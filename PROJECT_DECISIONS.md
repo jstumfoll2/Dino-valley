@@ -631,7 +631,7 @@ eventually"); licence choice pending
 **Decision:** Keep the app F-Droid-ready from the start: only free-software
 dependencies (AndroidX, Kotlin), no Google Play Services, no tracking, no
 network, reproducible build from source with the Gradle wrapper, an
-F-Droid-style application id (`io.github.jstumfoll2.dungeonquest`), and
+F-Droid-style application id (`io.github.jstumfoll2.dinovalley`), and
 store-listing metadata in `fastlane/metadata/android/` when we publish.
 Before publishing we need a free-software licence for the code and a
 Creative Commons licence for art and voice recordings.
@@ -646,22 +646,23 @@ Families policy review); family-only sideloading forever.
 
 ---
 
-### 32. Working name "Dino Valley"
+### 32. The game is called "Dino Valley" everywhere
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 (Jason renamed the repo to `Dino-valley`)
 
-**Decision:** The app is called "Dino Valley" on the phone. The repo stays
-`dungeonquest`; the code package is `com.dungeonquest` and the install id is
-`io.github.jstumfoll2.dungeonquest`.
+**Decision:** The app shows "Dino Valley" on the phone. The repo is
+`Dino-valley`, the code package is `com.dinovalley`, and the install id is
+`io.github.jstumfoll2.dinovalley`.
 
-**Why we made it:** The game needs a name a family would recognise on the
-home screen. Changing the display name later is free; the install id should
-stay fixed once installed.
+**Why we made it:** One name everywhere is easier to follow. The rename
+happened before anyone installed the app, which is the last cheap moment to
+change the install id: after that, a new id installs as a second app.
 
-**Alternatives considered:** Renaming the repo now (churn for no gain).
+**Alternatives considered:** Keeping the old `dungeonquest` names inside
+the code (confusing for no benefit).
 
-**What might cause us to change it:** Your son naming the dino; the app can
-take its name.
+**What might cause us to change it:** Your son naming the dino; the app's
+display name can take it at any time, while the install id stays fixed.
 
 ---
 

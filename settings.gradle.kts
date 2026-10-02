@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "dungeonquest"
+rootProject.name = "dino-valley"
 include(":app", ":engine")

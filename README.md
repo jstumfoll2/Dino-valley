@@ -1,4 +1,4 @@
-# Dungeon Quest (working title)
+# Dino Valley
 
 A playful, offline Android learning game for a four-year-old, built as a
 family project. Kotlin + Jetpack Compose. No accounts, no ads, no network, no
@@ -7,7 +7,7 @@ rules, procedural generation, good game design, and local data.
 
 **Status:** first playable counting prototype.
 
-**Try it:** on the phone, open the [latest build](https://github.com/jstumfoll2/dungeonquest/releases/tag/latest),
+**Try it:** on the phone, open the [latest build](https://github.com/jstumfoll2/Dino-valley/releases/tag/latest),
 download `dino-valley.apk`, and open it to install. The first time, Android
 asks to allow installs from your browser or Files app.
 
