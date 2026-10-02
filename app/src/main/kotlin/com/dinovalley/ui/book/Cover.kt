@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.dinovalley.R
 import com.dinovalley.engine.story.Backdrop
-import com.dinovalley.engine.story.Speech
+import com.dinovalley.engine.model.Speech
 import com.dinovalley.ui.art.Dino
 import com.dinovalley.ui.art.DinoKind
 import com.dinovalley.ui.art.Mood

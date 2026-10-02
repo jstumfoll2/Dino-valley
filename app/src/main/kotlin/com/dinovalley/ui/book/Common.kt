@@ -42,7 +42,7 @@ import com.dinovalley.R
 import com.dinovalley.audio.NameRecorder
 import com.dinovalley.audio.Narrator
 import com.dinovalley.engine.story.Backdrop
-import com.dinovalley.engine.story.Speech
+import com.dinovalley.engine.model.Speech
 import com.dinovalley.ui.art.Picto
 import com.dinovalley.ui.art.PictoIcon
 import com.dinovalley.ui.theme.DinoColors

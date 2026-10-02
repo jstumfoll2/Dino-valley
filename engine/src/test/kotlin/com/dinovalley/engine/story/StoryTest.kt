@@ -1,5 +1,7 @@
 package com.dinovalley.engine.story
 
+import com.dinovalley.engine.model.Speech
+
 import com.dinovalley.engine.activity.count.CountObjectsGenerator
 import com.dinovalley.engine.model.SpriteId
 import kotlin.test.Test

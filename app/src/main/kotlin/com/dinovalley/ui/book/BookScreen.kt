@@ -116,7 +116,7 @@ private fun PageView(page: StoryPage, onSolved: (Boolean) -> Unit, onNext: () ->
                 facingLeft = true,
             )
         }
-        page.challenge?.let { Challenge(it, enabled = phase == Phase.PLAYING, onDone = finish) }
+        page.challenge?.let { ChallengeLayer(it, enabled = phase == Phase.PLAYING, onDone = finish) }
         Caption(
             caption,
             fontSize = with(LocalDensity.current) { (h * 0.052f).toSp() },
@@ -136,7 +136,7 @@ private fun PageView(page: StoryPage, onSolved: (Boolean) -> Unit, onNext: () ->
 }
 
 @Composable
-private fun Challenge(c: Challenge, enabled: Boolean, onDone: (Boolean) -> Unit) {
+private fun ChallengeLayer(c: Challenge, enabled: Boolean, onDone: (Boolean) -> Unit) {
     when (c) {
         is Challenge.TapClouds -> TapClouds(c, enabled, onDone)
         is Challenge.CountEggs -> CountEggs(c, enabled, onDone)

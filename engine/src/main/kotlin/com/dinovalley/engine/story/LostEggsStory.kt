@@ -3,6 +3,7 @@ package com.dinovalley.engine.story
 import com.dinovalley.engine.activity.count.CountObjectsGenerator
 import com.dinovalley.engine.activity.count.PrototypeCountingLevels
 import com.dinovalley.engine.model.Ease
+import com.dinovalley.engine.model.Speech
 import com.dinovalley.engine.util.GameRandom
 import kotlin.random.Random
 

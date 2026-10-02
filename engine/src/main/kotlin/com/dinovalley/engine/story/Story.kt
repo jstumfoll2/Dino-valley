@@ -1,22 +1,7 @@
 package com.dinovalley.engine.story
 
 import com.dinovalley.engine.model.CountObjectsInstance
-
-/** A piece of narration: spoken words, or the dino's name (the child's own recording, or "Rex"). */
-sealed interface Speech {
-    data class Words(val text: String) : Speech
-    data object Name : Speech
-
-    companion object {
-        /** "Thank you, {name}!" becomes words, the name, then words again. */
-        fun of(template: String): List<Speech> =
-            template.split(NAME).flatMapIndexed { i, part ->
-                listOfNotNull(if (i > 0) Name else null, part.takeIf { it.isNotBlank() }?.let { Words(it.trim()) })
-            }
-
-        private const val NAME = "{name}"
-    }
-}
+import com.dinovalley.engine.model.Speech
 
 /** The painted background of a page. The app maps each one to its artwork. */
 enum class Backdrop { VALLEY, STORM, MEADOW, RIVER, FOREST, CAVE, HOME }
