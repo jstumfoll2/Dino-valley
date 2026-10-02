@@ -1299,6 +1299,26 @@ loads `report.json` and regenerates the exact question from its seed.
 
 ---
 
+## Update, 2026-10-02: the storybook
+
+After the first playtest the game became a picture book ("The Lost Eggs",
+PROJECT_DECISIONS.md #34–37). How the pieces map onto the plan above:
+
+- `engine/story`: `LostEggsStory` writes a `StoryBook` from a `StoryLevel` and a seed. Pages
+  carry narration (`Speech`, with `{name}` standing for the dino's recorded name), a
+  `Backdrop`, the `Cast`, and an optional `Challenge`: `TapClouds`, `CountEggs` (reusing
+  `CountObjectsGenerator` and its evaluator), `FindNumeral`, `FindLetter` or `HatchEggs`.
+  `ChoiceJudge` gives the hint ladder for picture choices, and `StoryLevels.next` is the
+  difficulty rule between reads.
+- `app/ui/book`: `BookScreen` turns pages (cover, seven pages, The End). `PageView` reads the
+  page, unlocks its challenge, then reads what happened and shows the next-page arrow.
+- `app/ui/art`: `Dino` stacks the layered WebP art and animates it. `Picto` draws button symbols.
+- `app/audio`: `Narrator.speak()` suspends until the words finish, playing the name clip in
+  the middle of a sentence. `NameRecorder` records that clip.
+- `art/`: SVG sources and `build.py`, which renders the WebP art (decision #35).
+
+The older round-based `GameSession` stays in the engine for the later free-play mode.
+
 ## How we'll keep this understandable
 
 - `PROJECT_DECISIONS.md` gets a new entry for every choice that someone
