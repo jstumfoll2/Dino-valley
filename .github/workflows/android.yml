@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test the engine and build the app
+        run: ./gradlew :engine:test :app:assembleDebug --stacktrace
+
+      - name: Keep the APK with this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: dino-valley-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      # On main, replace the "latest" pre-release so the newest APK is always one tap away on the phone.
+      - name: Publish the latest build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk dino-valley.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest dino-valley.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Latest build" \
+            --notes "Built from ${GITHUB_SHA::7}. On the phone, download dino-valley.apk and open it to install."

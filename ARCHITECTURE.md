@@ -1178,16 +1178,18 @@ where your answer would change something soon.
     counting) while the MVP theme is dinosaurs. *Default:* keep theme and
     skill independent in data; an area is a list of templates. Which subject
     lives where is a content decision, not code.
-12. **Healthy play length.** Not in the spec. *Default:* after N rounds
-    (parent setting, default 4) the character yawns and "goes to sleep", a
-    gentle natural ending instead of an endless loop.
+12. ~~Healthy play length?~~ **Answered: 5 rounds.** After 5 rounds (about
+    10–15 minutes) the dino yawns and "goes to sleep", a gentle natural ending
+    instead of an endless loop. Parents can change it later.
 13. **AI art consistency and animation.** Image generators produce flat
     raster images with drifting style, and a single picture can't be animated
     into blinks and bounces. *Default:* use AI for concepts, then make one
     clean layered master (traced to vector if possible) and reuse it.
-14. **Distribution.** Installing from Android Studio onto family devices
-    needs no Play Store account. If you ever publish on Google Play, its
-    Families policy applies; the no-network, no-SDK design already fits it.
+14. ~~Distribution?~~ **Answered: install builds from GitHub now, publish on
+    F-Droid eventually.** Every push to `main` publishes an installable APK
+    as the "latest" GitHub release. F-Droid needs a free-software licence,
+    no proprietary libraries (we have none), and a build from source; see
+    decision #31.
 15. ~~Are letters core?~~ **Answered: numbers and letters are the key
     objective.** Letters move from Phase 4 into Phase 2 (see "Learning goals").
 16. **His name inside the app.** Starting letters with his name means the
