@@ -5,13 +5,7 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--
-      Only for recording the dino's name on the cover (PROJECT_DECISIONS.md #36). Asked for the
-      first time the microphone button is held; the clip stays in private app storage.
-    -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
-    <!-- Lets the placeholder voice find the phone's text-to-speech engine on Android 11+. -->
+    <!-- Lets the last-resort voice find the phone's text-to-speech engine on Android 11+. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />

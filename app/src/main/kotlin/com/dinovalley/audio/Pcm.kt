@@ -1,20 +1,24 @@
 package com.dinovalley.audio
 
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioTrack
+import android.content.res.AssetManager
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
-import kotlinx.coroutines.delay
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 
-/** Mono audio, samples in -1..1. Every voice the game plays goes through here, so all of it can be loudness-matched. */
+/** Mono audio, samples in -1..1. Every sound the game plays goes through here, so all of it can be loudness-matched. */
 class Pcm(val samples: FloatArray, val rate: Int) {
     val seconds: Float get() = samples.size.toFloat() / rate
 
@@ -69,47 +73,83 @@ class Pcm(val samples: FloatArray, val rate: Int) {
         return if (to - from < rate / 10) this else Pcm(samples.copyOfRange(from, to), rate)
     }
 
-    /** Plays to the end, or stops right away if the caller is cancelled. */
-    suspend fun play() {
-        if (samples.isEmpty()) return
-        val track = AudioTrack.Builder()
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_GAME)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build(),
-            )
-            .setAudioFormat(
-                AudioFormat.Builder()
-                    .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                    .setSampleRate(rate)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .build(),
-            )
-            .setTransferMode(AudioTrack.MODE_STATIC)
-            .setBufferSizeInBytes(samples.size * 4)
-            .build()
-        try {
-            track.write(samples, 0, samples.size, AudioTrack.WRITE_BLOCKING)
-            track.play()
-            val frames = samples.size
-            val limit = System.currentTimeMillis() + (seconds * 1000).toLong() + 1500
-            while (track.playbackHeadPosition < frames && System.currentTimeMillis() < limit) delay(20)
-        } finally {
-            runCatching { track.stop() }
-            track.release()
+    /** The same sound at another sample rate (straight-line resampling, fine for speech). */
+    fun at(newRate: Int): Pcm {
+        if (newRate == rate || samples.isEmpty()) return this
+        val n = (samples.size.toLong() * newRate / rate).toInt()
+        val step = rate.toDouble() / newRate
+        return Pcm(
+            FloatArray(n) { i ->
+                val x = i * step
+                val k = x.toInt().coerceAtMost(samples.size - 1)
+                val f = (x - k).toFloat()
+                samples[k] * (1 - f) + samples[minOf(k + 1, samples.size - 1)] * f
+            },
+            newRate,
+        )
+    }
+
+    /**
+     * How loud each 1/50 s is, 0..1 against the loudest moment: what the characters' mouths
+     * follow while this plays.
+     */
+    val envelope: FloatArray by lazy {
+        val window = maxOf(1, rate / ENVELOPE_RATE)
+        val out = FloatArray((samples.size + window - 1) / window)
+        for (w in out.indices) {
+            var s = 0.0
+            val from = w * window
+            val to = minOf(samples.size, from + window)
+            for (k in from until to) s += samples[k] * samples[k]
+            out[w] = sqrt(s / maxOf(1, to - from)).toFloat()
         }
+        val top = out.maxOrNull()?.takeIf { it > 0f } ?: 1f
+        for (i in out.indices) out[i] = out[i] / top
+        out
+    }
+
+    /** Kept on the phone as 16-bit sound, half the size of the float samples. */
+    fun write(file: File) {
+        file.parentFile?.mkdirs()
+        val tmp = File(file.path + ".tmp")
+        DataOutputStream(BufferedOutputStream(FileOutputStream(tmp))).use { out ->
+            out.writeInt(rate)
+            out.writeInt(samples.size)
+            val bytes = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN)
+            for (v in samples) bytes.putShort((v.coerceIn(-1f, 1f) * 32767).toInt().toShort())
+            out.write(bytes.array())
+        }
+        tmp.renameTo(file)
     }
 
     companion object {
         const val TARGET_RMS = 0.11f
 
-        /** Reads a recorded clip (the dragon's name) into mono samples. Null if the phone can't decode it. */
-        fun decode(file: File): Pcm? = runCatching { decodeOrThrow(file) }.getOrNull()
+        const val ENVELOPE_RATE = 50
 
-        private fun decodeOrThrow(file: File): Pcm? {
+        /** Reads a sound file into mono samples. Null if the phone can't decode it. */
+        fun decode(file: File): Pcm? = runCatching { decodeOrThrow { setDataSource(file.path) } }.getOrNull()
+
+        /** Reads a sound packed in the app (stored uncompressed, see build.gradle.kts). */
+        fun decode(assets: AssetManager, path: String): Pcm? = runCatching {
+            assets.openFd(path).use { fd -> decodeOrThrow { setDataSource(fd.fileDescriptor, fd.startOffset, fd.length) } }
+        }.getOrNull()
+
+        /** Reads a sound saved by [write]. */
+        fun read(file: File): Pcm? = runCatching {
+            DataInputStream(BufferedInputStream(FileInputStream(file))).use { input ->
+                val rate = input.readInt()
+                val n = input.readInt()
+                val bytes = ByteArray(n * 2)
+                input.readFully(bytes)
+                val shorts = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                Pcm(FloatArray(n) { shorts.get(it) / 32768f }, rate)
+            }
+        }.getOrNull()
+
+        private fun decodeOrThrow(source: MediaExtractor.() -> Unit): Pcm? {
             val extractor = MediaExtractor()
-            extractor.setDataSource(file.path)
+            extractor.source()
             val track = (0 until extractor.trackCount).firstOrNull {
                 extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
             } ?: return null
@@ -120,7 +160,8 @@ class Pcm(val samples: FloatArray, val rate: Int) {
             val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
             codec.configure(format, null, null, 0)
             codec.start()
-            val out = ArrayList<Float>()
+            var out = FloatArray(1 shl 16)
+            var size = 0
             val info = MediaCodec.BufferInfo()
             var inputDone = false
             var outputDone = false
@@ -157,7 +198,8 @@ class Pcm(val samples: FloatArray, val rate: Int) {
                             while (shorts.hasRemaining()) {
                                 frame += shorts.get() / 32768f
                                 if (++c == channels) {
-                                    out += frame / channels
+                                    if (size == out.size) out = out.copyOf(out.size * 2)
+                                    out[size++] = frame / channels
                                     frame = 0f
                                     c = 0
                                 }
@@ -172,7 +214,7 @@ class Pcm(val samples: FloatArray, val rate: Int) {
                 codec.release()
                 extractor.release()
             }
-            return if (out.isEmpty()) null else Pcm(out.toFloatArray(), rate)
+            return if (size == 0) null else Pcm(out.copyOf(size), rate)
         }
     }
 }

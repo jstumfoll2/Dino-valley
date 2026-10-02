@@ -20,14 +20,14 @@ internal class Lines(private val r: Random) {
 
     fun intro(q: Quest): String = when (q.kind) {
         QuestKind.DRAGONS_PRISONER ->
-            "Oh no! Princess Ruby has disappeared! The knights say the dragon ${q.dragon} took her, deep in ${q.dungeon}. " +
+            "Oh no! Princess Ruby has disappeared! The knights say the dragon ${q.dragon} took her. She is somewhere deep in ${q.dungeon}. " +
                 "But nobody has asked the dragon. Will you go and find out what really happened?"
         QuestKind.LONELY_DRAGON ->
             "Things keep going missing in the kingdom: spoons, buttons, even the queen's shiny hat! " +
-                "Everyone says the dragon ${q.dragon} took them and hid them in ${q.dungeon}. Let's go and see!"
+                "Everyone says the dragon ${q.dragon} took them. They are hidden in ${q.dungeon}. Let's go and see!"
         QuestKind.RUBYS_QUEST ->
             "Princess Ruby didn't wait to be rescued. She climbed down from her tower all by herself! " +
-                "Now she needs your help. Something under the castle, in ${q.dungeon}, is scribbling on the magic Storybook."
+                "Now she needs your help. Something in ${q.dungeon} is scribbling on the magic Storybook."
     }
 
     /** The companion notices the child: past adventures and what they're good at. */
@@ -49,15 +49,15 @@ internal class Lines(private val r: Random) {
 
     fun toTheMap(q: Quest) = pick(
         "Here is the map of ${q.dungeon}. We start at the camp, and the dragon's lair is at the very end. Off we go!",
-        "Look at the map! The path goes from our camp, through ${q.dungeon}, all the way to the lair. Adventure time!",
-        "{name} points at the map. That's ${q.dungeon}! At every fork in the path, you get to pick a door. Let's go!",
+        "Look at the map of ${q.dungeon}! The path goes from our camp all the way to the lair. Adventure time!",
+        "{name} points at the map of ${q.dungeon}. At every fork in the path, you get to pick a door. Let's go!",
     )
 
     // ------------------------------------------------------------- doors and maps
 
     fun pickDoor() = pick("Which door will you open?", "Which door should we try?", "Hmm, which way? You choose!")
 
-    fun treasureSniff() = pick("{name} sniffs the air. Sniff, sniff! The treasure is", "A little bird sings: tweet! The treasure is", "The map glows. The treasure is")
+    fun treasureSniff() = pick("{name} sniffs the air. The treasure is", "A little bird sings. [tweet] The treasure is", "The map glows. The treasure is")
 
     /** After taking a door the clue didn't point to: the way goes on, but the treasure was elsewhere. */
     fun wrongWay(right: String) = pick(
@@ -71,7 +71,7 @@ internal class Lines(private val r: Random) {
 
     fun gate(q: Quest) = pick(
         "You reach the gate of ${q.dungeon}. It's stuck tight!",
-        "Here's the big old gate of ${q.dungeon}. Creak... It won't open!",
+        "Here's the big old gate of ${q.dungeon}. It won't open!",
     )
 
     fun gateRoll() = "Roll the dice to see how hard you push the gate!"
@@ -82,13 +82,13 @@ internal class Lines(private val r: Random) {
     )
 
     fun runeOops() = pick(
-        "The door sneezes! Ah-choo! Dust everywhere. Let's try again.",
-        "Bzzzt! The runes giggle and wiggle. Not that one. Try again!",
+        "The door sneezes! [sneeze] Dust everywhere. Let's try again.",
+        "[zap] The runes giggle and wiggle. Not that one. Try again!",
         "The door says, \"Hmm, no, thank you!\" Try another one.",
     )
 
     fun runeYay() = pick(
-        "You got it! The ancient door begins to shake... and rumbles open!",
+        "You got it! The ancient door begins to shake... [rumble] It's open!",
         "Yes! The runes shine brightly, and the door slides open!",
     )
 
@@ -98,11 +98,11 @@ internal class Lines(private val r: Random) {
     )
 
     fun bridgeOops() = pick(
-        "Wobble, wobble! The bridge shakes, and a bird flies away. Let's count again.",
-        "Oops! A stone splashes far below. Plip! Let's try again.",
+        "The bridge wobbles and shakes, and a bird flies away. Let's count again.",
+        "Oops! A stone falls into the water far below. [splash] Let's try again.",
     )
 
-    fun bridgeYay() = pick("You got it! The stones click into place. The bridge is strong!", "Yes! Stomp, stomp. The bridge holds tight!")
+    fun bridgeYay() = pick("You got it! The stones click into place. The bridge is strong!", "Yes! [stomp] The bridge holds tight!")
 
     fun crystalCave() = pick(
         "A cave full of glittering crystals! A tiny wizard waves her hat and calls out, \"My lantern went out! I need a crystal!\"",
@@ -110,8 +110,8 @@ internal class Lines(private val r: Random) {
     )
 
     fun crystalOops() = pick(
-        "The wizard puts the crystal in her lantern... and it toots like a trumpet! Toot! Wrong crystal. Try again!",
-        "Poof! The crystal turns the wizard's hat into a bunny. Hee hee! Not that one. Try again!",
+        "The wizard puts the crystal in her lantern... and it toots like a trumpet! [toot] Wrong crystal. Try again!",
+        "[poof] The crystal turns the wizard's hat into a bunny. Hee hee! Not that one. Try again!",
     )
 
     fun crystalYay() = pick("Her lantern glows brightly. \"Thank you!\" she says, and she gives you a gem.", "Yes! The lantern lights up the whole cave, and the wizard gives you a gem!")
@@ -124,22 +124,24 @@ internal class Lines(private val r: Random) {
     fun letterPurpose() = pick("The spell needs one more letter.", "The spell book is waiting for its magic letter.", "One magic letter will calm the flying books.")
 
     fun libraryOops() = pick(
-        "Flap, flap! The books fly faster! That's not the right letter. Try again!",
+        "[whoosh] The books fly faster! That's not the right letter. Try again!",
         "The spell book giggles, \"That tickles!\" Try another letter.",
     )
 
-    fun libraryYay() = pick("Whoosh! The books settle back on their shelves. The spell is finished!", "You got it! The spell book glows with happy magic!")
+    fun libraryYay() = pick("[whoosh] The books settle back on their shelves. The spell is finished!", "You got it! The spell book glows with happy magic!")
 
     fun tunnel() = pick(
-        "This tunnel is so dark! Far away, a little crystal glows.",
-        "A dark, twisty tunnel. We need a magic path to the glowing crystal!",
+        "This tunnel is so dark! Magic letters on the wall light the way, but they are fading.",
+        "A dark, twisty tunnel. If we write magic letters on the wall, they will glow and light the way!",
     )
 
-    fun traceGoal() = pick("from the green star to the crystal.", "all the way to the glowing crystal.", "to light the way to the crystal.")
+    fun writePurpose() = pick("Let's light the tunnel!", "Write with your magic finger!", "Make the wall glow!")
 
-    fun tunnelOops() = pick("The path fizzles out like a sparkler. Psst! Let's draw it again.", "Oops, the magic wandered off the path! Try again.")
+    fun writeAgain() = pick("Now a magic number!", "One more! This time, a number.")
 
-    fun tunnelYay() = pick("The magic path lights up the whole tunnel!", "Your path glows brightly. Now we can see!")
+    fun tunnelOops() = pick("The magic fizzles out like a sparkler. Psst! Let's try that part again.", "Oops, the magic wandered off the line! Try again.")
+
+    fun tunnelYay() = pick("It glows! The whole tunnel lights up!", "Your letter shines brightly. Now we can see!")
 
     fun mirrorHall() = pick(
         "A hall full of mirrors! Only one door is the real way out. Watch carefully...",
@@ -150,13 +152,59 @@ internal class Lines(private val r: Random) {
 
     fun mirrorYay() = pick("That's the real door! You remembered!", "Yes! The mirrors cheer, \"What a memory!\"")
 
+    fun storeroom() = pick(
+        "This is the goblins' storeroom, and what a mess! Gems and coins and keys everywhere. Let's tidy up!",
+        "Oh my! The goblins' storeroom is so messy that we can't get through. Let's put things in baskets!",
+    )
+
+    fun storeroomOops() = pick("Oops! That basket says, \"That's not mine!\" and spits it back out. Try another one.", "[boing] It bounced out. Does it look like the others in that basket?")
+
+    fun storeroomYay() = pick("All tidy! The goblins will be so happy.", "What a tidy storeroom! Now we can walk through.")
+
+    fun pond() = pick(
+        "An underground pond! A frog sits on a lily pad. [ribbit] \"I only hop on lily pads when you count them right!\"",
+        "Here's a quiet pond with lily pads. A little frog wants to hop across, but it needs your help counting!",
+    )
+
+    fun pondAgain() = pick("Ribbit! The frog wants to hop again!", "Here come more lily pads!")
+
+    fun pondOops() = pick("[splash] The frog falls in the water. It's okay, frogs love water! Let's count again.", "[ribbit] The frog says, \"Not that one!\" Let's count again.")
+
+    fun pondYay() = pick("[boing] The frog jumps across!", "You got it! The frog hops all the way!")
+
+    fun mosaic() = pick(
+        "A grand hall with a magic picture on the wall. Oh no, it's broken into pieces!",
+        "Look at this hall! Its magic picture has cracked apart, and the door won't open until it's fixed.",
+    )
+
+    fun mosaicOops() = pick("Hmm, that piece doesn't fit there. Look at the picture!", "That piece belongs somewhere else. Look at the picture!")
+
+    fun mosaicYay() = pick("The picture is whole again! It sparkles, and the door opens.", "You fixed it! The magic picture glows!")
+
+    fun countThenFind() = pick("Now find the number that says how many!", "Can you find that number?")
+
+    fun colorAgain() = pick("Her friend needs a crystal too!", "Another lantern went out!")
+
+    fun letterAgain() = pick("The spell book has one more missing letter.", "Here's another page with a missing letter!")
+
+    fun patternAgain() = "The door has a second lock!"
+
+    // ------------------------------------------------------------- forks
+
+    /** At a fork, each door says what kind of puzzle is behind it, so the path is the child's pick. */
+    fun doorOffer(hue: String, activity: String, index: Int, last: Int) = when (index) {
+        0 -> "The $hue door has $activity."
+        last -> "And the $hue door has $activity."
+        else -> "The $hue door has $activity."
+    }
+
     fun vault() = pick("A treasure vault! A big chest with a magic lock sits in the middle.", "Gold glitters everywhere! This is a treasure vault.")
 
     fun vaultRoll() = "Roll the dice to open the treasure chest!"
 
-    fun vaultOops() = pick("Clink! The coins jump back out of your bag. Let's count again.", "The chest burps! Burp! Let's count again.")
+    fun vaultOops() = pick("[coins] The coins jump back out of your bag. Let's count again.", "The chest burps! [burp] Let's count again.")
 
-    fun vaultYay() = pick("Clink clink! Into your bag they go!", "You got it! What a lot of treasure!")
+    fun vaultYay() = pick("[coins] Into your bag they go!", "You got it! What a lot of treasure!")
 
     fun den(goblin: String) = pick(
         "Here's a goblin named $goblin hiding behind a barrel. He's shaking! He's scared of the dark.",
@@ -168,25 +216,25 @@ internal class Lines(private val r: Random) {
     fun denAsk(goblin: String) = "$goblin is frightened. What should you do?"
 
     fun workshop(potion: PotionKind) = pick(
-        "An alchemist's workshop! A big cauldron bubbles: blub, blub, blub. Here's a recipe for the ${potion.title}. We might need it!",
+        "An alchemist's workshop! A big cauldron bubbles. [bubble] Here's a recipe for the ${potion.title}. We might need it!",
         "Bubbles and smoke! This is the alchemist's workshop. Let's make the ${potion.title}!",
     )
 
     fun potionOops() = pick(
-        "Blorp! The potion turns polka-dotted, and that one pops right back out! Let's check the recipe.",
-        "Fizz! Purple smoke, and {name} sneezes sparkles! Not that one. Try again.",
+        "[bubble] The potion turns polka-dotted, and that one pops right back out! Let's check the recipe.",
+        "[fizz] Purple smoke, and {name} sneezes sparkles! Not that one. Try again.",
     )
 
-    fun potionYay(potion: PotionKind) = "POOF! You made the ${potion.title}!"
+    fun potionYay(potion: PotionKind) = "[poof] You made the ${potion.title}!"
 
     // ------------------------------------------------------------- dice
 
     fun gateResult(tier: Tier, coins: Int) = when (tier) {
         Tier.SILLY -> pick(
-            "The gate swings open... and bonks you on the nose! Boing! But it's open.",
+            "The gate swings open... and bonks you on the nose! [boing] But it's open.",
             "You push and push... and your hat flies off and gets stuck on the gate! But the gate opens anyway.",
         )
-        Tier.GOOD -> "Creeeeak. The gate opens!"
+        Tier.GOOD -> "[creak] The gate opens!"
         Tier.GREAT -> "The gate flies open, and ${coinWords(coins)} roll out!"
         Tier.MAGIC -> "Magic! The gate bows to you and opens all by itself! ${capitalCoins(coins)} sparkle on the ground!"
     }
@@ -199,8 +247,8 @@ internal class Lines(private val r: Random) {
     }
 
     fun vaultResult(tier: Tier) = when (tier) {
-        Tier.SILLY -> "The lid pops open... and a frog jumps out! Ribbit! The treasure is underneath."
-        Tier.GOOD -> "Click! The chest opens."
+        Tier.SILLY -> "The lid pops open... and a frog jumps out! [ribbit] The treasure is underneath."
+        Tier.GOOD -> "[unlock] The chest opens."
         Tier.GREAT -> "The chest flies open! Shiny coins everywhere!"
         Tier.MAGIC -> "The chest sings a song and opens wide. So much treasure!"
     }
@@ -220,16 +268,16 @@ internal class Lines(private val r: Random) {
     fun chestLock(what: String) = pick("The lock opens only for the right $what.", "The lock is waiting for its magic $what.", "To open the lock, tap the right $what.")
 
     fun chestOops() = pick(
-        "The lock blows a raspberry! Pbbbt! Not that one. Try again!",
-        "Clunk! The lock stays shut, and the chest wiggles. Try again!",
+        "The lock blows a raspberry! [raspberry] Not that one. Try again!",
+        "[clunk] The lock stays shut, and the chest wiggles. Try again!",
     )
 
-    fun chestYay() = pick("Click! The lock pops open!", "The magic lock sparkles and clicks open!")
+    fun chestYay() = pick("[unlock] The lock pops open!", "[unlock] The magic lock sparkles and clicks open!")
 
     fun chestLoot(n: Int) = "Inside the chest: ${coinWords(n)}!"
 
     /** Hearts never run out: the companion helps, and the adventure carries on. */
-    fun heartsBack() = "Oh no, your hearts are all gone! {name} gives you a magic berry. Munch, munch... All your hearts are back!"
+    fun heartsBack() = "Oh no, your hearts are all gone! {name} gives you a magic berry. [munch] All your hearts are back!"
 
     fun heartsKept(n: Int) = when (n) {
         3 -> "You kept all three hearts! Here are some bonus stars."
@@ -261,7 +309,7 @@ internal class Lines(private val r: Random) {
     fun starLit(left: Int) = when (left) {
         0 -> pick("The last star lights up!", "All three stars are shining!")
         1 -> pick("Another star lights up! Just one more!", "Two stars! One more to go!")
-        else -> pick("A star lights up!", "Ding! The first star is shining!")
+        else -> pick("A star lights up!", "[poof] The first star is shining!")
     }
 
     fun goblinHelps(goblin: String) = "Look who's here! $goblin the goblin runs in and shouts, \"I'll help you, friend!\" A star lights up!"
@@ -284,9 +332,9 @@ internal class Lines(private val r: Random) {
     fun spellRoll() = "Roll the dice to power up your spell!"
 
     fun spellResult(tier: Tier) = when (tier) {
-        Tier.SILLY -> "Your spell goes fizz... and turns your cape pink! It still works a little."
-        Tier.GOOD -> "Zap! Your spell sparkles."
-        Tier.GREAT -> "Kaboom! A big sparkly spell!"
+        Tier.SILLY -> "[fizz] Your spell fizzles and turns your cape pink! It still works a little."
+        Tier.GOOD -> "[zap] Your spell sparkles."
+        Tier.GREAT -> "[poof] A big sparkly spell!"
         Tier.MAGIC -> "WOW! A rainbow spell fills the whole lair!"
     }
 
@@ -322,7 +370,7 @@ internal class Lines(private val r: Random) {
             "Your light spell shines on the Storybook, and the scribbles fly away like moths. The story is safe!"
         }
         Twist.SLEEPY_SHADOW -> if (friendly) {
-            "Your lullaby rocks the Ink Shadow to sleep. Zzzz. The Storybook is safe, and Ruby tucks the shadow in with a blanket."
+            "Your lullaby rocks the Ink Shadow to sleep. The Storybook is safe, and Ruby tucks the shadow in with a blanket."
         } else {
             "Your light spell makes the Ink Shadow sparkle. It stops scribbling and draws a happy picture instead!"
         }

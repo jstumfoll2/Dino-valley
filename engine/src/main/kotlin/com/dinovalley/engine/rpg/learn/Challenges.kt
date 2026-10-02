@@ -31,7 +31,7 @@ data class Rune(val shape: RuneShape, val hue: Hue)
 enum class LetterMode { NAME, SOUND, FIRST_SOUND }
 
 /** Paths to trace with a finger, from a straight line up to shapes (brief: pre-writing stages). */
-enum class TraceShape { LINE, CURVE, ZIGZAG, LOOP, CIRCLE, TRIANGLE }
+enum class TraceShape { LINE, CURVE, ZIGZAG, LOOP, CIRCLE, TRIANGLE, LETTER, NUMBER }
 
 /** A point on the tracing card, 0..1 across and down. */
 data class Point(val x: Float, val y: Float)
@@ -171,16 +171,22 @@ data class MapChallenge(
     override val optionCount get() = doors.size
 }
 
-/** Trace along [path] with a finger; within [tolerance] (fraction of the card's height) counts. */
+/**
+ * Trace with a finger, one stroke after another, each from its start in its direction: a
+ * path, a shape, or a letter or number written the way it is taught ([glyph]). A stroke counts
+ * once most of its points are touched within [tolerance] (fraction of the card's height).
+ */
 data class TraceChallenge(
     override val level: Int,
     override val seed: Long,
     override val prompt: List<Speech>,
     val shape: TraceShape,
-    val path: List<Point>,
+    val strokes: List<List<Point>>,
     val tolerance: Float,
+    val glyph: Char? = null,
 ) : Challenge {
     override val skill get() = Skill.TRACING
+    val path: List<Point> get() = strokes.flatten()
 }
 
 /** Look at the doors, then they hide; tap the doors in [sequence] order (indices into [doors]). */
@@ -222,4 +228,72 @@ data class RecipeChallenge(
     val shelf: List<Ingredient>,
 ) : Challenge {
     override val skill get() = Skill.RECIPES
+}
+
+/** How things are sorted into baskets, from easiest to hardest. */
+enum class SortRule { COLOR, KIND, SIZE }
+
+/** Something to sort: a gem (with its color and size) or another [Thing]. */
+data class Sortable(val thing: Thing, val hue: Hue = Hue.RED, val size: GemSize = GemSize.BIG)
+
+/**
+ * Drag every item into its basket. [baskets] shows one sample item on each basket; [home] is
+ * the right basket for each of [items]. Judged item by item.
+ */
+data class SortChallenge(
+    override val level: Int,
+    override val seed: Long,
+    override val prompt: List<Speech>,
+    val rule: SortRule,
+    val baskets: List<Sortable>,
+    val items: List<Sortable>,
+    val home: List<Int>,
+) : Challenge {
+    override val skill get() = Skill.SORTING
+}
+
+/**
+ * Counting by [step]s: [shown] lily pads hold [step] [thing]s each, the first ones labeled with
+ * the running count (2, 4, 6) and the last one asking for its number.
+ */
+data class SkipCountChallenge(
+    override val level: Int,
+    override val seed: Long,
+    override val prompt: List<Speech>,
+    val step: Int,
+    val shown: Int,
+    val thing: Thing,
+    val options: List<Int>,
+) : PickOne {
+    override val skill get() = Skill.SKIP_COUNTING
+    val total: Int get() = step * shown
+    override val optionCount get() = options.size
+    override val answer get() = options.indexOf(total)
+}
+
+/**
+ * A picture cut into [cols] x [rows] pieces, to put back in place. With [ghost] a faint copy of
+ * the picture shows where each piece goes. The app draws the place's picture.
+ */
+data class PuzzleChallenge(
+    override val level: Int,
+    override val seed: Long,
+    override val prompt: List<Speech>,
+    val picture: PuzzlePicture,
+    val cols: Int,
+    val rows: Int,
+    val ghost: Boolean,
+) : Challenge {
+    override val skill get() = Skill.PUZZLES
+    val pieces: Int get() = cols * rows
+}
+
+/** Pictures for the mosaic puzzles: the places the child knows from adventures. */
+enum class PuzzlePicture(val said: String) {
+    CAMP("our camp"),
+    BRIDGE("the wobbly bridge"),
+    CRYSTAL_CAVE("the crystal cave"),
+    LIBRARY("the spell library"),
+    LAIR("the dragon's lair"),
+    POND("the frog pond"),
 }

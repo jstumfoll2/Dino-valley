@@ -6,23 +6,29 @@ import com.dinovalley.engine.rpg.learn.Skill
 import com.dinovalley.engine.rpg.learn.SkillBook
 import kotlin.random.Random
 
-/** Every kind of room. Learning rooms pair a story obstacle with one skill. */
-enum class RoomKind(val skill: Skill?, val title: String) {
-    GATE(null, "the dungeon gate"),
-    RUNE_DOOR(Skill.PATTERNS, "the Rune Door"),
-    BRIDGE(Skill.COUNTING, "the Broken Bridge"),
-    CRYSTAL_CAVE(Skill.COLORS, "the Crystal Cave"),
-    LIBRARY(Skill.LETTERS, "the Spell Library"),
-    TUNNEL(Skill.TRACING, "the Dark Tunnel"),
-    MIRROR_HALL(Skill.MEMORY, "the Mirror Hall"),
-    VAULT(Skill.ADDITION, "the Treasure Vault"),
-    GOBLIN_DEN(null, "the Goblin Den"),
-    WORKSHOP(Skill.RECIPES, "the Alchemist's Workshop"),
-    LAIR(null, "the lair"),
+/**
+ * Every kind of room. Learning rooms pair a story obstacle with one skill; [activity] is what
+ * the narrator calls it at a fork, so the child can pick the kind of puzzle they want.
+ */
+enum class RoomKind(val skill: Skill?, val title: String, val activity: String) {
+    GATE(null, "the dungeon gate", ""),
+    RUNE_DOOR(Skill.PATTERNS, "the Rune Door", "a pattern puzzle"),
+    BRIDGE(Skill.COUNTING, "the Broken Bridge", "a counting game"),
+    CRYSTAL_CAVE(Skill.COLORS, "the Crystal Cave", "a color game"),
+    LIBRARY(Skill.LETTERS, "the Spell Library", "a letter game"),
+    TUNNEL(Skill.TRACING, "the Dark Tunnel", "a writing game"),
+    MIRROR_HALL(Skill.MEMORY, "the Mirror Hall", "a memory game"),
+    VAULT(Skill.ADDITION, "the Treasure Vault", "an adding game"),
+    STOREROOM(Skill.SORTING, "the Goblins' Storeroom", "a sorting game"),
+    POND(Skill.SKIP_COUNTING, "the Frog Pond", "a frog counting game"),
+    MOSAIC_HALL(Skill.PUZZLES, "the Mosaic Hall", "a jigsaw puzzle"),
+    GOBLIN_DEN(null, "the Goblin Den", ""),
+    WORKSHOP(Skill.RECIPES, "the Alchemist's Workshop", ""),
+    LAIR(null, "the lair", ""),
     ;
 
     companion object {
-        val learningRooms = listOf(RUNE_DOOR, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT)
+        val learningRooms = listOf(RUNE_DOOR, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, STOREROOM, POND, MOSAIC_HALL)
     }
 }
 
@@ -38,8 +44,12 @@ sealed interface Stop {
 data class DungeonMap(val name: String, val stops: List<Stop>)
 
 object DungeonGenerator {
-    private val adjectives = listOf("Mossy", "Whispering", "Glittering", "Sleepy", "Rumbling", "Misty", "Crooked", "Twinkling", "Echoing", "Bubbling")
-    private val places = listOf("Caverns", "Vaults", "Tunnels", "Halls", "Dungeon", "Grottoes", "Burrows")
+    /** A dozen names, so every one can be recorded by the narrator ahead of time. */
+    private val names = listOf(
+        "the Mossy Caverns", "the Whispering Vaults", "the Glittering Tunnels", "the Sleepy Halls", "the Rumbling Dungeon",
+        "the Misty Grottoes", "the Crooked Burrows", "the Twinkling Caverns", "the Echoing Halls", "the Bubbling Grottoes",
+        "the Mossy Burrows", "the Glittering Halls",
+    )
 
     /**
      * Rooms are dealt like cards: skills practiced least recently (and lowest) are more likely,
@@ -48,7 +58,7 @@ object DungeonGenerator {
      */
     fun generate(seed: Long, skills: SkillBook): DungeonMap {
         val r = Random(seed)
-        val name = "the ${adjectives.random(r)} ${places.random(r)}"
+        val name = names.random(r)
         val dealt = RoomKind.learningRooms
             .sortedBy { kind ->
                 val skill = kind.skill!!
@@ -68,11 +78,10 @@ object DungeonGenerator {
             val doors = chosen.mapIndexed { i, k -> room(k, hues[i], sides[i]) }
             return Stop.Fork(doors, r.nextInt(doors.size))
         }
-        // Seven learning rooms over three forks: each fork shows two doors (three at the wide
-        // one), so the third fork borrows the rooms the first two only show when wide.
+        // Three forks, each showing two doors (three at the wide one) from its own three rooms.
         val firstKinds = dealt.subList(0, 3)
         val secondKinds = dealt.subList(3, 6)
-        val thirdKinds = listOf(dealt[6], dealt[2], dealt[5])
+        val thirdKinds = dealt.subList(6, 9)
         return DungeonMap(
             name,
             listOf(

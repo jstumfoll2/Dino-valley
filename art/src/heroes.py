@@ -5,6 +5,7 @@ Each character is one SVG in a fixed box, split into named layers (<g id="...">)
 renders every layer on its own at the same size, so the app can stack them and animate parts
 (blink, talk, bob, flap). Characters face right; the app mirrors them when needed.
 """
+import math
 
 INK = "#3d2a1c"
 
@@ -138,8 +139,9 @@ KID_LAYERS = ["shadow", "cape", "legs", "arm-back", "body", "head", "eye-open", 
 SKIN = {"light": "#ffe0bd", "mid": "#f3c08e", "dark": "#d99a66", "cheek": "#ff9a9a"}
 
 
-def _kid(outfit: dict, hair: str, hat: str, gear: str, cape: str = "#c7354a", extra_head: str = "") -> str:
-    """A big-headed young adventurer in a 300×300 box, three-quarter view facing right, feet on y≈280."""
+def _kid(outfit: dict, hair: str, hat: str, gear: str, feather: tuple, cape: str = "#c7354a", extra_head: str = "") -> str:
+    """A big-headed young adventurer in a 300×300 box, three-quarter view facing right, feet on y≈280.
+    feather = (x, y, lean, pin colour): where the unlockable feather is tucked into this hat."""
     o = INK
     s = _stroke(o)
     thin = _stroke(o, 3)
@@ -214,10 +216,7 @@ def _kid(outfit: dict, hair: str, hat: str, gear: str, cape: str = "#c7354a", ex
   <ellipse cx="190" cy="143" rx="4" ry="2" fill="#ff7b8a"/>
 </g>
 <g id="hat">{hat}</g>
-<g id="feather">
-  <path d="M132 44 C118 20 120 0 136 -2 C140 14 142 30 140 46 Z" fill="#ffd34d" {thin} transform="translate(-6 8) rotate(-12 136 44)"/>
-  <path d="M134 40 C130 26 130 14 134 4" stroke="#e0a020" stroke-width="2" fill="none" transform="translate(-6 8) rotate(-12 136 44)"/>
-</g>
+<g id="feather">{_feather(*feather)}</g>
 <g id="gear">{gear}</g>
 <g id="arm-front">
   <path d="M182 178 C200 184 214 196 222 206 C220 214 212 218 206 212 C198 204 188 198 176 192 Z" fill="url(#tunic)" {s}/>
@@ -233,11 +232,206 @@ def _outfit(light, dark, pants="#5a4a7a", boots="#6b4226", belt="#7a4a26", chest
 S = _stroke()
 T = _stroke(width=3)
 
+
+# ------------------------------------------------------------------ hats that sit on the head
+
+# The kids' head as an ellipsoid seen in three-quarter view (turned right, seen a little from above).
+_HX, _HY, _HRX, _HRY = 164.0, 97.0, 67.0, 70.0
+_YAW, _PITCH = math.radians(25), math.radians(20)
+
+
+def _hp(lat, t, tilt=0.0, k=1.0, r=1.0, lift=0.0, back=0.0):
+    """Screen point (x, y, facing) of a point on/around the head.
+
+    lat: degrees above the head's 'equator' of a ring tilted back by `tilt` degrees; t: degrees around
+    that ring (0 = straight out of the face, -90 = the back-left side we see, ±180 = the back);
+    k scales the whole head (k > 1 sits just outside the hair); r scales the ring's radius (a brim);
+    lift raises the point along the ring's axis, back pushes it toward the back of the head.
+    facing > 0 means the point is on the side of the head turned toward us."""
+    la, tl, tt = math.radians(lat), math.radians(tilt), math.radians(t)
+    F = (math.sin(_YAW), 0.0, math.cos(_YAW))
+    S = (math.cos(_YAW), 0.0, -math.sin(_YAW))
+    N = tuple(math.cos(tl) * (0, 1, 0)[i] - math.sin(tl) * F[i] for i in range(3))
+    Fp = tuple(math.cos(tl) * F[i] + math.sin(tl) * (0, 1, 0)[i] for i in range(3))
+    h, rad = math.sin(la) + lift, math.cos(la) * r
+    p = [h * N[i] + rad * (math.cos(tt) * Fp[i] + math.sin(tt) * S[i]) - back * Fp[i] for i in range(3)]
+    x, y, z = p
+    y2 = y * math.cos(_PITCH) - z * math.sin(_PITCH)
+    z2 = y * math.sin(_PITCH) + z * math.cos(_PITCH)
+    return _HX + x * _HRX * k, _HY - y2 * _HRY * k, z2
+
+
+def _seen(lat, tilt, k=1.0):
+    """The part of a ring that faces us, from its back-left end to its right end, ends on the silhouette."""
+    f = lambda t: _hp(lat, t, tilt, k)[2]
+    ends = []
+    for sgn in (-1, 1):
+        a, b = 0.0, 0.0
+        while f(b) > 0 and abs(b) < 180:
+            a, b = b, b + 5 * sgn
+        for _ in range(30):
+            m = (a + b) / 2
+            a, b = (m, b) if f(m) > 0 else (a, m)
+        ends.append(a)
+    n = 36
+    return [_hp(lat, ends[0] + (ends[1] - ends[0]) * i / n, tilt, k)[:2] for i in range(n + 1)]
+
+
+def _rim(p0, p1, k=1.0, top=True):
+    """Points along the head's outline (scaled by k) from p0 to p1, over the top (or the short way)."""
+    rx, ry = _HRX * k, _HRY * k
+    ang = lambda p: math.atan2((p[1] - _HY) / ry, (p[0] - _HX) / rx)
+    a0, a1 = ang(p0), ang(p1)
+    if top and a1 > a0:
+        a1 -= 2 * math.pi
+    if not top:
+        while a1 - a0 > math.pi: a1 -= 2 * math.pi
+        while a0 - a1 > math.pi: a1 += 2 * math.pi
+    n = max(2, int(abs(a1 - a0) / 0.08))
+    return [(_HX + rx * math.cos(a0 + (a1 - a0) * i / n), _HY + ry * math.sin(a0 + (a1 - a0) * i / n)) for i in range(1, n)]
+
+
+def _d(pts, close=True):
+    s = "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in pts)
+    return s + (" Z" if close else "")
+
+
+def _band(lat0, lat1, tilt, k=1.0):
+    """A strip around the head between two rings (a headband, a hat's rim)."""
+    lo, hi = _seen(lat0, tilt, k), _seen(lat1, tilt, k)
+    return _d(lo + _rim(lo[-1], hi[-1], k, top=False) + hi[::-1] + _rim(hi[0], lo[0], k, top=False))
+
+
+def _cap(lat, tilt, k=1.0):
+    """Everything of the head above a ring: a helmet or cap that covers the hair."""
+    lo = _seen(lat, tilt, k)
+    return _d(lo + _rim(lo[-1], lo[0], k))
+
+
+def _pt(*a, **kw):
+    x, y, _ = _hp(*a, **kw)
+    return f"{x:.1f} {y:.1f}"
+
+
+def _xy(*a, **kw):
+    return _hp(*a, **kw)[:2]
+
+
+def _meridian(t, tilt, k, lat0=24, lat1=170):
+    """The seen part of a line over the crown, from the brow to the back of the head."""
+    pts = [_hp(lat0 + (lat1 - lat0) * i / 60, t, tilt, k) for i in range(61)]
+    return [(x, y) for x, y, z in pts if z > 0.02]
+
+
+def _feather(x, y, ang, pin):
+    """The unlockable feather: its quill sits at (x, y), leaning `ang` degrees (negative leans back),
+    pinned into the hat with a little button in the hat's colour."""
+    tf = f'transform="translate({x} {y}) rotate({ang})"'
+    return (f'<path d="M-3 2 C-17 -22 -15 -44 1 -48 C6 -32 7 -14 4 2 Z" fill="#ffd34d" {T} {tf}/>'
+            f'<path d="M-6 -12 L-12 -14 M-8 -24 L-14 -27 M2 -18 L6 -22 M1 -32 L4 -36" stroke="#e0a020" stroke-width="1.6" stroke-linecap="round" {tf}/>'
+            f'<path d="M1 0 C-3 -16 -4 -30 -1 -42" stroke="#e0a020" stroke-width="2" fill="none" stroke-linecap="round" {tf}/>'
+            f'<circle cx="{x}" cy="{y}" r="4.5" fill="{pin}" {_stroke(INK, 2.5)}/>')
+
+
+# Knight: a round steel helmet with a rim, a centre ridge and a red plume at the back.
+_KT, _KK = 12, 1.07
+_k_ridge = _d(_meridian(-6, _KT, _KK + 0.02) + _meridian(6, _KT, _KK + 0.02)[::-1])
+_k_plume_at = _xy(118, 0, _KT, _KK)
 KNIGHT_HAT = f'''
-  <path d="M100 92 C96 46 130 22 166 22 C204 22 232 48 228 92 L214 90 C212 62 194 46 166 46 C138 46 118 62 116 92 Z" fill="#c9d3dc" {S}/>
-  <path d="M104 86 L226 86" stroke="#8a98a6" stroke-width="5"/>
-  <circle cx="166" cy="34" r="6" fill="#ffd34d" {T}/>
-  <path d="M164 22 C160 6 168 -2 180 2 C176 10 174 16 172 24 Z" fill="#e23b3b" {T}/>'''
+  <defs><linearGradient id="steel" x1="0.1" y1="0" x2="0.8" y2="1">
+    <stop offset="0" stop-color="#f4f8fb"/><stop offset="0.45" stop-color="#c3ced8"/><stop offset="1" stop-color="#8794a2"/>
+  </linearGradient></defs>
+  <path d="M{_k_plume_at[0]:.1f} {_k_plume_at[1] + 4:.1f} C{_k_plume_at[0] - 14:.1f} {_k_plume_at[1] - 14:.1f} {_k_plume_at[0] - 40:.1f} {_k_plume_at[1] - 18:.1f} {_k_plume_at[0] - 62:.1f} {_k_plume_at[1] - 4:.1f}
+           C{_k_plume_at[0] - 52:.1f} {_k_plume_at[1] - 2:.1f} {_k_plume_at[0] - 48:.1f} {_k_plume_at[1] + 6:.1f} {_k_plume_at[0] - 54:.1f} {_k_plume_at[1] + 16:.1f}
+           C{_k_plume_at[0] - 36:.1f} {_k_plume_at[1] + 6:.1f} {_k_plume_at[0] - 18:.1f} {_k_plume_at[1] + 12:.1f} {_k_plume_at[0]:.1f} {_k_plume_at[1] + 4:.1f} Z" fill="#e23b3b" {S}/>
+  <path d="M{_k_plume_at[0] - 8:.1f} {_k_plume_at[1] + 2:.1f} C{_k_plume_at[0] - 24:.1f} {_k_plume_at[1] - 8:.1f} {_k_plume_at[0] - 40:.1f} {_k_plume_at[1] - 8:.1f} {_k_plume_at[0] - 54:.1f} {_k_plume_at[1] - 2:.1f}" stroke="#ff8a7a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="{_cap(23, _KT, _KK)}" fill="url(#steel)" {S}/>
+  <path d="{_k_ridge}" fill="#dfe6ec" {T}/>
+  <path d="{_band(23, 34, _KT, _KK + 0.03)}" fill="#a3afbb" {S}/>
+  {"".join(f'<circle cx="{_xy(28.5, t, _KT, _KK + 0.03)[0]:.1f}" cy="{_xy(28.5, t, _KT, _KK + 0.03)[1]:.1f}" r="2.6" fill="#eef3f7" stroke="{INK}" stroke-width="1.5"/>' for t in (-80, -52, -24, 4, 32))}
+  <ellipse cx="136" cy="46" rx="9" ry="16" fill="#fff" opacity="0.45" transform="rotate(38 136 46)"/>'''
+KNIGHT_FEATHER = (*_xy(30, -84, _KT, _KK + 0.03), -38, "#a3afbb")
+
+# Wizard: a wide brim tipped back on the head and a soft pointed hat whose tip flops backwards.
+_WT, _WL = 16, 24
+_w_brim = _d([_xy(_WL, t, _WT, 1.06, r=1.42) for t in range(-180, 180, 6)])
+_w_base = _seen(_WL, _WT, 1.06)
+_w_l, _w_r = _w_base[0], _w_base[-1]
+WIZARD_HAT = f'''
+  <defs><linearGradient id="wizCone" x1="0" y1="0" x2="1" y2="0.6">
+    <stop offset="0" stop-color="#7d9bff"/><stop offset="1" stop-color="#3550c4"/>
+  </linearGradient></defs>
+  <path d="{_w_brim}" fill="#3a5bd0" {S}/>
+  <path d="M{_w_l[0]:.1f} {_w_l[1]:.1f} {_d(_w_base[1:], False).replace("M", "L", 1)}
+           C{_w_r[0] + 4:.1f} {_w_r[1] - 30:.1f} 214 30 190 16 C172 6 150 10 132 14 C116 8 98 10 84 22
+           C100 22 112 26 120 34 C108 48 102 62 {_w_l[0]:.1f} {_w_l[1]:.1f} Z" fill="url(#wizCone)" {S}/>
+  <path d="{_band(_WL + 1, _WL + 10, _WT, 1.06)}" fill="#ffd34d" {T}/>
+  <path d="M150 38 L154 46 L162 46 L156 52 L158 60 L150 55 L143 60 L145 52 L139 46 L147 46 Z" fill="#ffd34d"/>
+  <circle cx="186" cy="34" r="4" fill="#ffd34d"/><circle cx="198" cy="56" r="3" fill="#fff6c0"/><circle cx="118" cy="56" r="2.5" fill="#fff6c0"/>
+  <circle cx="86" cy="22" r="5" fill="#ffd34d" {T}/>'''
+WIZARD_FEATHER = (*_xy(_WL + 5, -78, _WT, 1.06), -50, "#ffd34d")
+
+# Ranger: a soft green cap pulled over the hair with a turned-up rim; its long tip hangs off the back.
+_RT, _RK = 12, 1.07
+_r_back = _xy(112, 0, _RT, _RK)
+RANGER_HAT = f'''
+  <defs><linearGradient id="cap" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6cc06a"/><stop offset="1" stop-color="#2f7a3e"/>
+  </linearGradient></defs>
+  <path d="M{_r_back[0] + 6:.1f} {_r_back[1] + 2:.1f} C{_r_back[0] - 24:.1f} {_r_back[1] - 6:.1f} 80 32 62 58 C82 50 96 52 108 60 Z" fill="#3f8f4e" {S}/>
+  <path d="{_cap(23, _RT, _RK)}" fill="url(#cap)" {S}/>
+  <path d="{_band(22, 35, _RT, _RK + 0.04)}" fill="#2f7a3e" {S}/>
+  <path d="{_d(_seen(31, _RT, _RK + 0.04), False)}" stroke="#5aa85e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="140" cy="42" rx="8" ry="14" fill="#fff" opacity="0.25" transform="rotate(48 140 42)"/>'''
+RANGER_FEATHER = (*_xy(29, -76, _RT, _RK + 0.04), -44, "#2f7a3e")
+
+# Guardian: a headband that wraps round the head, a gold medallion over the brow and a knot at the back.
+_GT, _GK = 10, 1.04
+_g_front = _xy(37, 0, _GT, _GK)
+_g_knot = _xy(33, -112, _GT, _GK)
+GUARDIAN_HAT = f'''
+  <path d="M{_g_knot[0]:.1f} {_g_knot[1]:.1f} C{_g_knot[0] - 14:.1f} {_g_knot[1] + 10:.1f} {_g_knot[0] - 18:.1f} {_g_knot[1] + 22:.1f} {_g_knot[0] - 14:.1f} {_g_knot[1] + 36:.1f}
+           L{_g_knot[0] - 4:.1f} {_g_knot[1] + 30:.1f} C{_g_knot[0] - 6:.1f} {_g_knot[1] + 20:.1f} {_g_knot[0] - 2:.1f} {_g_knot[1] + 10:.1f} {_g_knot[0] + 4:.1f} {_g_knot[1] + 4:.1f} Z" fill="#2a8a8a" {T}/>
+  <path d="M{_g_knot[0]:.1f} {_g_knot[1]:.1f} C{_g_knot[0] - 4:.1f} {_g_knot[1] + 14:.1f} {_g_knot[0] + 2:.1f} {_g_knot[1] + 28:.1f} {_g_knot[0] + 6:.1f} {_g_knot[1] + 40:.1f}
+           L{_g_knot[0] + 14:.1f} {_g_knot[1] + 34:.1f} C{_g_knot[0] + 10:.1f} {_g_knot[1] + 22:.1f} {_g_knot[0] + 8:.1f} {_g_knot[1] + 12:.1f} {_g_knot[0] + 8:.1f} {_g_knot[1] + 2:.1f} Z" fill="#2fa3a3" {T}/>
+  <path d="{_band(29, 44, _GT, _GK)}" fill="#2fa3a3" {S}/>
+  <path d="{_d(_seen(40, _GT, _GK), False)}" stroke="#7fdada" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <ellipse cx="{_g_knot[0] + 3:.1f}" cy="{_g_knot[1] + 2:.1f}" rx="7" ry="8" fill="#2fa3a3" {T}/>
+  <ellipse cx="{_g_front[0]:.1f}" cy="{_g_front[1]:.1f}" rx="7.5" ry="8.5" fill="#ffd34d" {T}/>
+  <circle cx="{_g_front[0] - 2:.1f}" cy="{_g_front[1] - 2.5:.1f}" r="2.2" fill="#fff" opacity="0.85"/>'''
+GUARDIAN_FEATHER = (*_xy(39, -92, _GT, _GK), -30, "#2fa3a3")
+
+# Spellkeeper: a gold circlet round the head with a purple band and a pointed gem setting over the brow.
+_ST, _SK = 10, 1.04
+_s_front = _xy(36, 0, _ST, _SK)
+_s_tip = _xy(36, 0, _ST, _SK, lift=0.38)
+SPELLKEEPER_HAT = f'''
+  <path d="{_band(30, 42, _ST, _SK)}" fill="#8e4ad8" {S}/>
+  <path d="{_band(30, 33, _ST, _SK)}" fill="#ffd34d" stroke="none"/>
+  <path d="{_band(39, 42, _ST, _SK)}" fill="#ffd34d" stroke="none"/>
+  <path d="{_band(30, 42, _ST, _SK)}" fill="none" {S}/>
+  {"".join(f'<circle cx="{_xy(36, t, _ST, _SK)[0]:.1f}" cy="{_xy(36, t, _ST, _SK)[1]:.1f}" r="2.4" fill="#ffd34d"/>' for t in (-75, -50, -25, 25, 50))}
+  <path d="M{_s_front[0] - 12:.1f} {_s_front[1] + 5:.1f} L{_s_tip[0]:.1f} {_s_tip[1]:.1f} L{_s_front[0] + 11:.1f} {_s_front[1] + 3:.1f} Z" fill="#ffd34d" {T}/>
+  <circle cx="{_s_front[0]:.1f}" cy="{_s_front[1] - 4:.1f}" r="5" fill="#ff6b8a" {_stroke(INK, 2)}/>
+  <circle cx="{_s_front[0] - 1.5:.1f}" cy="{_s_front[1] - 5.5:.1f}" r="1.5" fill="#fff"/>'''
+SPELLKEEPER_FEATHER = (*_xy(36, -86, _ST, _SK), -32, "#8e4ad8")
+
+# Ruby: a little gold crown sitting on top of her head; the far side of the crown shows behind.
+_CT, _CL, _CH = 10, 46, 0.34
+_c_ts = [-180 + i * 22.5 for i in range(17)]
+_c_ring = [(t, _hp(_CL, t, _CT, 1.0)) for t in _c_ts]
+def _crown_wall(ts, shade):
+    lo = [_xy(_CL, t, _CT, 1.0) for t in ts]
+    hi = [_xy(_CL, t, _CT, 1.0, lift=_CH * (1.0 if i % 2 else 0.45)) for i, t in enumerate(ts)]
+    return f'<path d="{_d(lo + hi[::-1])}" fill="{shade}" {T}/>'
+RUBY_HAT = f'''
+  {_crown_wall([90 + i * 18 for i in range(11)], "#e0a92a")}
+  {_crown_wall([-90 + i * 18 for i in range(11)], "#ffd34d")}
+  {"".join(f'<circle cx="{_xy(_CL, t, _CT, 1.0, lift=_CH)[0]:.1f}" cy="{_xy(_CL, t, _CT, 1.0, lift=_CH)[1]:.1f}" r="3" fill="#fff4c0" {_stroke(INK, 2)}/>' for t in (-72, -36, 0, 36, 72))}
+  <circle cx="{_xy(_CL + 9, 0, _CT, 1.0)[0]:.1f}" cy="{_xy(_CL + 9, 0, _CT, 1.0)[1]:.1f}" r="4" fill="#e23b3b" {_stroke(INK, 2)}/>'''
+RUBY_FEATHER = (*_xy(_CL + 4, -70, _CT, 1.0), -34, "#ffd34d")
+
+
 KNIGHT_GEAR = f'''
   <path d="M218 146 L226 146 L226 198 L218 198 Z" fill="#dfe6ec" {T}/>
   <path d="M218 146 L222 132 L226 146 Z" fill="#dfe6ec" {T}/>
@@ -245,37 +439,22 @@ KNIGHT_GEAR = f'''
   <rect x="217" y="204" width="10" height="18" rx="3" fill="#8a5a32" {T}/>'''
 KNIGHT_CHEST = f'<path d="M136 176 C150 170 162 170 176 176 L174 210 C162 216 150 216 138 210 Z" fill="#dfe6ec" {T}/><path d="M156 182 L156 206 M146 194 L166 194" stroke="#e23b3b" stroke-width="5" stroke-linecap="round"/>'
 
-WIZARD_HAT = f'''
-  <path d="M96 84 C120 74 206 70 232 82 C224 92 196 96 166 96 C134 96 106 94 96 84 Z" fill="#3a5bd0" {S}/>
-  <path d="M120 82 C134 46 150 14 196 -6 C186 18 192 44 214 80 C184 88 148 88 120 82 Z" fill="#4f74ea" {S}/>
-  <path d="M150 50 L154 58 L162 58 L156 64 L158 72 L150 67 L143 72 L145 64 L139 58 L147 58 Z" fill="#ffd34d"/>
-  <circle cx="182" cy="34" r="4" fill="#ffd34d"/><circle cx="174" cy="66" r="3" fill="#fff6c0"/>'''
 WIZARD_GEAR = f'''
   <path d="M232 66 L240 66 L238 272 L230 272 Z" fill="#9a6a3a" {T}/>
   <circle cx="236" cy="56" r="26" fill="#8fe8ff" opacity="0.25"/>
   <circle cx="236" cy="56" r="16" fill="#8fe8ff" {T}/>
   <circle cx="231" cy="51" r="5" fill="#fff" opacity="0.9"/>'''
 
-RANGER_HAT = f'''
-  <path d="M94 104 C86 52 122 18 166 18 C210 18 238 50 232 98 C226 76 210 56 188 50 C160 44 134 52 118 70 C108 82 102 94 94 104 Z" fill="#3f8f4e" {S}/>
-  <path d="M120 36 C106 14 96 6 84 4 C96 20 100 36 106 52 Z" fill="#3f8f4e" {S}/>'''
 RANGER_GEAR = f'''
   <path d="M206 120 C244 150 244 230 206 260" fill="none" stroke="#8a5a32" stroke-width="7" stroke-linecap="round"/>
   <path d="M206 120 C244 150 244 230 206 260" fill="none" stroke="{INK}" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
   <path d="M208 122 L208 258" stroke="#f2e6c8" stroke-width="2"/>'''
 
-GUARDIAN_HAT = f'''
-  <path d="M100 82 C120 70 208 68 228 80 L226 92 C206 82 122 84 102 94 Z" fill="#2fa3a3" {S}/>
-  <circle cx="166" cy="78" r="7" fill="#ffd34d" {T}/>'''
 GUARDIAN_GEAR = f'''
   <ellipse cx="222" cy="214" rx="34" ry="40" fill="#2fa3a3" {S}/>
   <ellipse cx="222" cy="214" rx="24" ry="30" fill="#5cc7c7" {T}/>
   <path d="M222 236 C204 222 204 206 214 204 C220 203 222 208 222 210 C222 208 224 203 230 204 C240 206 240 222 222 236 Z" fill="#ff6b8a" {T}/>'''
 
-SPELLKEEPER_HAT = f'''
-  <path d="M104 84 C126 70 204 68 226 82 C214 90 190 92 166 92 C140 92 116 90 104 84 Z" fill="#8e4ad8" {S}/>
-  <path d="M150 74 L166 50 L182 74 Z" fill="#ffd34d" {T}/>
-  <circle cx="166" cy="64" r="5" fill="#ff6b8a"/>'''
 SPELLKEEPER_GEAR = f'''
   <path d="M196 200 L222 190 L250 200 L250 236 L222 228 L196 236 Z" fill="#fff4dc" {S}/>
   <path d="M222 190 L222 228" stroke="{INK}" stroke-width="2.5"/>
@@ -283,18 +462,18 @@ SPELLKEEPER_GEAR = f'''
   <circle cx="222" cy="180" r="18" fill="#fff6a0" opacity="0.45"/>'''
 
 RUBY_HAIR = "#c8341f"
-RUBY_HAT = f'''
-  <path d="M136 30 L144 6 L156 24 L166 2 L176 24 L188 6 L196 30 C176 36 156 36 136 30 Z" fill="#ffd34d" {S}/>
-  <circle cx="166" cy="20" r="4" fill="#e23b3b"/>'''
 RUBY_EXTRA = f'''<path d="M100 92 C88 118 90 150 104 170 C112 150 110 122 112 100 Z" fill="{RUBY_HAIR}" {S}/>'''
 
 CLASSES = {
-    "knight": (_outfit("#e65a5a", "#a8323a", chest=KNIGHT_CHEST), "#6b3f1f", KNIGHT_HAT, KNIGHT_GEAR),
-    "wizard": (_outfit("#6f8cf2", "#3a4fb8"), "#4a2f1a", WIZARD_HAT, WIZARD_GEAR),
-    "ranger": (_outfit("#7cc46a", "#3f8f4e", pants="#6b4a2a"), "#8a5a2a", RANGER_HAT, RANGER_GEAR),
-    "guardian": (_outfit("#5cc7c7", "#2a8a8a", pants="#4a5a7a"), "#2a1a10", GUARDIAN_HAT, GUARDIAN_GEAR),
-    "spellkeeper": (_outfit("#b98af0", "#7a3fc4", pants="#4a3a6a"), "#e0b050", SPELLKEEPER_HAT, SPELLKEEPER_GEAR),
+    "knight": (_outfit("#e65a5a", "#a8323a", chest=KNIGHT_CHEST), "#6b3f1f", KNIGHT_HAT, KNIGHT_GEAR, KNIGHT_FEATHER),
+    "wizard": (_outfit("#6f8cf2", "#3a4fb8"), "#4a2f1a", WIZARD_HAT, WIZARD_GEAR, WIZARD_FEATHER),
+    "ranger": (_outfit("#7cc46a", "#3f8f4e", pants="#6b4a2a"), "#8a5a2a", RANGER_HAT, RANGER_GEAR, RANGER_FEATHER),
+    "guardian": (_outfit("#5cc7c7", "#2a8a8a", pants="#4a5a7a"), "#2a1a10", GUARDIAN_HAT, GUARDIAN_GEAR, GUARDIAN_FEATHER),
+    "spellkeeper": (_outfit("#b98af0", "#7a3fc4", pants="#4a3a6a"), "#e0b050", SPELLKEEPER_HAT, SPELLKEEPER_GEAR,
+                    SPELLKEEPER_FEATHER),
 }
+
+
 
 
 # ------------------------------------------------------------------ the goblin, the wizard, the shadow
@@ -423,9 +602,9 @@ def sprites() -> dict:
         "goblin": (goblin(), GOBLIN_LAYERS),
         "wizard": (little_wizard(), SMALL_LAYERS),
         "shadow": (ink_shadow(), SMALL_LAYERS),
-        "ruby": (_kid(_outfit("#ff7a6a", "#c8341f", pants="#7a3a5a"), RUBY_HAIR, RUBY_HAT, "", cape="#ffb020", extra_head=RUBY_EXTRA),
+        "ruby": (_kid(_outfit("#ff7a6a", "#c8341f", pants="#7a3a5a"), RUBY_HAIR, RUBY_HAT, "", RUBY_FEATHER, cape="#ffb020", extra_head=RUBY_EXTRA),
                  KID_LAYERS),
     }
-    for name, (outfit, hair, hat, gear) in CLASSES.items():
-        out[f"hero_{name}"] = (_kid(outfit, hair, hat, gear), KID_LAYERS)
+    for name, (outfit, hair, hat, gear, feather) in CLASSES.items():
+        out[f"hero_{name}"] = (_kid(outfit, hair, hat, gear, feather), KID_LAYERS)
     return out

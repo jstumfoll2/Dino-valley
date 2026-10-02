@@ -31,16 +31,17 @@ object ChallengeFactory {
      * "Find the number SEVEN." Up to five at first, then ten, then twenty. From level three the
      * wrong choices include look-alikes (6 and 9, 1 and 7, 12 and 21).
      */
-    fun numeral(level: Int, seed: Long, purpose: String): NumberChallenge {
+    fun numeral(level: Int, seed: Long, purpose: String, number: Int? = null): NumberChallenge {
         val r = Random(seed)
-        val (max, opts) = when (level) {
+        val (top, opts) = when (level) {
             1 -> 5 to 2
             2 -> 10 to 3
             3 -> 10 to 4
             4 -> 20 to 3
             else -> 20 to 4
         }
-        val n = r.nextInt(1, max + 1)
+        val n = number ?: r.nextInt(1, top + 1)
+        val max = maxOf(top, n, opts)
         val lookAlike = mapOf(6 to 9, 9 to 6, 1 to 7, 7 to 1, 2 to 5, 5 to 2, 3 to 8, 8 to 3, 12 to 21, 13 to 31, 10 to 1, 11 to 17, 17 to 11, 16 to 19, 19 to 16)
         val tricky = lookAlike[n]?.takeIf { level >= 3 && it in 1..max }
         val others = (1..max).filter { it != n && it != tricky }.shuffled(r)
@@ -157,7 +158,107 @@ object ChallengeFactory {
             else -> if (r.nextBoolean()) TraceShape.CIRCLE else TraceShape.TRIANGLE
         }
         val tolerance = 0.14f - 0.012f * level
-        return TraceChallenge(level, seed, Speech.of("Draw the magic path with your finger $goal"), shape, path(shape, r), tolerance)
+        return TraceChallenge(level, seed, Speech.of("Draw the magic path with your finger $goal"), shape, listOf(path(shape, r)), tolerance)
+    }
+
+    /**
+     * Write a capital letter (or a number, with [number]) by tracing it stroke by stroke:
+     * straight letters first, then slants, curves and the twisty ones.
+     */
+    fun write(level: Int, seed: Long, purpose: String, number: Boolean = false): TraceChallenge {
+        val r = Random(seed)
+        val pool = Glyphs.byLevel[(level - 1).coerceIn(0, 4)].filter { it.isDigit() == number }
+        val c = pool.random(r)
+        val tolerance = 0.11f - 0.006f * level
+        val strokes = Glyphs.strokes(c)
+        val start = if (strokes.size == 1) "Start at the green star." else "Start at the green star, and follow the arrows."
+        val ask = if (number) {
+            "$purpose Trace the number ${number(c.digitToInt()).uppercase()} with your finger. $start"
+        } else {
+            "$purpose Trace the letter $c with your finger. $c, as in ${Words.LETTER_WORDS.getValue(c)}. $start"
+        }
+        return TraceChallenge(level, seed, Speech.of(ask), if (number) TraceShape.NUMBER else TraceShape.LETTER, strokes, tolerance, c)
+    }
+
+    /**
+     * Tidy the goblins' storeroom: drag things into baskets by color, then by kind, then by
+     * size, with more baskets and more things as the level grows.
+     */
+    fun sort(level: Int, seed: Long): SortChallenge {
+        val r = Random(seed)
+        val (rule, basketCount, itemCount) = when (level) {
+            1 -> Triple(SortRule.COLOR, 2, 4)
+            2 -> Triple(SortRule.KIND, 2, 6)
+            3 -> Triple(SortRule.COLOR, 3, 6)
+            4 -> Triple(SortRule.SIZE, 2, 6)
+            else -> Triple(listOf(SortRule.KIND, SortRule.COLOR).random(r), 3, 8)
+        }
+        val kinds = listOf(Thing.COIN, Thing.KEY, Thing.MUSHROOM, Thing.STONE, Thing.POTION).shuffled(r)
+        val hues = Hue.entries.shuffled(r)
+        val baskets = List(basketCount) { i ->
+            when (rule) {
+                SortRule.COLOR -> Sortable(Thing.GEM, hues[i])
+                SortRule.KIND -> Sortable(kinds[i])
+                SortRule.SIZE -> Sortable(Thing.GEM, hues[0], GemSize.entries[i])
+            }
+        }
+        // Every basket gets at least one thing; the rest are dealt at random.
+        val home = (List(basketCount) { it } + List(itemCount - basketCount) { r.nextInt(basketCount) }).shuffled(r)
+        val items = home.map { b ->
+            when (rule) {
+                SortRule.COLOR -> Sortable(Thing.GEM, hues[b], GemSize.entries.random(r))
+                SortRule.KIND -> Sortable(kinds[b])
+                SortRule.SIZE -> Sortable(Thing.GEM, hues[r.nextInt(3)], GemSize.entries[b])
+            }
+        }
+        val ask = when (rule) {
+            SortRule.COLOR -> "Put each gem in the basket of the same color. " +
+                baskets.joinToString(" ") { "${it.hue.word.uppercase()} gems go in the ${it.hue.word} basket." }
+            SortRule.KIND -> "Put the things that are the same together. Each basket gets one kind of thing."
+            SortRule.SIZE -> "Put the BIG gems in the big basket, and the SMALL gems in the little basket."
+        }
+        return SortChallenge(level, seed, Speech.of("The goblins made a big mess! $ask"), rule, baskets, items, home)
+    }
+
+    /** Counting by twos (then fives, then threes): lily pads of things, counted in jumps. */
+    fun skipCount(level: Int, seed: Long): SkipCountChallenge {
+        val r = Random(seed)
+        val (step, shown, opts) = when (level) {
+            1 -> Triple(2, 3, 2)
+            2 -> Triple(2, r.nextInt(3, 6), 3)
+            3 -> Triple(listOf(2, 5).random(r), r.nextInt(3, 5), 3)
+            4 -> Triple(listOf(5, 10).random(r), r.nextInt(3, 5), 3)
+            else -> Triple(listOf(2, 3, 5, 10).random(r), r.nextInt(3, 6), 4)
+        }
+        val thing = listOf(Thing.GEM, Thing.COIN, Thing.MUSHROOM, Thing.STONE).random(r)
+        val total = step * shown
+        // Wrong answers are near misses: one jump short, one too far, or counting by ones.
+        val wrong = listOf(total - step, total + step, total + 1, total - 1).filter { it > 0 && it != total }.distinct().shuffled(r)
+        val options = (listOf(total) + wrong.take(opts - 1)).sorted()
+        val by = when (step) {
+            2 -> "twos"
+            3 -> "threes"
+            5 -> "fives"
+            else -> "tens"
+        }
+        val counted = (1 until shown).joinToString(", ") { number(step * it).uppercase() }
+        val ask = "Each lily pad has ${number(step)} ${thing.many}. Let's count them by $by! $counted... How many on the last lily pad?"
+        return SkipCountChallenge(level, seed, Speech.of(ask), step, shown, thing, options)
+    }
+
+    /** Mend the broken mosaic: a picture in 4, 6 and then 9 pieces, with its outline fading away. */
+    fun puzzle(level: Int, seed: Long): PuzzleChallenge {
+        val r = Random(seed)
+        val (cols, rows, ghost) = when (level) {
+            1 -> Triple(2, 2, true)
+            2 -> Triple(3, 2, true)
+            3 -> Triple(3, 2, false)
+            4 -> Triple(3, 3, true)
+            else -> Triple(3, 3, false)
+        }
+        val picture = PuzzlePicture.entries.random(r)
+        val ask = "The magic picture of ${picture.said} broke into ${number(cols * rows)} pieces! Drag each piece back to its place."
+        return PuzzleChallenge(level, seed, Speech.of(ask), picture, cols, rows, ghost)
     }
 
     /** Evenly spaced points along the path, left to right (or around, for shapes). */
@@ -185,6 +286,7 @@ object ChallengeFactory {
                 Point(0.5f + 0.3f * cos(a).toFloat(), 0.5f + 0.32f * sin(a).toFloat())
             }
             TraceShape.TRIANGLE -> along(listOf(Point(0.5f, 0.15f), Point(0.85f, 0.85f), Point(0.15f, 0.85f), Point(0.5f, 0.15f)), n)
+            TraceShape.LETTER, TraceShape.NUMBER -> Glyphs.strokes('L').flatten()
         }
     }
 
@@ -217,7 +319,11 @@ object ChallengeFactory {
         val doors = Hue.entries.shuffled(r).take(doorCount)
         val sequence = doors.indices.shuffled(r).take(steps)
         val names = sequence.map { doors[it].word.uppercase() }
-        val remember = if (steps == 1) "Remember the ${names[0]} door." else "Remember the doors in order: ${names.joinToString(", then ")}."
+        val remember = if (steps == 1) {
+            "Remember the ${names[0]} door."
+        } else {
+            "Remember the doors in order. " + names.mapIndexed { i, n -> if (i == 0) "First, the $n door." else "Then the $n door." }.joinToString(" ")
+        }
         val ask = if (steps == 1) "The doors are hiding! Which one was it?" else "The doors are hiding! Tap them in order."
         return MemoryChallenge(level, seed, Speech.of(ask), doors, sequence, show, Speech.of(remember))
     }
@@ -249,7 +355,8 @@ object ChallengeFactory {
             Ingredient.MUSHROOM to "purple things that grow in the dark",
         )
         val parts = steps.map { s -> "${number(s.count)} ${clue.getValue(s.ingredient).let { if (s.count == 1) singular(it) else it }}" }
-        return "I need " + parts.joinToString(", then ") + ", and then stir ${number(stirs)} times."
+        // One sentence per step, so each can be recorded once and reused in any recipe.
+        return parts.mapIndexed { i, p -> if (i == 0) "I need $p." else "Then $p." }.joinToString(" ") + " Then stir ${number(stirs)} times."
     }
 
     private fun singular(clue: String) = clue.replaceFirst("things", "thing").replace(" grow ", " grows ").replace(" sparkle", " sparkles").replace(" smell ", " smells ")
@@ -261,7 +368,7 @@ object ChallengeFactory {
         } else {
             "$why behind the door on the ${door.side.word.uppercase()}."
         }
-        return MapChallenge(level, seed, Speech.of("$clue Which door should we take?"), doors, target)
+        return MapChallenge(level, seed, Speech.of(clue), doors, target)
     }
 
     /** The right number and its nearest neighbors, so wrong choices are close, not silly. */

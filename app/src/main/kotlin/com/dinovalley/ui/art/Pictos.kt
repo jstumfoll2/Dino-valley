@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.Composable
 
 /** Simple picture symbols for buttons, drawn in code so there are no text labels to read. */
-enum class Picto { NEXT, LISTEN, MIC, AGAIN, HOME, CHECK, BOOK }
+enum class Picto { NEXT, LISTEN, PENCIL, AGAIN, HOME, CHECK, BOOK }
 
 @Composable
 fun PictoIcon(picto: Picto, color: Color, modifier: Modifier = Modifier) {
@@ -41,11 +41,16 @@ fun PictoIcon(picto: Picto, color: Color, modifier: Modifier = Modifier) {
                 arc(color, w * 0.5f, w * 0.2f, stroke)
                 arc(color, w * 0.5f, w * 0.36f, stroke)
             }
-            Picto.MIC -> {
-                drawRoundRect(color, Offset(w * 0.36f, w * 0.1f), Size(w * 0.28f, w * 0.48f), CornerRadius(w * 0.14f))
-                drawArc(color, 0f, 180f, false, Offset(w * 0.24f, w * 0.3f), Size(w * 0.52f, w * 0.44f), style = stroke)
-                drawLine(color, Offset(w * 0.5f, w * 0.74f), Offset(w * 0.5f, w * 0.88f), stroke.width, StrokeCap.Round)
-                drawLine(color, Offset(w * 0.34f, w * 0.88f), Offset(w * 0.66f, w * 0.88f), stroke.width, StrokeCap.Round)
+            Picto.PENCIL -> {
+                // A pencil, tip down-left.
+                drawPath(
+                    Path().apply {
+                        moveTo(w * 0.62f, w * 0.12f); lineTo(w * 0.88f, w * 0.38f); lineTo(w * 0.4f, w * 0.86f)
+                        lineTo(w * 0.14f, w * 0.86f); lineTo(w * 0.14f, w * 0.6f); close()
+                    },
+                    color,
+                )
+                drawLine(color.copy(alpha = 0.5f), Offset(w * 0.54f, w * 0.2f), Offset(w * 0.8f, w * 0.46f), w * 0.05f)
             }
             Picto.AGAIN -> {
                 drawArc(color, -60f, 290f, false, Offset(w * 0.2f, w * 0.2f), Size(w * 0.6f, w * 0.6f), style = stroke)

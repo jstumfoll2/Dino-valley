@@ -9,7 +9,7 @@ import com.dinovalley.engine.rpg.world.RoomKind
 import com.dinovalley.engine.rpg.world.Stop
 
 /** Where a beat happens. The app paints a background for each. */
-enum class Place { CAMP, GATE, RUNE_HALL, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, GOBLIN_DEN, WORKSHOP, LAIR, MAP }
+enum class Place { CAMP, GATE, RUNE_HALL, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, STOREROOM, POND, MOSAIC_HALL, GOBLIN_DEN, WORKSHOP, LAIR, MAP }
 
 /** Where each kind of room is drawn. */
 fun placeOf(kind: RoomKind): Place = when (kind) {
@@ -21,6 +21,9 @@ fun placeOf(kind: RoomKind): Place = when (kind) {
     RoomKind.TUNNEL -> Place.TUNNEL
     RoomKind.MIRROR_HALL -> Place.MIRROR_HALL
     RoomKind.VAULT -> Place.VAULT
+    RoomKind.STOREROOM -> Place.STOREROOM
+    RoomKind.POND -> Place.POND
+    RoomKind.MOSAIC_HALL -> Place.MOSAIC_HALL
     RoomKind.GOBLIN_DEN -> Place.GOBLIN_DEN
     RoomKind.WORKSHOP -> Place.WORKSHOP
     RoomKind.LAIR -> Place.LAIR
@@ -104,6 +107,8 @@ sealed interface Beat {
         val clue: MapChallenge?,
         val peek: Boolean,
         val stopIndex: Int,
+        /** Said while each door lifts: its color and the kind of puzzle behind it. */
+        val offers: List<List<Speech>> = emptyList(),
     ) : Beat
 
     /** Something found. Reply [Reply.Next]. */
@@ -135,4 +140,23 @@ sealed interface Reply {
 
     /** A choice or door was picked, after [tries] (more than 1 only for a map clue). */
     data class Picked(val index: Int, val tries: Int = 1) : Reply
+}
+
+/**
+ * Everything a beat may say, in the order it is likely to be said, for getting the words ready
+ * before they're needed.
+ */
+fun Beat.speech(): List<List<Speech>> = when (this) {
+    is Beat.Tell -> listOf(lines)
+    is Beat.Found -> listOf(lines)
+    is Beat.Ask -> buildList {
+        (challenge as? com.dinovalley.engine.rpg.learn.MemoryChallenge)?.let { add(it.remember) }
+        add(challenge.prompt)
+        add(yay)
+        add(oops)
+    }
+    is Beat.Roll -> listOf(why)
+    is Beat.Choose -> listOf(prompt)
+    is Beat.Doors -> listOf(prompt) + offers
+    is Beat.Finale -> listOf(summary.lines)
 }

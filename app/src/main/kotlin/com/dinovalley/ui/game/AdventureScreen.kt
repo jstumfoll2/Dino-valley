@@ -66,6 +66,8 @@ import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Place
 import com.dinovalley.engine.rpg.run.Reply
 import com.dinovalley.engine.rpg.run.placeOf
+import com.dinovalley.engine.rpg.run.Say
+import com.dinovalley.engine.rpg.run.speech
 import com.dinovalley.ui.art.Art
 import com.dinovalley.ui.art.Character
 import com.dinovalley.ui.art.DieFace
@@ -92,6 +94,12 @@ fun AdventureScreen(vm: GameViewModel) {
     var caption by remember { mutableStateOf<List<Speech>>(emptyList()) }
     var heroMood by remember { mutableStateOf(Mood.CALM) }
     val interactive = beat !is Beat.Tell && beat !is Beat.Found
+
+    // While this scene plays, get the words of the next ones ready, so they start without a pause.
+    LaunchedEffect(vm.beatNumber) {
+        beat.speech().forEach { narrator.prepare(it) }
+        adventure.upcoming.forEach { next -> next.speech().forEach { narrator.prepare(it) } }
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val w = maxWidth
@@ -147,6 +155,7 @@ fun AdventureScreen(vm: GameViewModel) {
         RoundButton(Picto.LISTEN, Palette.Sky, h * 0.14f, Modifier.align(Alignment.TopStart).padding(10.dp)) {
             scope.launch { narrator.speak(caption) }
         }
+        VoiceLoading()
         Column(Modifier.align(Alignment.TopEnd).padding(10.dp), horizontalAlignment = Alignment.End) {
             BagBar(adventure.bag, h * 0.07f)
             if (beat.scene.place == Place.LAIR && beat.scene.bossStars != null) {
@@ -181,6 +190,7 @@ private fun Cast(beat: Beat, interactive: Boolean, speaking: Boolean, heroMood: 
             else -> Mood.CALM
         },
         Modifier.at(w * if (ruby) 0.34f else 0.27f, h * 0.8f, h * 0.36f, h * 0.36f),
+        voice = LocalNarrator.current::level,
     )
     val npcMood = when (scene.mood) {
         SceneMood.HAPPY -> Mood.HAPPY
@@ -270,6 +280,7 @@ private fun potionFor(title: String): Int =
 @Composable
 private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (Int) -> Unit) {
     val narrator = LocalNarrator.current
+    val sfx = LocalSfx.current
     val haptics = LocalHapticFeedback.current
     var pointing by remember { mutableIntStateOf(-1) }
     var chosen by remember { mutableIntStateOf(-1) }
@@ -279,7 +290,7 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
         narrator.speak(beat.prompt)
         beat.options.forEachIndexed { i, o ->
             pointing = i
-            narrator.speak(if (i == beat.options.lastIndex && i > 0) "Or... ${o.said}?" else "${o.said}?")
+            narrator.speak(Say.option(o.said, last = i == beat.options.lastIndex && i > 0))
             delay(150)
         }
         pointing = -1
@@ -297,9 +308,10 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
                     .graphicsLayer { scaleX = lift; scaleY = lift; alpha = if (chosen >= 0 && chosen != i) 0.4f else 1f }
                     .clickable(NoRipple, null, enabled = chosen < 0) {
                         chosen = i
+                        sfx.play("tap")
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         scope.launch {
-                            narrator.speak(o.said + "!")
+                            narrator.speak(Say.chosen(o.said))
                             pick(i)
                         }
                     },
@@ -313,12 +325,14 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
 // ------------------------------------------------------------------ the map
 
 /**
- * Pick a door at a fork. The narrator names each door's color while it lifts, then any door can
- * be taken; whether it was the one from the clue is the engine's to say.
+ * Pick a door at a fork. While each door lifts, the narrator says its color and the kind of
+ * puzzle behind it (the sign on the door shows it too), so the child picks the path and the
+ * puzzle; whether it was the door from the clue is the engine's to say.
  */
 @Composable
 private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int) -> Unit) {
     val narrator = LocalNarrator.current
+    val sfx = LocalSfx.current
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     var pointing by remember { mutableIntStateOf(-1) }
@@ -330,17 +344,11 @@ private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int)
         doors.forEachIndexed { i, room ->
             if (opened >= 0) return@LaunchedEffect
             pointing = i
-            val color = room.hue.word.uppercase()
-            narrator.speak(
-                when {
-                    i == 0 -> "The $color door?"
-                    i == doors.lastIndex -> "Or the $color door?"
-                    else -> "The $color door?"
-                },
-            )
+            narrator.speak(beat.offers.getOrNull(i) ?: Speech.of(Say.doorName(room.hue)))
             delay(150)
         }
         pointing = -1
+        if (opened < 0) narrator.speak(Say.PICK_DOOR)
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = maxHeight
@@ -362,19 +370,28 @@ private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int)
                     .clickable(NoRipple, null, enabled = opened < 0) {
                         opened = i
                         pointing = -1
+                        sfx.play("tap")
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         scope.launch {
-                            narrator.speak("The ${room.hue.word.uppercase()} door! Creeeak...")
+                            narrator.speak(Speech.of(Say.doorPicked(room.hue)))
                             pick(i)
                         }
                     },
             ) {
                 Image(painterResource(Art.door(room.hue)), null, Modifier.fillMaxSize())
+                // A sign on the door: what kind of puzzle waits behind it.
+                Box(
+                    Modifier.align(Alignment.TopCenter).padding(top = doorH * 0.08f).size(doorW * 0.5f)
+                        .shadow(4.dp, CircleShape).background(Palette.Paper, CircleShape).border(3.dp, Palette.PaperEdge, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(Art.sign(room.kind), fontSize = with(LocalDensity.current) { (doorW * 0.24f).toSp() }, fontWeight = FontWeight.Black, color = Palette.Ink, maxLines = 1)
+                }
                 if (beat.peek) {
                     // Ranger power: a peek at what's behind each door.
                     Image(
                         painterResource(Art.place(placeOf(room.kind))), null,
-                        Modifier.align(Alignment.Center).size(doorW * 0.5f).clip(CircleShape).border(3.dp, Palette.Gold, CircleShape),
+                        Modifier.align(Alignment.BottomCenter).padding(bottom = doorH * 0.1f).size(doorW * 0.45f).clip(CircleShape).border(3.dp, Palette.Gold, CircleShape),
                         contentScale = ContentScale.Crop,
                     )
                 }
@@ -410,6 +427,7 @@ fun rememberShake(key: Any?): Animatable<Float, *> {
 @Composable
 private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: () -> Unit, done: (Boolean, Int) -> Unit) {
     val narrator = LocalNarrator.current
+    val sfx = LocalSfx.current
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     var faces by remember { mutableStateOf(listOf(Random.nextInt(1, 7), Random.nextInt(1, 7))) }
@@ -435,7 +453,7 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
     suspend fun tumbleTo(target: List<Int>) {
         stage = "rolling"
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-        narrator.blurt("Roll!")
+        sfx.play("dice", 1f)
         spin.snapTo(0f)
         val job = scope.launch { spin.animateTo(720f, tween(900)) }
         repeat(9) {
@@ -447,7 +465,7 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
     }
 
     suspend fun askSum() {
-        val q = "You rolled ${Words.number(final[0]).uppercase()} and ${Words.number(final[1]).uppercase()}. How many dots is that altogether?"
+        val q = Say.diceSum(final[0], final[1])
         faces = final
         say(Speech.of(q))
         stage = "sum"
@@ -460,7 +478,7 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
             tumbleTo(beat.dice)
             if (reroll != null) {
                 stage = "reroll?"
-                val l = "Knight power! Do you want to roll again? Tap the dice to roll, or tap the check to keep them."
+                val l = Say.ROLL_AGAIN
                 say(Speech.of(l))
                 narrator.speak(l)
             } else {
@@ -475,10 +493,10 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
         lit = 0
         for (k in 1..total) {
             lit = k
-            narrator.speak(Words.capital(k) + "!")
+            narrator.speak(Say.count(k))
         }
         delay(300)
-        narrator.speak("${Words.capital(total)} dots altogether! Now find ${Words.number(total).uppercase()}.")
+        narrator.speak(Say.diceTotal(total))
         stage = "sum"
     }
 
@@ -503,8 +521,7 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
                                 usedReroll = true
                                 tumbleTo(reroll)
                                 if (reroll.sum() < beat.dice.sum()) {
-                                    val l = "The first roll was better. Let's keep it!"
-                                    narrator.speak(l)
+                                    narrator.speak(Say.FIRST_ROLL_BETTER)
                                 }
                                 askSum()
                             }
@@ -539,18 +556,25 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
                     tries += 1
                     if (n == total) {
                         stage = "done"
+                        sfx.play("right")
                         celebrate()
                         scope.launch {
-                            narrator.speak("Yes! ${Words.capital(final[0])} and ${Words.number(final[1])} make ${Words.number(total)}!")
+                            narrator.speak(Say.diceRight(final[0], final[1]))
                             done(usedReroll, tries)
                         }
                     } else {
                         wrong = n
+                        stage = "counting"
+                        sfx.play("wrong")
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (tries == 1) heartPop = true
                         if (tries >= 2) glow = total
                         keep = listOf(total, n).sorted()
                         scope.launch {
-                            if (tries == 1) narrator.speak("Oh no, a heart pops! Let's count the dots together.")
+                            if (tries == 1) {
+                                sfx.play("heart")
+                                narrator.speak(Say.HEART_POPS)
+                            }
                             countTogether()
                             wrong = null
                         }
@@ -605,7 +629,7 @@ fun NumberCard(n: Int, size: Dp, visible: Boolean, wrong: Boolean, correct: Bool
         ) {
             val fs = with(LocalDensity.current) { (size * 0.4f).toSp() }
             Text(n.toString(), fontSize = fs, lineHeight = fs, fontWeight = FontWeight.Black, color = Palette.Ink)
-            Dots(n, size * 0.065f)
+            if (n <= 12) Dots(n, size * 0.065f)
         }
     }
 }

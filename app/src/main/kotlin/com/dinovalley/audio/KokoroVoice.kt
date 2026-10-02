@@ -12,19 +12,20 @@ import java.util.concurrent.Executors
 
 /**
  * The narrator's natural voice: the Kokoro speech model, running entirely on the phone through
- * sherpa-onnx (decision #43). The model files are packed into the app by CI
- * (scripts/fetch-voice.sh). Speech is made one sentence at a time on a single background
- * thread, and recent sentences are remembered so repeated lines play instantly.
+ * sherpa-onnx (decision #43). Almost every sentence is recorded by the build ahead of time
+ * (decision #45); the model only speaks the few the build couldn't know, like sentences with a
+ * dragon name typed on the phone. It is loaded only when first needed and uses two cores, so
+ * the phone stays cool.
  */
 class KokoroVoice(private val context: Context) {
     private val thread = Executors.newSingleThreadExecutor { Thread(it, "kokoro") }.asCoroutineDispatcher()
     private var tts: OfflineTts? = null
-    private val cache = object : LinkedHashMap<String, Pcm>(64, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pcm>?) = size > CACHE
-    }
+    private var tried = false
 
-    /** Loads the model. False when it isn't in this build or the phone can't run it. */
+    /** Loads the model once. False when it isn't in this build or the phone can't run it. */
     suspend fun load(): Boolean = withContext(thread) {
+        if (tried) return@withContext tts != null
+        tried = true
         runCatching {
             if (context.assets.list(DIR)?.contains(MODEL) != true) return@runCatching false
             val config = OfflineTtsConfig(
@@ -35,7 +36,7 @@ class KokoroVoice(private val context: Context) {
                         tokens = "$DIR/tokens.txt",
                         dataDir = copyEspeakData(),
                     ),
-                    numThreads = 4,
+                    numThreads = 2,
                 ),
             )
             tts = OfflineTts(context.assets, config)
@@ -43,14 +44,14 @@ class KokoroVoice(private val context: Context) {
         }.getOrDefault(false)
     }
 
-    /** The words as sound, at the shared loudness. Null if the voice isn't loaded. */
-    suspend fun say(text: String): Pcm? = withContext(thread) {
-        val voice = tts ?: return@withContext null
-        synchronized(cache) { cache[text] }?.let { return@withContext it }
-        val audio = runCatching { voice.generate(text, sid = SPEAKER, speed = SPEED) }.getOrNull() ?: return@withContext null
-        val pcm = Pcm(audio.samples, audio.sampleRate).normalized()
-        synchronized(cache) { cache[text] = pcm }
-        pcm
+    /** The words as sound, at the shared loudness. Null if the voice can't load. */
+    suspend fun say(text: String): Pcm? {
+        if (!load()) return null
+        return withContext(thread) {
+            val voice = tts ?: return@withContext null
+            val audio = runCatching { voice.generate(text, sid = SPEAKER, speed = SPEED) }.getOrNull() ?: return@withContext null
+            Pcm(audio.samples, audio.sampleRate).normalized()
+        }
     }
 
     /**
@@ -91,6 +92,5 @@ class KokoroVoice(private val context: Context) {
 
         /** A touch slower than normal speech, for a four-year-old. */
         const val SPEED = 0.9f
-        const val CACHE = 160
     }
 }

@@ -16,12 +16,14 @@ import com.dinovalley.R
 import com.dinovalley.engine.rpg.learn.Hue
 import com.dinovalley.engine.rpg.learn.Ingredient
 import com.dinovalley.engine.rpg.learn.PotionKind
+import com.dinovalley.engine.rpg.learn.PuzzlePicture
 import com.dinovalley.engine.rpg.learn.Rune
 import com.dinovalley.engine.rpg.learn.RuneShape
 import com.dinovalley.engine.rpg.learn.Thing
 import com.dinovalley.engine.rpg.run.ChoicePicture
 import com.dinovalley.engine.rpg.run.LootKind
 import com.dinovalley.engine.rpg.run.Place
+import com.dinovalley.engine.rpg.world.RoomKind
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -48,10 +50,39 @@ object Art {
         Place.TUNNEL -> R.drawable.art_scene_tunnel
         Place.MIRROR_HALL -> R.drawable.art_scene_mirror_hall
         Place.VAULT -> R.drawable.art_scene_vault
+        Place.STOREROOM -> R.drawable.art_scene_storeroom
+        Place.POND -> R.drawable.art_scene_pond
+        Place.MOSAIC_HALL -> R.drawable.art_scene_mosaic_hall
         Place.GOBLIN_DEN -> R.drawable.art_scene_goblin_den
         Place.WORKSHOP -> R.drawable.art_scene_workshop
         Place.LAIR -> R.drawable.art_scene_lair
         Place.MAP -> R.drawable.art_scene_map
+    }
+
+    /** The picture a mosaic puzzle is made of. */
+    @DrawableRes
+    fun puzzle(p: PuzzlePicture): Int = when (p) {
+        PuzzlePicture.CAMP -> R.drawable.art_scene_camp
+        PuzzlePicture.BRIDGE -> R.drawable.art_scene_bridge
+        PuzzlePicture.CRYSTAL_CAVE -> R.drawable.art_scene_crystal_cave
+        PuzzlePicture.LIBRARY -> R.drawable.art_scene_library
+        PuzzlePicture.LAIR -> R.drawable.art_scene_lair
+        PuzzlePicture.POND -> R.drawable.art_scene_pond
+    }
+
+    /** The sign on a door at a fork: what kind of puzzle is behind it. */
+    fun sign(kind: RoomKind): String = when (kind) {
+        RoomKind.RUNE_DOOR -> "⭐🌙"
+        RoomKind.BRIDGE -> "123"
+        RoomKind.CRYSTAL_CAVE -> "🎨"
+        RoomKind.LIBRARY -> "ABC"
+        RoomKind.TUNNEL -> "✏️"
+        RoomKind.MIRROR_HALL -> "👀"
+        RoomKind.VAULT -> "1+1"
+        RoomKind.STOREROOM -> "🧺"
+        RoomKind.POND -> "🐸"
+        RoomKind.MOSAIC_HALL -> "🧩"
+        else -> "❓"
     }
 
     @DrawableRes
