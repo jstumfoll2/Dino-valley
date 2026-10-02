@@ -1319,6 +1319,31 @@ PROJECT_DECISIONS.md #34–37). How the pieces map onto the plan above:
 
 The older round-based `GameSession` stays in the engine for the later free-play mode.
 
+## Update, 2026-10-02: The Little Dungeon
+
+The storybook grew into **The Little Dungeon**, a kid-sized roguelike built from the family's
+brief (`docs/design/little-dungeon-brief.md`; how it maps to code is in
+`docs/design/little-dungeon-plan.md`; decisions #38–42). The `engine/story` package and
+`app/ui/book` are gone. The new pieces:
+
+- `engine/rpg/learn`: the learning engine. `ChallengeFactory` makes counting, addition, color,
+  pattern, letter, tracing, memory, recipe and map challenges at skill levels 1–5. `SkillBook`
+  keeps one level per skill (two first-try wins in a row: up; a third try: down). `Coach` is
+  the hint ladder.
+- `engine/rpg/world`: the narrative engine. `DungeonGenerator` deals a new map each run (gate,
+  three forks of two doors, the goblin den, the workshop, the lair). `QuestWriter` picks one of
+  the three storylines and a twist. `WorldMemory` remembers friends, endings and treasure.
+- `engine/rpg/run`: `Adventure` is the run's state machine. It hands the app one `Beat` at a
+  time (tell, ask, roll, choose, doors, found, finale) and takes back a `Reply`.
+- `engine/rpg/hero`: XP per attribute, levels, unlocks and the class powers.
+- `app/ui/game`: `TitleScreen` (camp, name recording, class picker), `AdventureScreen` (draws
+  each beat), `Challenges.kt` (rune door, gems, spell books, tracing, mirror doors, cauldron),
+  `Finale.kt` (stars, level-up). `GameViewModel` bridges to the engine; `data/Save` writes
+  `save.json` and appends every challenge to `challenges.jsonl` for a future on-device model.
+- `art/src`: `heroes.py`, `props.py` and `dungeon_scenes.py`, rendered by `art/build.py`.
+
+The older round-based `GameSession` stays in the engine for a later free-play mode.
+
 ## How we'll keep this understandable
 
 - `PROJECT_DECISIONS.md` gets a new entry for every choice that someone

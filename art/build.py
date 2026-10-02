@@ -1,14 +1,16 @@
-"""Build storybook art: SVG sources -> per-layer SVGs -> PNG (Chromium) -> WebP (ffmpeg).
+"""Build the game's art: SVG sources -> per-layer SVGs -> PNG (Chromium) -> WebP (ffmpeg).
 
-Run: python3 art/build.py   (needs node + playwright and ffmpeg; outputs go to app/src/main/res/drawable-nodpi)
+Run: python3 art/build.py [module ...]
+Needs node + playwright and ffmpeg. Outputs go to app/src/main/res/drawable-nodpi as
+art_<name>[_<layer>].webp. Each module in art/src may define sprites() -> {name: (svg, layers or None)}
+and/or scenes() -> {name: svg} (1920x1080 backgrounds). With no arguments every module is built.
 """
-import json, os, re, subprocess, sys, shutil
+import importlib, json, os, re, subprocess, sys, shutil
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "src"))
-import characters, scenes  # noqa: E402
 
-OUT = os.path.join(HERE, "out")
+MODULES = ["heroes", "props", "dungeon_scenes"]
 RES = os.path.join(HERE, "..", "app", "src", "main", "res", "drawable-nodpi")
 CHAR_SCALE = 3  # sprites render at 3x their viewBox for crisp phone screens
 
@@ -20,10 +22,23 @@ def only(svg: str, keep: str, layers: list) -> str:
 
 
 def main():
-    shutil.rmtree(OUT, ignore_errors=True)
-    os.makedirs(OUT)
+    wanted = sys.argv[1:] or MODULES
+    out = os.path.join(HERE, "out", "-".join(wanted))
+    shutil.rmtree(out, ignore_errors=True)
+    os.makedirs(out)
+    sprites, backgrounds = {}, {}
+    for m in wanted:
+        mod = importlib.import_module(m)
+        if hasattr(mod, "sprites"):
+            sprites.update(mod.sprites())
+        if hasattr(mod, "scenes"):
+            backgrounds.update(mod.scenes())
+    build(sprites, backgrounds, out)
+
+
+def build(sprites, backgrounds, OUT):
     jobs = []
-    for name, (svg, layers) in characters.sprites().items():
+    for name, (svg, layers) in sprites.items():
         w, h = map(float, re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg).groups())
         size = [int(w * CHAR_SCALE), int(h * CHAR_SCALE)]
         if layers is None:
@@ -33,7 +48,7 @@ def main():
         for out, s in outs:
             open(os.path.join(OUT, out + ".svg"), "w").write(s)
             jobs.append({"name": out, "w": size[0], "h": size[1], "transparent": True})
-    for name, svg in scenes.scenes().items():
+    for name, svg in backgrounds.items():
         open(os.path.join(OUT, name + ".svg"), "w").write(svg)
         jobs.append({"name": name, "w": 1920, "h": 1080, "transparent": False})
     json.dump(jobs, open(os.path.join(OUT, "jobs.json"), "w"))

@@ -2,6 +2,7 @@ package com.dinovalley
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
@@ -11,10 +12,11 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dinovalley.audio.NameRecorder
 import com.dinovalley.audio.Narrator
-import com.dinovalley.ui.book.BookScreen
-import com.dinovalley.ui.book.BookViewModel
-import com.dinovalley.ui.book.LocalNameRecorder
-import com.dinovalley.ui.book.LocalNarrator
+import com.dinovalley.ui.game.AdventureScreen
+import com.dinovalley.ui.game.GameViewModel
+import com.dinovalley.ui.game.LocalNameRecorder
+import com.dinovalley.ui.game.LocalNarrator
+import com.dinovalley.ui.game.TitleScreen
 import com.dinovalley.ui.theme.DinoValleyTheme
 
 class MainActivity : ComponentActivity() {
@@ -30,8 +32,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             DinoValleyTheme {
                 CompositionLocalProvider(LocalNarrator provides narrator, LocalNameRecorder provides recorder) {
-                    val viewModel: BookViewModel = viewModel()
-                    BookScreen(viewModel)
+                    val vm: GameViewModel = viewModel()
+                    if (vm.adventure == null) {
+                        TitleScreen(vm)
+                    } else {
+                        // Back leaves the adventure for the camp; progress so far is kept per adventure.
+                        BackHandler { vm.home() }
+                        AdventureScreen(vm)
+                    }
                 }
             }
         }
