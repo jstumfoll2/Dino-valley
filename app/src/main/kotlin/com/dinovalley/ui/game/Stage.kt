@@ -140,7 +140,7 @@ fun RoundButton(picto: Picto, color: Color, size: Dp, modifier: Modifier = Modif
     }
 }
 
-/** The bag in the corner: coins, gems, the key and the potion found on this adventure. */
+/** The bag in the corner: hearts, then the coins, gems, key and potion found on this adventure. */
 @Composable
 fun BagBar(bag: Adventure.Bag, height: Dp, modifier: Modifier = Modifier) {
     Row(
@@ -151,6 +151,7 @@ fun BagBar(bag: Adventure.Bag, height: Dp, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        repeat(3) { i -> Text(if (i < bag.hearts) "❤️" else "🤍", fontSize = 18.sp) }
         Image(painterResource(R.drawable.art_coin), null, Modifier.size(height))
         Text("${bag.coins}", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
         if (bag.gems > 0) {

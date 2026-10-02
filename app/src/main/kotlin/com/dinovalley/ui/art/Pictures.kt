@@ -190,9 +190,9 @@ private fun Color.compositeOver(background: Color): Color {
     return Color(red * a + background.red * (1 - a), green * a + background.green * (1 - a), blue * a + background.blue * (1 - a), 1f)
 }
 
-/** A six-sided die showing [value] pips. */
+/** A six-sided die showing [value] pips. The first [lit] pips glow gold, for counting them out loud. */
 @Composable
-fun DieFace(value: Int, modifier: Modifier = Modifier, glow: Boolean = false) {
+fun DieFace(value: Int, modifier: Modifier = Modifier, glow: Boolean = false, lit: Int = 0) {
     Canvas(modifier) {
         val w = size.minDimension
         val r = CornerRadius(w * 0.2f)
@@ -207,7 +207,14 @@ fun DieFace(value: Int, modifier: Modifier = Modifier, glow: Boolean = false) {
             5 -> listOf(0.27f to 0.27f, 0.73f to 0.27f, 0.5f to 0.5f, 0.27f to 0.73f, 0.73f to 0.73f)
             else -> listOf(0.28f to 0.24f, 0.72f to 0.24f, 0.28f to 0.5f, 0.72f to 0.5f, 0.28f to 0.76f, 0.72f to 0.76f)
         }
-        for ((x, y) in spots) drawCircle(if (value == 6) Color(0xFFE23B3B) else Color(0xFF3D2A1C), w * 0.085f, Offset(w * x, w * y))
+        spots.forEachIndexed { i, (x, y) ->
+            if (i < lit) {
+                drawCircle(Color(0x88FFD34D), w * 0.14f, Offset(w * x, w * y))
+                drawCircle(Color(0xFFFFB000), w * 0.095f, Offset(w * x, w * y))
+            } else {
+                drawCircle(Color(0xFF3D2A1C), w * 0.085f, Offset(w * x, w * y))
+            }
+        }
     }
 }
 

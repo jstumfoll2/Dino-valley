@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -47,6 +48,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -57,13 +59,13 @@ import androidx.compose.ui.unit.sp
 import com.dinovalley.R
 import com.dinovalley.engine.model.Speech
 import com.dinovalley.engine.rpg.hero.Power
-import com.dinovalley.engine.rpg.learn.Coach
+import com.dinovalley.engine.rpg.learn.ChallengeFactory
 import com.dinovalley.engine.rpg.learn.Words
 import com.dinovalley.engine.rpg.run.Actor
 import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Place
 import com.dinovalley.engine.rpg.run.Reply
-import com.dinovalley.engine.rpg.world.RoomKind
+import com.dinovalley.engine.rpg.run.placeOf
 import com.dinovalley.ui.art.Art
 import com.dinovalley.ui.art.Character
 import com.dinovalley.ui.art.DieFace
@@ -99,6 +101,14 @@ fun AdventureScreen(vm: GameViewModel) {
         }
         if (beat.scene.place != Place.MAP) {
             Cast(beat, interactive, speaking, heroMood, vm, w, h)
+        } else {
+            // The map: big while the narrator explains it, a strip above the doors at a fork.
+            val fork = beat is Beat.Doors
+            DungeonMapView(
+                adventure.map, adventure.position, adventure.route,
+                left = w * 0.05f, top = if (fork) h * 0.2f else h * 0.26f,
+                width = w * 0.9f, height = if (fork) h * 0.3f else h * 0.6f,
+            )
         }
 
         val reply: (Reply) -> Unit = { r ->
@@ -119,7 +129,7 @@ fun AdventureScreen(vm: GameViewModel) {
                 is Beat.Tell -> TellBeat(beat.lines, say) { reply(Reply.Next) }
                 is Beat.Found -> FoundBeat(beat, say, celebrate) { reply(Reply.Next) }
                 is Beat.Choose -> ChooseBeat(beat, say) { reply(Reply.Picked(it)) }
-                is Beat.Doors -> DoorsBeat(beat, adventure.map.stops.size, say) { i, tries -> reply(Reply.Picked(i, tries)) }
+                is Beat.Doors -> DoorsBeat(beat, say) { i -> reply(Reply.Picked(i)) }
                 is Beat.Roll -> RollBeat(beat, say, celebrate) { used, tries -> reply(Reply.Rolled(used, tries)) }
                 is Beat.Ask -> AskBeat(beat, vm.state.hero.heroClass.power == Power.SPARKLE_HINT, say, celebrate) { tries, hints, ms -> reply(Reply.Solved(tries, hints, ms)) }
                 is Beat.Finale -> Unit
@@ -302,107 +312,75 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
 
 // ------------------------------------------------------------------ the map
 
+/**
+ * Pick a door at a fork. The narrator names each door's color while it lifts, then any door can
+ * be taken; whether it was the one from the clue is the engine's to say.
+ */
 @Composable
-private fun DoorsBeat(beat: Beat.Doors, stops: Int, say: (List<Speech>) -> Unit, pick: (Int, Int) -> Unit) {
+private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int) -> Unit) {
     val narrator = LocalNarrator.current
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    var tries by remember { mutableIntStateOf(0) }
-    var keep by remember { mutableStateOf<List<Int>?>(null) }
-    var glow by remember { mutableIntStateOf(-1) }
-    var wrong by remember { mutableIntStateOf(-1) }
+    var pointing by remember { mutableIntStateOf(-1) }
     var opened by remember { mutableIntStateOf(-1) }
+    val doors = beat.fork.doors
     LaunchedEffect(Unit) {
         say(beat.prompt)
         narrator.speak(beat.prompt)
+        doors.forEachIndexed { i, room ->
+            if (opened >= 0) return@LaunchedEffect
+            pointing = i
+            val color = room.hue.word.uppercase()
+            narrator.speak(
+                when {
+                    i == 0 -> "The $color door?"
+                    i == doors.lastIndex -> "Or the $color door?"
+                    else -> "The $color door?"
+                },
+            )
+            delay(150)
+        }
+        pointing = -1
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = maxHeight
         val w = maxWidth
-        // The route so far, as a dotted trail across the bottom of the map.
-        Canvas(Modifier.fillMaxSize()) {
-            val y = size.height * 0.9f
-            val x0 = size.width * 0.06f
-            val x1 = size.width * 0.94f
-            drawLine(Color(0xFF8A5A2A), Offset(x0, y), Offset(x1, y), size.height * 0.012f, StrokeCap.Round, PathEffect.dashPathEffect(floatArrayOf(18f, 16f)))
-            for (i in 0 until stops) {
-                val x = x0 + (x1 - x0) * i / (stops - 1).coerceAtLeast(1)
-                val done = i < beat.stopIndex
-                val here = i == beat.stopIndex
-                drawCircle(if (here) Color(0xFFE5641F) else if (done) Color(0xFF8A5A2A) else Color(0x668A5A2A), size.height * if (here) 0.035f else 0.022f, Offset(x, y))
-            }
-        }
-        // You are here: the hero's dragon on the trail.
-        val n = beat.fork.doors.size
-        val doorH = h * 0.5f
+        val n = doors.size
+        val doorH = h * 0.42f
         val doorW = doorH * (200f / 280f)
-        beat.fork.doors.forEachIndexed { i, room ->
-            val visible = keep?.contains(i) ?: true
-            val shake = rememberShake(if (wrong == i) tries else null)
-            val open by animateFloatAsState(if (opened == i) 1f else 0f, tween(500), label = "open")
-            val x = w * (0.32f + 0.6f * (i + 0.5f) / n)
+        doors.forEachIndexed { i, room ->
+            val lift by animateFloatAsState(if (pointing == i || opened == i) 1.1f else 1f, spring(dampingRatio = 0.5f), label = "lift")
+            val x = w * (0.5f + 0.5f * ((i + 0.5f) / n - 0.5f))
             Box(
                 Modifier
-                    .at(x, h * 0.5f, doorW, doorH)
+                    .at(x, h * 0.75f, doorW, doorH)
                     .graphicsLayer {
-                        translationX = shake.value
-                        alpha = if (visible) 1f else 0.25f
-                        scaleX = 1f + 0.1f * open
-                        scaleY = 1f + 0.1f * open
+                        scaleX = lift
+                        scaleY = lift
+                        alpha = if (opened >= 0 && opened != i) 0.4f else 1f
                     }
-                    .clickable(NoRipple, null, enabled = opened < 0 && visible) {
-                        val clue = beat.clue
-                        tries += 1
-                        if (clue == null) {
-                            opened = i
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            scope.launch {
-                                narrator.speak("The ${room.hue.word} door! Creeeak...")
-                                pick(i, 1)
-                            }
-                            return@clickable
-                        }
-                        val v = Coach.judge(clue, i, tries)
-                        if (v.correct) {
-                            opened = i
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            scope.launch {
-                                narrator.speak("Yes! The ${room.hue.word} door! Creeeak...")
-                                pick(i, tries)
-                            }
-                        } else {
-                            wrong = i
-                            v.keep?.let { keep = it }
-                            if (v.glow != null) glow = v.glow!!
-                            scope.launch {
-                                narrator.speak("Knock knock... that's the ${room.hue.word} door. Listen to the clue again!")
-                                narrator.speak(clue.prompt)
-                            }
+                    .clickable(NoRipple, null, enabled = opened < 0) {
+                        opened = i
+                        pointing = -1
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        scope.launch {
+                            narrator.speak("The ${room.hue.word.uppercase()} door! Creeeak...")
+                            pick(i)
                         }
                     },
             ) {
-                if (glow == i) GlowRing(Modifier.fillMaxSize())
                 Image(painterResource(Art.door(room.hue)), null, Modifier.fillMaxSize())
                 if (beat.peek) {
+                    // Ranger power: a peek at what's behind each door.
                     Image(
-                        painterResource(peekArt(room.kind)), null,
-                        Modifier.align(Alignment.TopCenter).size(doorW * 0.42f).graphicsLayer { translationY = -(doorW * 0.5f).toPx() },
+                        painterResource(Art.place(placeOf(room.kind))), null,
+                        Modifier.align(Alignment.Center).size(doorW * 0.5f).clip(CircleShape).border(3.dp, Palette.Gold, CircleShape),
+                        contentScale = ContentScale.Crop,
                     )
                 }
             }
         }
     }
-}
-
-private fun peekArt(kind: RoomKind): Int = when (kind) {
-    RoomKind.RUNE_DOOR -> R.drawable.art_door_rune_frame
-    RoomKind.BRIDGE -> R.drawable.art_stone
-    RoomKind.CRYSTAL_CAVE -> R.drawable.art_gem_purple
-    RoomKind.LIBRARY -> R.drawable.art_book
-    RoomKind.TUNNEL -> R.drawable.art_lantern
-    RoomKind.MIRROR_HALL -> R.drawable.art_door_blue
-    RoomKind.VAULT -> R.drawable.art_treasure
-    else -> R.drawable.art_coin
 }
 
 /** A soft pulsing glow behind the right answer, the last rung of the hint ladder. */
@@ -425,140 +403,155 @@ fun rememberShake(key: Any?): Animatable<Float, *> {
 
 // ------------------------------------------------------------------ dice
 
+/**
+ * Two dice: tap to roll, then add them up. A wrong first answer pops a heart, and the narrator
+ * counts the dots together with the child, lighting each one, before they try again.
+ */
 @Composable
 private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: () -> Unit, done: (Boolean, Int) -> Unit) {
     val narrator = LocalNarrator.current
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    var face by remember { mutableIntStateOf(Random.nextInt(1, 7)) }
-    var stage by remember { mutableStateOf("ready") } // ready, rolling, rolled, reroll?, sum, done
+    var faces by remember { mutableStateOf(listOf(Random.nextInt(1, 7), Random.nextInt(1, 7))) }
+    var stage by remember { mutableStateOf("ready") } // ready, rolling, reroll?, sum, counting, done
     var usedReroll by remember { mutableStateOf(false) }
-    var sumTries by remember { mutableIntStateOf(0) }
+    var tries by remember { mutableIntStateOf(0) }
     var keep by remember { mutableStateOf<List<Int>?>(null) }
     var glow by remember { mutableIntStateOf(-1) }
     var wrong by remember { mutableStateOf<Int?>(null) }
+    var lit by remember { mutableIntStateOf(0) }
+    var heartPop by remember { mutableStateOf(false) }
     val spin = remember { Animatable(0f) }
     val reroll = beat.reroll
-    val final = if (usedReroll && reroll != null) maxOf(beat.value, reroll) else beat.value
-    val total = final + beat.bonus
-    val sumOptions = remember { com.dinovalley.engine.rpg.learn.ChallengeFactory.numberOptions(beat.value + beat.bonus, 3, Random(beat.value)) }
+    val final = if (usedReroll && reroll != null) listOf(beat.dice, reroll).maxBy { it.sum() } else beat.dice
+    val total = final.sum()
+    val options = remember(total) { ChallengeFactory.numberOptions(total, 4, Random(total)) }
 
     LaunchedEffect(Unit) {
         say(beat.why)
         narrator.speak(beat.why)
     }
 
-    suspend fun tumbleTo(target: Int) {
+    suspend fun tumbleTo(target: List<Int>) {
         stage = "rolling"
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         narrator.blurt("Roll!")
         spin.snapTo(0f)
         val job = scope.launch { spin.animateTo(720f, tween(900)) }
         repeat(9) {
-            face = Random.nextInt(1, 7)
+            faces = listOf(Random.nextInt(1, 7), Random.nextInt(1, 7))
             delay(90)
         }
         job.join()
-        face = target
+        faces = target
     }
 
-    suspend fun finish() {
-        val bonusLine = "Plus ${Words.number(beat.bonus)} for your courage!"
-        if (beat.askSum) {
-            val q = "You rolled ${Words.number(final)}. $bonusLine What is ${Words.number(final)} plus ${Words.number(beat.bonus)}?"
-            say(Speech.of(q))
-            stage = "sum"
-            narrator.speak(q)
-        } else {
-            val l = "$bonusLine ${Words.capital(final)} plus ${Words.number(beat.bonus)} makes ${Words.number(total)}!"
-            say(Speech.of(l))
-            narrator.speak(l)
-            stage = "done"
-            done(usedReroll, 0)
-        }
+    suspend fun askSum() {
+        val q = "You rolled ${Words.number(final[0]).uppercase()} and ${Words.number(final[1]).uppercase()}. How many dots is that altogether?"
+        faces = final
+        say(Speech.of(q))
+        stage = "sum"
+        narrator.speak(q)
     }
 
     fun roll() {
         if (stage != "ready") return
         scope.launch {
-            tumbleTo(beat.value)
-            stage = "rolled"
-            celebrate()
-            val l = "You rolled a ${Words.number(beat.value)}!"
-            say(Speech.of(l))
-            narrator.speak(l)
-            if (beat.reroll != null) {
+            tumbleTo(beat.dice)
+            if (reroll != null) {
                 stage = "reroll?"
-                narrator.speak("Knight power! Do you want to roll again? Tap the die again, or tap the check to keep it.")
+                val l = "Knight power! Do you want to roll again? Tap the dice to roll, or tap the check to keep them."
+                say(Speech.of(l))
+                narrator.speak(l)
             } else {
-                finish()
+                askSum()
             }
         }
+    }
+
+    /** Counts every dot out loud, lighting them one by one. */
+    suspend fun countTogether() {
+        stage = "counting"
+        lit = 0
+        for (k in 1..total) {
+            lit = k
+            narrator.speak(Words.capital(k) + "!")
+        }
+        delay(300)
+        narrator.speak("${Words.capital(total)} dots altogether! Now find ${Words.number(total).uppercase()}.")
+        stage = "sum"
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = maxHeight
         val w = maxWidth
-        val t = rememberInfiniteTransition(label = "die")
+        val t = rememberInfiniteTransition(label = "dice")
         val bob by t.animateFloat(-1f, 1f, infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "bob")
-        val dieSize = h * 0.34f
-        Box(
-            Modifier.at(w * 0.62f, h * 0.48f, dieSize, dieSize)
-                .graphicsLayer {
-                    rotationZ = spin.value
-                    translationY = if (stage == "ready" || stage == "reroll?") bob * 10f else 0f
-                }
-                .clickable(NoRipple, null) {
-                    when (stage) {
-                        "ready" -> roll()
-                        "reroll?" -> if (reroll != null) scope.launch {
-                            usedReroll = true
-                            tumbleTo(reroll)
-                            val better = maxOf(beat.value, reroll)
-                            val l = "You rolled a ${Words.number(reroll)}!" + if (better != reroll) " You keep the ${Words.number(better)}." else ""
-                            face = better
-                            say(Speech.of(l))
-                            narrator.speak(l)
-                            finish()
-                        }
-                        else -> Unit
+        val dieSize = h * 0.26f
+        faces.forEachIndexed { d, face ->
+            val litHere = if (d == 0) minOf(lit, faces[0]) else (lit - faces[0]).coerceIn(0, face)
+            Box(
+                Modifier.at(w * (0.56f + 0.2f * d), h * 0.42f, dieSize, dieSize)
+                    .graphicsLayer {
+                        rotationZ = spin.value * if (d == 0) 1f else -1f
+                        translationY = if (stage == "ready" || stage == "reroll?") bob * 10f * (if (d == 0) 1f else -1f) else 0f
                     }
-                },
-        ) {
-            DieFace(face, Modifier.fillMaxSize(), glow = stage == "ready")
-        }
-        if (stage == "reroll?") {
-            RoundButton(Picto.CHECK, Palette.Go, h * 0.16f, Modifier.at(w * 0.84f, h * 0.48f, h * 0.16f, h * 0.16f)) {
-                scope.launch { finish() }
+                    .clickable(NoRipple, null) {
+                        when (stage) {
+                            "ready" -> roll()
+                            "reroll?" -> if (reroll != null) scope.launch {
+                                usedReroll = true
+                                tumbleTo(reroll)
+                                if (reroll.sum() < beat.dice.sum()) {
+                                    val l = "The first roll was better. Let's keep it!"
+                                    narrator.speak(l)
+                                }
+                                askSum()
+                            }
+                            else -> Unit
+                        }
+                    },
+            ) {
+                DieFace(face, Modifier.fillMaxSize(), glow = stage == "ready", lit = litHere)
             }
         }
-        if (stage != "ready" && stage != "rolling" && beat.bonus > 0) {
+        if (stage == "reroll?") {
+            RoundButton(Picto.CHECK, Palette.Go, h * 0.16f, Modifier.at(w * 0.9f, h * 0.42f, h * 0.16f, h * 0.16f)) {
+                scope.launch { askSum() }
+            }
+        }
+        if (heartPop) {
+            val pop = remember { Animatable(0.5f) }
+            LaunchedEffect(Unit) {
+                pop.animateTo(1.6f, tween(500))
+                pop.animateTo(0f, tween(400))
+                heartPop = false
+            }
             Text(
-                "+${beat.bonus}", fontSize = with(LocalDensity.current) { (h * 0.12f).toSp() }, fontWeight = FontWeight.Black,
-                color = Palette.Gold, modifier = Modifier.at(w * 0.82f, h * 0.3f, h * 0.24f, h * 0.16f),
+                "💔", fontSize = with(LocalDensity.current) { (h * 0.18f).toSp() },
+                modifier = Modifier.at(w * 0.66f, h * 0.42f, h * 0.3f, h * 0.3f).graphicsLayer { scaleX = pop.value; scaleY = pop.value; alpha = pop.value.coerceIn(0f, 1f) },
             )
         }
-        if (stage == "sum") {
-            val answer = final + beat.bonus
-            val options = if (answer in sumOptions) sumOptions else com.dinovalley.engine.rpg.learn.ChallengeFactory.numberOptions(answer, 3, Random(answer))
+        if (stage == "sum" || stage == "counting" || stage == "done") {
             NumberRow(
-                options, h, w, keep, glow, wrong, solved = false,
+                options, h, w, keep, glow, wrong, solved = stage == "done", answer = total, enabled = stage == "sum",
                 onPick = { n ->
-                    sumTries += 1
-                    val v = Coach.judge(options.size, options.indexOf(answer), options.indexOf(n), sumTries)
-                    if (v.correct) {
+                    tries += 1
+                    if (n == total) {
                         stage = "done"
                         celebrate()
                         scope.launch {
-                            narrator.speak("Yes! ${Words.capital(answer)}!")
-                            done(usedReroll, sumTries)
+                            narrator.speak("Yes! ${Words.capital(final[0])} and ${Words.number(final[1])} make ${Words.number(total)}!")
+                            done(usedReroll, tries)
                         }
                     } else {
                         wrong = n
-                        v.keep?.let { k -> keep = k.map { options[it] } }
-                        v.glow?.let { glow = options[it] }
+                        if (tries == 1) heartPop = true
+                        if (tries >= 2) glow = total
+                        keep = listOf(total, n).sorted()
                         scope.launch {
-                            narrator.speak("Hmm, let's count the dots, then ${Words.number(beat.bonus)} more!")
+                            if (tries == 1) narrator.speak("Oh no, a heart pops! Let's count the dots together.")
+                            countTogether()
                             wrong = null
                         }
                     }

@@ -235,19 +235,6 @@ class Adventure(
         }
     }
 
-    private fun placeOf(kind: RoomKind): Place = when (kind) {
-        RoomKind.GATE -> Place.GATE
-        RoomKind.RUNE_DOOR -> Place.RUNE_HALL
-        RoomKind.BRIDGE -> Place.BRIDGE
-        RoomKind.CRYSTAL_CAVE -> Place.CRYSTAL_CAVE
-        RoomKind.LIBRARY -> Place.LIBRARY
-        RoomKind.TUNNEL -> Place.TUNNEL
-        RoomKind.MIRROR_HALL -> Place.MIRROR_HALL
-        RoomKind.VAULT -> Place.VAULT
-        RoomKind.GOBLIN_DEN -> Place.GOBLIN_DEN
-        RoomKind.WORKSHOP -> Place.WORKSHOP
-        RoomKind.LAIR -> Place.LAIR
-    }
 
     /**
      * A small chest with a magic lock after each room behind a door: find a number or a letter

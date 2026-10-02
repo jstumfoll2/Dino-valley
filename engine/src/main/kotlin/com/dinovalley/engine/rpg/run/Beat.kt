@@ -5,10 +5,26 @@ import com.dinovalley.engine.rpg.hero.Attribute
 import com.dinovalley.engine.rpg.hero.Unlock
 import com.dinovalley.engine.rpg.learn.Challenge
 import com.dinovalley.engine.rpg.learn.MapChallenge
+import com.dinovalley.engine.rpg.world.RoomKind
 import com.dinovalley.engine.rpg.world.Stop
 
 /** Where a beat happens. The app paints a background for each. */
 enum class Place { CAMP, GATE, RUNE_HALL, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, GOBLIN_DEN, WORKSHOP, LAIR, MAP }
+
+/** Where each kind of room is drawn. */
+fun placeOf(kind: RoomKind): Place = when (kind) {
+    RoomKind.GATE -> Place.GATE
+    RoomKind.RUNE_DOOR -> Place.RUNE_HALL
+    RoomKind.BRIDGE -> Place.BRIDGE
+    RoomKind.CRYSTAL_CAVE -> Place.CRYSTAL_CAVE
+    RoomKind.LIBRARY -> Place.LIBRARY
+    RoomKind.TUNNEL -> Place.TUNNEL
+    RoomKind.MIRROR_HALL -> Place.MIRROR_HALL
+    RoomKind.VAULT -> Place.VAULT
+    RoomKind.GOBLIN_DEN -> Place.GOBLIN_DEN
+    RoomKind.WORKSHOP -> Place.WORKSHOP
+    RoomKind.LAIR -> Place.LAIR
+}
 
 /** Who can be on screen. COMPANION is the child's baby dragon. */
 enum class Actor { HERO, COMPANION, GOBLIN, WIZARD, DRAGON, RUBY, SHADOW }

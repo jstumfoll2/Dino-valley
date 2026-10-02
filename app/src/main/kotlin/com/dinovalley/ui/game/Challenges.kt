@@ -73,6 +73,7 @@ import com.dinovalley.engine.rpg.learn.Ingredient
 import com.dinovalley.engine.rpg.learn.LetterChallenge
 import com.dinovalley.engine.rpg.learn.MapChallenge
 import com.dinovalley.engine.rpg.learn.MemoryChallenge
+import com.dinovalley.engine.rpg.learn.NumberChallenge
 import com.dinovalley.engine.rpg.learn.PatternChallenge
 import com.dinovalley.engine.rpg.learn.PickOne
 import com.dinovalley.engine.rpg.learn.RecipeChallenge
@@ -81,6 +82,7 @@ import com.dinovalley.engine.rpg.learn.Thing
 import com.dinovalley.engine.rpg.learn.TraceChallenge
 import com.dinovalley.engine.rpg.learn.Words
 import com.dinovalley.engine.rpg.run.Beat
+import com.dinovalley.engine.rpg.run.Prop
 import com.dinovalley.ui.art.Art
 import com.dinovalley.ui.art.RuneIcon
 import kotlinx.coroutines.CoroutineScope
@@ -206,7 +208,8 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
             is AddChallenge -> AddRoom(c, turn, zone)
             is ColorChallenge -> GemRoom(c, turn, zone)
             is PatternChallenge -> RuneDoor(c, turn, zone)
-            is LetterChallenge -> SpellBooks(c, turn, zone)
+            is LetterChallenge -> if (beat.prop == Prop.CHEST) ChestLock(c, c.options.map { it.toString() }, turn, zone) else SpellBooks(c, turn, zone)
+            is NumberChallenge -> ChestLock(c, c.options.map { it.toString() }, turn, zone)
             is MapChallenge -> MapPick(c, turn, zone)
             is TraceChallenge -> TraceRoom(c, turn, zone)
             is MemoryChallenge -> MemoryRoom(c, turn, zone)
@@ -463,6 +466,39 @@ private fun SpellBooks(c: LetterChallenge, turn: Turn, z: Zone) {
                 fontWeight = FontWeight.Black, color = Color(0xFF6E1F1D),
                 modifier = Modifier.align(Alignment.Center).padding(bottom = bookH * 0.08f),
             )
+        }
+    }
+}
+
+// ------------------------------------------------------------------ chests with a magic lock
+
+/** A treasure chest; tap the right number or letter on the lock stones to open it. */
+@Composable
+private fun ChestLock(c: PickOne, labels: List<String>, turn: Turn, z: Zone) {
+    val pick = remember { Pick(turn, c) }
+    val chestW = z.h * 0.5f
+    val chestH = chestW * (220f / 260f)
+    val chestX = z.left + z.width * 0.3f
+    val chestY = z.h * 0.58f
+    val wiggle = rememberShake(if (pick.wrong >= 0) pick.wrongTick else null)
+    Box(Modifier.at(chestX, chestY, chestW, chestH).graphicsLayer { rotationZ = wiggle.value * 0.3f }) {
+        if (turn.done) {
+            Image(painterResource(R.drawable.art_chest_lid_open), null, Modifier.fillMaxSize())
+            Image(painterResource(R.drawable.art_chest_glow), null, Modifier.fillMaxSize())
+            Image(painterResource(R.drawable.art_chest_base), null, Modifier.fillMaxSize())
+        } else {
+            Image(painterResource(R.drawable.art_chest_base), null, Modifier.fillMaxSize())
+            Image(painterResource(R.drawable.art_chest_lid_closed), null, Modifier.fillMaxSize())
+        }
+    }
+    val n = labels.size
+    val tile = minOf(z.h * 0.17f, z.h * 0.72f / (n * 1.15f))
+    val x = z.left + z.width * 0.78f
+    val fs = with(LocalDensity.current) { (tile * 0.55f).toSp() }
+    for (i in 0 until n) {
+        val y = chestY + tile * 1.15f * (i - (n - 1) / 2f)
+        Tile(pick, i, Modifier.at(x, y, tile, tile).spot()) {
+            Text(labels[i], fontSize = fs, lineHeight = fs, fontWeight = FontWeight.Black, color = Palette.Ink)
         }
     }
 }
