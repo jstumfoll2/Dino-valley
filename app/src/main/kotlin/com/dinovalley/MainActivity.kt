@@ -4,35 +4,35 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dinovalley.audio.NameRecorder
 import com.dinovalley.audio.Narrator
-import com.dinovalley.ui.play.PlayScreen
-import com.dinovalley.ui.play.PlayViewModel
+import com.dinovalley.ui.book.BookScreen
+import com.dinovalley.ui.book.BookViewModel
+import com.dinovalley.ui.book.LocalNameRecorder
+import com.dinovalley.ui.book.LocalNarrator
 import com.dinovalley.ui.theme.DinoValleyTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var narrator: Narrator
+    private lateinit var recorder: NameRecorder
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         hideSystemBars()
-        narrator = Narrator(this)
+        recorder = NameRecorder(this)
+        narrator = Narrator(this) { if (recorder.hasName) recorder.clip else null }
         setContent {
             DinoValleyTheme {
-                val viewModel: PlayViewModel = viewModel()
-                val state by viewModel.state.collectAsStateWithLifecycle()
-                PlayScreen(
-                    state = state,
-                    onEvent = viewModel::onEvent,
-                    onPlayAgain = viewModel::playAgain,
-                    narrator = narrator,
-                )
+                CompositionLocalProvider(LocalNarrator provides narrator, LocalNameRecorder provides recorder) {
+                    val viewModel: BookViewModel = viewModel()
+                    BookScreen(viewModel)
+                }
             }
         }
     }
@@ -40,6 +40,12 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()
+    }
+
+    override fun onPause() {
+        narrator.stop()
+        recorder.stop()
+        super.onPause()
     }
 
     override fun onDestroy() {

@@ -686,3 +686,93 @@ and F-Droid signs its own builds).
 
 **What might cause us to change it:** Publishing outside F-Droid, which
 would need a private release key kept out of the repo.
+
+### 34. The game is a picture book with games baked into its pages
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** The game is now a storybook, "The Lost Eggs". A storm blows
+Mama Dino's eggs across the valley and the child's dino finds them. There
+are seven pages after the cover, each read aloud with its words printed like
+a book. Most pages hide a small game: tap clouds to make thunder, count eggs
+in the meadow, hop on the river stone with a numeral, find the bush with a
+letter, light a dark cave and count, then hatch the eggs at home. The words
+stay the same each read. The numbers and letters change every time, chosen
+by the engine (`engine/story`).
+
+**Why we made it:** After the first playtest, Jason said the counting game
+was too simple and needed a strong story, "a mixture of a book with some
+game elements baked in." A story gives every number and letter a reason to
+matter: the egg is on the far side of the river.
+
+**Alternatives considered:** A map of separate mini-games (no story to carry
+him along); a fully branching story (much more to write and record, and
+harder for a four-year-old to follow).
+
+**What might cause us to change it:** He loses interest once he knows the
+story. Then we add a second book with the same page machinery.
+
+### 35. Art is drawn as code (SVG) and turned into WebP pictures for the app
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** Characters, props and backgrounds are written as SVG by
+Python scripts in `art/src`. `art/build.py` renders them with a headless
+browser and saves WebP files into `app/src/main/res/drawable-nodpi`.
+Characters are cut into layers (tail, body, arm, head, eyes, mouths) so the
+app can make them breathe, blink, talk, wag and hop.
+
+**Why we made it:** It gives much more detail than shapes drawn in Kotlin
+(shading, outlines, texture). It stays free and open, so F-Droid can rebuild
+it, and anyone can change a color and re-run one command.
+
+**Alternatives considered:** Drawing in Kotlin on a Canvas (what the first
+prototype did, too plain); hand-painted bitmaps (nobody in the project
+paints, and they can't be regenerated); AI-generated art (licensing is
+unclear for F-Droid and it is hard to keep consistent).
+
+**What might cause us to change it:** An illustrator joins in, or the APK
+grows too big. Right now all the art is under 1 MB.
+
+### 36. The child names the dino with their own voice
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** The cover has a big microphone button. While it is held, the
+phone records, and the dino tilts its head to listen. Then the dino says
+"My name is …" using the child's own recording, and the story uses that
+clip wherever the dino's name comes up. The clip is stored only in the
+app's private storage. Without a recording, the dino is called "Rex". The
+microphone permission is asked for the first time the button is held.
+
+**Why we made it:** Jason asked for it. Naming the dino makes it his. He
+can't type or read, so his voice is the natural way to do it.
+
+**Alternatives considered:** Picking a name from pictures (not really his
+name); speech recognition to turn the name into text (it needs Google's
+online service on most phones, which breaks the no-network rule).
+
+**What might cause us to change it:** Two children want two dinos, which
+means a dino per profile.
+
+### 37. Each read of the story adjusts difficulty with one simple rule
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** The story has five levels (`StoryLevels`). Each level sets the
+counting range, the highest stone numeral, which letters appear and how many
+choices each question has. The rule is checked at "The End". If every
+question was right on the first try, the next read is one level harder. If
+two or more needed help, it is one level easier. Otherwise it stays the
+same. The level is saved on the phone.
+
+**Why we made it:** It's easy to explain, and it keeps him near the edge of
+what he knows without any tracking beyond the phone. It replaces the fixed
+level 2 used by the first prototype.
+
+**Alternatives considered:** Per-skill mastery tracking from the
+architecture (planned for later, once there is more than one book);
+difficulty chosen by a parent (more work for the parents).
+
+**What might cause us to change it:** Numbers and letters move at different
+speeds for him. Then each gets its own level.
