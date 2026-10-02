@@ -5,6 +5,7 @@ import com.dinovalley.engine.rpg.hero.Attribute
 /** What the learning engine tracks. Each skill feeds one hero attribute. */
 enum class Skill(val attribute: Attribute) {
     COUNTING(Attribute.CLEVERNESS),
+    NUMBERS(Attribute.CLEVERNESS),
     ADDITION(Attribute.CLEVERNESS),
     COLORS(Attribute.MAGIC),
     PATTERNS(Attribute.MAGIC),

@@ -17,6 +17,7 @@ import com.dinovalley.engine.rpg.learn.TraceChallenge
 import com.dinovalley.engine.rpg.run.Adventure
 import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Place
+import com.dinovalley.engine.rpg.run.Prop
 import com.dinovalley.engine.rpg.run.Reply
 import com.dinovalley.engine.rpg.world.WorldMemory
 import com.dinovalley.engine.util.Clock
@@ -49,11 +50,16 @@ class AdventureTest {
                     check(b.challenge)
                     Reply.Solved(tries = 1 + misses, hints = misses, millis = 1000)
                 }
-                is Beat.Roll -> Reply.Rolled(usedReroll = b.reroll != null, sumTries = if (b.askSum) 1 + misses else 0)
+                is Beat.Roll -> {
+                    assertTrue(b.dice.size == 2 && b.dice.all { it in 1..6 })
+                    Reply.Rolled(usedReroll = b.reroll != null, sumTries = 1 + misses)
+                }
                 is Beat.Choose -> Reply.Picked(choice.coerceAtMost(b.options.lastIndex))
                 is Beat.Doors -> {
-                    b.clue?.let { check(it) }
-                    Reply.Picked(b.clue?.answer ?: 0, tries = 1 + misses)
+                    val clue = assertNotNull(b.clue, "every fork has a clue")
+                    check(clue)
+                    // Sometimes take the wrong door: the adventure goes on either way.
+                    Reply.Picked(if (misses == 2) (clue.answer + 1) % clue.optionCount else clue.answer)
                 }
                 else -> Reply.Next
             }
@@ -61,6 +67,7 @@ class AdventureTest {
             assertTrue(++guard < 200, "adventure never ended")
         }
         seen += a.beat
+        assertTrue(a.bag.hearts in 1..3)
         return seen
     }
 
@@ -75,7 +82,10 @@ class AdventureTest {
                 assertEquals(3, beats.filter { it.scene.place == Place.LAIR }.maxOf { it.scene.bossStars ?: 0 })
                 val finale = beats.last() as Beat.Finale
                 assertTrue(finale.summary.starsEarned.values.sum() > 50)
-                assertTrue(a.records.size >= 4)
+                assertTrue(a.records.size >= 12, "not enough learning: ${a.records.size}")
+                assertTrue(beats.count { it is Beat.Doors } == 3)
+                assertTrue(beats.any { it is Beat.Ask && it.prop == Prop.CHEST })
+                assertTrue(beats.any { it.scene.place == Place.MAP && it is Beat.Tell }, "the camp shows the map")
                 assertEquals(1, a.world.adventures)
                 assertTrue(a.world.endings.isNotEmpty())
             }
@@ -118,7 +128,10 @@ class AdventureTest {
             check(ChallengeFactory.add(level, seed, Thing.COIN) { h, m, _ -> "$h and $m" })
             check(ChallengeFactory.color(level, seed, "The wizard"))
             check(ChallengeFactory.pattern(level, seed))
-            check(ChallengeFactory.letter(level, seed, "The spell needs a rune."))
+            check(ChallengeFactory.letter(level, seed, "The spell needs a letter."))
+            val n = ChallengeFactory.numeral(level, seed, "The lock opens for one magic sign.")
+            check(n)
+            assertEquals(n.options.size, n.options.toSet().size, "number options must differ")
             check(ChallengeFactory.trace(level, seed, "to the crystal."))
             check(ChallengeFactory.memory(level, seed))
             check(ChallengeFactory.recipe(level, seed, PotionKind.GLOW))
@@ -141,9 +154,9 @@ class AdventureTest {
     @Test
     fun `levels need a little more each time`() {
         assertEquals(1, Progression.levelFor(0))
-        assertEquals(2, Progression.levelFor(60))
-        assertEquals(3, Progression.levelFor(140))
-        assertEquals(2, Progression.levelFor(139))
+        assertEquals(2, Progression.levelFor(180))
+        assertEquals(3, Progression.levelFor(420))
+        assertEquals(2, Progression.levelFor(419))
         assertEquals(listOf("feather_hat", "class_guardian"), Progression.unlocksBetween(1, 3).map { it.id })
     }
 }

@@ -60,10 +60,11 @@ data class Hero(
 
 object Progression {
     /**
-     * Stars needed to reach [level]: 60, 140, 240, 360, … Each level asks for 20 more than the
-     * one before, so the first adventures level up every time and later ones every few runs.
+     * Stars needed to reach [level]: 180, 420, 720, 1080, … Each level asks for 60 more than
+     * the one before. An adventure earns about 250 stars, so the first ones level up every time
+     * and later ones every few adventures.
      */
-    fun xpFor(level: Int): Int = (1 until level).sumOf { 40 + 20 * it }
+    fun xpFor(level: Int): Int = (1 until level).sumOf { 120 + 60 * it }
 
     fun levelFor(xp: Int): Int {
         var level = 1

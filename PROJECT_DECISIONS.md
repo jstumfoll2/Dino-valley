@@ -823,7 +823,7 @@ A "play that one again" button could replay a seed.
 **Status:** Accepted · 2026-10-02
 
 **Decision:** Every challenge, roll and kind choice earns stars (XP) in one of
-the brief's five attributes. Stars add up to hero levels (60, 140, 240, 360, …),
+the brief's five attributes. Stars add up to hero levels (180, 420, 720, 1080, …),
 and levels unlock a feather hat, the Guardian class, a star cape, the
 Spellkeeper class and later rewards. Each class has a power: the Knight rerolls
 a low die once, the Wizard gets hints one step sooner, the Ranger peeks behind
