@@ -438,7 +438,8 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
     var glow by remember { mutableIntStateOf(-1) }
     var wrong by remember { mutableStateOf<Int?>(null) }
     val spin = remember { Animatable(0f) }
-    val final = if (usedReroll && beat.reroll != null) maxOf(beat.value, beat.reroll) else beat.value
+    val reroll = beat.reroll
+    val final = if (usedReroll && reroll != null) maxOf(beat.value, reroll) else beat.value
     val total = final + beat.bonus
     val sumOptions = remember { com.dinovalley.engine.rpg.learn.ChallengeFactory.numberOptions(beat.value + beat.bonus, 3, Random(beat.value)) }
 
@@ -510,11 +511,11 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
                 .clickable(NoRipple, null) {
                     when (stage) {
                         "ready" -> roll()
-                        "reroll?" -> scope.launch {
+                        "reroll?" -> if (reroll != null) scope.launch {
                             usedReroll = true
-                            tumbleTo(beat.reroll!!)
-                            val better = maxOf(beat.value, beat.reroll)
-                            val l = "You rolled a ${Words.number(beat.reroll)}!" + if (better != beat.reroll) " You keep the ${Words.number(better)}." else ""
+                            tumbleTo(reroll)
+                            val better = maxOf(beat.value, reroll)
+                            val l = "You rolled a ${Words.number(reroll)}!" + if (better != reroll) " You keep the ${Words.number(better)}." else ""
                             face = better
                             say(Speech.of(l))
                             narrator.speak(l)
