@@ -776,3 +776,99 @@ difficulty chosen by a parent (more work for the parents).
 
 **What might cause us to change it:** Numbers and letters move at different
 speeds for him. Then each gets its own level.
+
+### 38. The game becomes The Little Dungeon
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** We replace the Lost Eggs storybook with The Little Dungeon, the
+original fantasy RPG from the family's brief (`docs/design/little-dungeon-brief.md`).
+Learning is how you get through the world: patterns open rune doors, counting
+fixes bridges, colors find crystals, letters power spells, tracing lights paths,
+and recipes brew potions. The first build is the brief's vertical slice. The
+app keeps its install id, so it updates over Dino Valley.
+
+**Why we made it:** Jason found the storybook too simple and asked for a
+strong story with real game elements. His wife designed the brief.
+
+**Alternatives considered:** Growing the dino storybook into more books (still
+linear, and less to come back for).
+
+**What might cause us to change it:** He finds the dungeon scary or confusing in
+playtests.
+
+### 39. Every adventure is generated, and choices change it
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** Each run is made from a seed. The dungeon map, which rooms are
+behind which doors, the storyline (one of the brief's three), its twist, names,
+treasure and funny events all change from run to run. The rooms lean toward the
+skills he needs to practice. Choices matter inside a run (doors, how to treat the
+goblin, friend or spell at the boss) and between runs, because the world remembers
+friends, endings and treasure. Nothing is ever lost and there is no game over:
+every room ends in success, and dice results of 1–2 are silly rather than bad.
+
+**Why we made it:** Jason asked for randomness, roguelike elements and choices
+that matter, so the game stays fresh for repeated play.
+
+**Alternatives considered:** Hand-written levels (they run out); real roguelike
+permadeath and losing items (too harsh for a four-year-old).
+
+**What might cause us to change it:** He wants the same favorite adventure again.
+A "play that one again" button could replay a seed.
+
+### 40. Stars, levels and unlocks for the hero
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** Every challenge, roll and kind choice earns stars (XP) in one of
+the brief's five attributes. Stars add up to hero levels (60, 140, 240, 360, …),
+and levels unlock a feather hat, the Guardian class, a star cape, the
+Spellkeeper class and later rewards. Each class has a power: the Knight rerolls
+a low die once, the Wizard gets hints one step sooner, the Ranger peeks behind
+doors, and the Guardian makes friends easily. Levels are never shown as grades.
+
+**Why we made it:** Jason asked for experience and level-ups as gamification.
+Visible things to earn give a reason to play again.
+
+**Alternatives considered:** Collectible stickers only (no sense of growing
+stronger).
+
+**What might cause us to change it:** Rewards start to matter more to him than
+the adventure, or later unlocks feel too slow.
+
+### 41. His named dino becomes a baby dragon companion
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** The child's companion is a baby dragon that comes on every
+adventure. The name he recorded for the dino carries over; without a recording
+it is called "Sparky".
+
+**Why we made it:** Jason chose "Baby dragon" when asked how to keep the dino
+in the new fantasy world.
+
+**Alternatives considered:** Keeping the T. rex as is; dropping the companion.
+
+**What might cause us to change it:** He misses the T. rex. It could come back
+as a second companion.
+
+### 42. Progress and every challenge are saved on the phone
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** The hero, skill levels and world memory are saved to
+`save.json` in the app's private storage when an adventure ends. Every challenge
+is appended to `challenges.jsonl` with its skill, level, tries, hints, time and
+seed. That log is for tuning and for a possible small on-device model later.
+Nothing leaves the phone.
+
+**Why we made it:** The brief asks for adaptive learning that is ready for a
+model later, and the no-network rule stays.
+
+**Alternatives considered:** A database (Room is more setup than a few small
+files need right now).
+
+**What might cause us to change it:** The log grows large, or a parent view needs
+queries. Then it moves to Room.

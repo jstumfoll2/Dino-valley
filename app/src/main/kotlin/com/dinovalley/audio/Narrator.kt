@@ -146,6 +146,6 @@ class Narrator(context: Context, private val nameClip: () -> File?) {
     }
 
     companion object {
-        const val DEFAULT_NAME = "Rex"
+        const val DEFAULT_NAME = "Sparky"
     }
 }

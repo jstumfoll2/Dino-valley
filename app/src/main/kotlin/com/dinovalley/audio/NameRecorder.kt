@@ -19,7 +19,7 @@ class NameRecorder(private val context: Context) {
     private var recorder: MediaRecorder? = null
     private var startedAt = 0L
 
-    /** Whether the dino has a recorded name (otherwise it is "Rex"). */
+    /** Whether the dragon has a recorded name (otherwise it is "Sparky"). */
     var hasName by mutableStateOf(clip.exists() && clip.length() > 0)
         private set
 

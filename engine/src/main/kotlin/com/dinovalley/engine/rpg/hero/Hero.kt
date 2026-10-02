@@ -25,7 +25,7 @@ enum class Power {
     /** Knight: roll the die again once, keeping the better roll. */
     BRAVE_REROLL,
 
-    /** Wizard and Spellkeeper: one magic glow that points at the right answer. */
+    /** Wizard and Spellkeeper: hints come one step sooner, ending in a glow on the right answer. */
     SPARKLE_HINT,
 
     /** Ranger: peeks behind the doors on the map. */

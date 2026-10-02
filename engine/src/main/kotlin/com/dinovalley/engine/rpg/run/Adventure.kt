@@ -69,6 +69,15 @@ class Adventure(
     private var bossStars = 0
     private var powerUsed = false
 
+    /** What the hero is carrying, for the bag in the corner of the screen. */
+    data class Bag(val coins: Int, val key: Boolean, val potion: PotionKind?, val gems: Int, val friends: Int)
+
+    val bag: Bag get() = Bag(coins, magicKey, if (potionMade) quest.potion else null, gems, if (goblinFriend) 1 else 0)
+
+    val bossStarsLit: Int get() = bossStars
+
+    private var gems = 0
+
     private class Step(val beat: Beat, val then: (Reply) -> List<Step> = { emptyList() })
 
     private val queue = ArrayDeque<Step>()
@@ -215,6 +224,7 @@ class Adventure(
             listOf(
                 tell(s, lines.crystalCave()),
                 ask(s, c, lines.crystalOops(), lines.crystalYay()) {
+                    gems++
                     listOf(found(s.copy(mood = Mood.HAPPY), Loot(LootKind.GEM, 1, "a ${c.target.hue.word} gem"), "You got a shiny ${c.target.hue.word} gem!")) + treasure(s)
                 },
             )
