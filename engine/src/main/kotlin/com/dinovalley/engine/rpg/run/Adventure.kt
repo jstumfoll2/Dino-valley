@@ -68,11 +68,20 @@ class Adventure(
     private var potionMade = false
     private var bossStars = 0
     private var powerUsed = false
+    private var hearts = MAX_HEARTS
+    private var chests = 0
+    private val taken = mutableMapOf<Int, Room>()
 
     /** What the hero is carrying, for the bag in the corner of the screen. */
-    data class Bag(val coins: Int, val key: Boolean, val potion: PotionKind?, val gems: Int, val friends: Int)
+    data class Bag(val coins: Int, val key: Boolean, val potion: PotionKind?, val gems: Int, val friends: Int, val hearts: Int)
 
-    val bag: Bag get() = Bag(coins, magicKey, if (potionMade) quest.potion else null, gems, if (goblinFriend) 1 else 0)
+    val bag: Bag get() = Bag(coins, magicKey, if (potionMade) quest.potion else null, gems, if (goblinFriend) 1 else 0, hearts)
+
+    /** Where the hero is on the map: the index of the current stop, or -1 at the camp. */
+    val position: Int get() = stopIndex
+
+    /** The room picked at each fork so far, by stop index, for drawing the map. */
+    val route: Map<Int, Room> get() = taken.toMap()
 
     val bossStarsLit: Int get() = bossStars
 
@@ -133,35 +142,48 @@ class Adventure(
     }
 
     /** A challenge step; [after] runs once it's solved. */
-    private fun ask(scene: Scene, c: Challenge, oops: String, yay: String, after: () -> List<Step> = { emptyList() }): Step =
-        Step(Beat.Ask(scene, c, Speech.of(oops), Speech.of(yay))) { reply ->
+    private fun ask(scene: Scene, c: Challenge, oops: String, yay: String, prop: Prop = Prop.NONE, after: () -> List<Step> = { emptyList() }): Step =
+        Step(Beat.Ask(scene, c, Speech.of(oops), Speech.of(yay), prop)) { reply ->
             val s = reply as? Reply.Solved ?: Reply.Solved(1, 0, 0)
             record(c, s.tries, s.hints, s.millis)
             after()
         }
 
-    /** A dice step. Courage grows with every roll; [result] tells what the roll did. */
+    /**
+     * A dice step: roll two dice and add them up. Courage grows with every roll. Getting the
+     * total wrong on the first try costs a heart; [result] tells what the roll did.
+     */
     private fun roll(scene: Scene, why: String, result: (Tier, Int) -> List<Step>): Step {
-        val first = random.nextInt(1, 7)
-        val second = random.nextInt(1, 7)
+        val first = List(2) { random.nextInt(1, 7) }
+        val second = List(2) { random.nextInt(1, 7) }
         val knight = hero.heroClass.power == Power.BRAVE_REROLL && !powerUsed
-        val askSum = level(Skill.ADDITION) >= 3
-        val beat = Beat.Roll(scene, Speech.of(why), first, hero.diceBonus, askSum, if (knight && first <= 2) second else null)
+        val beat = Beat.Roll(scene, Speech.of(why), first, if (knight && first.sum() <= 4) second else null)
         return Step(beat) { reply ->
-            val rolled = reply as? Reply.Rolled ?: Reply.Rolled(false, 0)
-            val die = if (rolled.usedReroll && beat.reroll != null) {
+            val rolled = reply as? Reply.Rolled ?: Reply.Rolled(false, 1)
+            val dice = if (rolled.usedReroll && beat.reroll != null) {
                 powerUsed = true
-                maxOf(first, beat.reroll)
+                listOf(first, beat.reroll).maxBy { it.sum() }
             } else {
                 first
             }
             gain(Attribute.COURAGE, 5)
-            if (askSum && rolled.sumTries > 0) {
-                // The sum question is an addition challenge in its own right.
-                val c = ChallengeFactory.add(level(Skill.ADDITION), nextSeed(), Thing.GEM) { _, _, _ -> "What is $die plus ${hero.diceBonus}?" }
-                record(c, rolled.sumTries, if (rolled.sumTries > 1) rolled.sumTries - 1 else 0, 0)
+            // Adding the dice is an addition challenge in its own right.
+            val c = ChallengeFactory.add(level(Skill.ADDITION), nextSeed(), Thing.GEM) { _, _, _ -> "What is ${dice[0]} plus ${dice[1]}?" }
+            val tries = rolled.sumTries.coerceAtLeast(1)
+            record(c, tries, (tries - 1).coerceAtMost(2), 0)
+            val revive = if (tries > 1) {
+                hearts -= 1
+                if (hearts <= 0) {
+                    hearts = MAX_HEARTS
+                    listOf(tell(scene, lines.heartsBack()))
+                } else {
+                    emptyList()
+                }
+            } else {
+                emptyList()
             }
-            result(Tier.of(die), die + hero.diceBonus)
+            // Higher levels bring a little luck: the hero's bonus nudges the result, not the sum.
+            revive + result(Tier.of(dice.sum() + hero.diceBonus - 1), dice.sum())
         }
     }
 
@@ -173,7 +195,8 @@ class Adventure(
         val s = scene(Place.CAMP)
         return listOf(
             tell(s, lines.intro(quest)),
-            tell(s, lines.remember(world, hero.strongest), lines.toTheMap(quest)),
+            tell(s, lines.remember(world, hero.strongest)),
+            tell(Scene(Place.MAP, cast), lines.toTheMap(quest)),
         )
     }
 
@@ -196,12 +219,44 @@ class Adventure(
         return Step(Beat.Doors(s, prompt, fork, clue, peek, stopIndex)) { reply ->
             val picked = reply as? Reply.Picked ?: Reply.Picked(0)
             val index = picked.index.coerceIn(fork.doors.indices)
-            if (clue != null) {
-                record(clue, picked.tries, (picked.tries - 1).coerceAtLeast(0), 0)
-                treasureDoorTaken = index == clue.answer
+            val room = fork.doors[index]
+            taken[stopIndex] = room
+            // Any door can be taken. Following the clue finds the treasure; another door still
+            // leads on, and the narrator says where the treasure was.
+            val said = if (clue != null) {
+                val right = index == clue.answer
+                record(clue, if (right) 1 else 2, 0, 0)
+                treasureDoorTaken = right
+                if (right) listOf(tell(s, lines.rightWay())) else listOf(tell(s, lines.wrongWay(fork.doors[clue.answer].hue.word.uppercase())))
+            } else {
+                emptyList()
             }
-            room(fork.doors[index])
+            said + room(room) + chest(room)
         }
+    }
+
+
+    /**
+     * A small chest with a magic lock after each room behind a door: find a number or a letter
+     * (the core learning goals), taking turns, to open it.
+     */
+    private fun chest(room: Room): List<Step> {
+        if (room.kind == RoomKind.VAULT) return emptyList()
+        val s = scene(placeOf(room.kind))
+        val numbers = chests++ % 2 == 0
+        val c = if (numbers) {
+            ChallengeFactory.numeral(level(Skill.NUMBERS), nextSeed(), lines.chestLock("number"))
+        } else {
+            ChallengeFactory.letter(level(Skill.LETTERS), nextSeed(), lines.chestLock("letter"))
+        }
+        return listOf(
+            tell(s, lines.chestAppears()),
+            ask(s, c, lines.chestOops(), lines.chestYay(), Prop.CHEST) {
+                val n = random.nextInt(1, 4)
+                coins += n
+                listOf(found(s.copy(mood = Mood.HAPPY), Loot(LootKind.COINS, n, lines.coinWords(n)), lines.chestLoot(n)))
+            },
+        )
     }
 
     private fun room(room: Room): List<Step> = when (room.kind) {
@@ -287,7 +342,7 @@ class Adventure(
                     if (missing) {
                         "The magic purse holds ${Words.number(have + more)} coins. You have ${Words.number(have)}. How many more do you need to fill it?"
                     } else {
-                        "There are ${Words.number(have)} coins in the chest, and ${Words.number(more)} more on the floor. How many coins is that?"
+                        "${if (have == 1) "There is one coin" else "There are ${Words.number(have)} coins"} in the chest, and ${Words.number(more)} more on the floor. How many coins is that altogether?"
                     }
                 }
                 listOf(
@@ -321,8 +376,8 @@ class Adventure(
                 when (options.getOrNull((reply as? Reply.Picked)?.index ?: 0)?.picture) {
                     ChoicePicture.SING_SONG -> {
                         befriend(goblin)
-                        listOf(roll(s, "Sing your song! Roll the die to see how it sounds.") { tier, _ ->
-                            listOf(tell(happy, lines.songResult(tier, goblin), "I'll come and help you later! he says."))
+                        listOf(roll(s, "Sing your song! Roll the dice to see how it sounds.") { tier, _ ->
+                            listOf(tell(happy, lines.songResult(tier, goblin), "\"I'll come and help you later!\" he says."))
                         })
                     }
                     ChoicePicture.TIPTOE -> {
@@ -330,13 +385,13 @@ class Adventure(
                         magicKey = true
                         if (magnet) befriend(goblin)
                         listOf(
-                            tell(s, "Tiptoe, tiptoe... ${if (magnet) "$goblin sees you and smiles. Friends!" else "$goblin doesn't even notice."} Behind the barrel you find a secret key!"),
+                            tell(s, "Tiptoe, tiptoe... ${if (magnet) "$goblin sees you and smiles. Friends!" else "$goblin doesn't even notice you."} Behind the barrel, you find a secret key!"),
                             found(happy, Loot(LootKind.MAGIC_KEY, 1, "a magic key"), "A magic key! It might open something later."),
                         )
                     }
                     else -> {
                         befriend(goblin)
-                        listOf(tell(happy, "$goblin nibbles your cookie and smiles. Yum! You're kind. I'll come and help you later!"))
+                        listOf(tell(happy, "$goblin nibbles your cookie and smiles. \"Yum! You're so kind. I'll come and help you later!\""))
                     }
                 }
             },
@@ -411,13 +466,13 @@ class Adventure(
                 "gift" -> listOf(
                     ask(
                         s(), ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.COIN, lines.giftAsk(quest) + " How many coins are in the gift?"),
-                        "${quest.dragon} counts them too, and gets mixed up! Let's count again.", "${quest.dragon} hugs the gift. Thank you!",
+                        "${quest.dragon} counts them too and gets mixed up! Let's count again.", "${quest.dragon} hugs the gift and says, \"Thank you!\"",
                     ) { lightOne() },
                 )
                 "joke" -> listOf(roll(s(), lines.jokeRoll()) { tier, _ -> listOf(tell(s(Mood.SILLY), lines.jokeResult(tier, quest.dragon))) + lightOne() })
                 "spell" -> listOf(roll(s(), lines.spellRoll()) { tier, _ -> listOf(tell(s(Mood.SURPRISED), lines.spellResult(tier))) + lightOne() })
                 "letters" -> listOf(
-                    ask(s(), ChallengeFactory.letter(level(Skill.LETTERS), nextSeed(), "The spell needs one more rune."), lines.libraryOops(), "The rune shines!") { lightOne() },
+                    ask(s(), ChallengeFactory.letter(level(Skill.LETTERS), nextSeed(), "The spell needs one more magic letter."), lines.libraryOops(), "The letter shines!") { lightOne() },
                 )
                 else -> listOf(
                     ask(s(), ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed()), lines.runeOops(), "The magic symbols spin and glow!") { lightOne() },
@@ -453,16 +508,22 @@ class Adventure(
 
     private var lastEnding = ""
 
+    private companion object {
+        const val MAX_HEARTS = 3
+    }
+
     private fun finale(): List<Step> {
         world = world.copy(
             adventures = world.adventures + 1,
             questsDone = world.questsDone + (quest.kind to (world.questsDone[quest.kind] ?: 0) + 1),
             lastQuest = quest.kind,
         )
+        gain(Attribute.COURAGE, hearts * 5)
         val earned = stars.values.sum()
         val levelAfter = hero.level
         val unlocked = Progression.unlocksBetween(levelBefore, levelAfter)
         val said = buildList {
+            add(lines.heartsKept(hearts))
             add(lines.finale(earned))
             if (levelAfter > levelBefore) add(lines.levelUp(levelAfter))
             unlocked.forEach { add(it.announcement) }

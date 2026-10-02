@@ -27,6 +27,27 @@ object ChallengeFactory {
         return CountChallenge(level, seed, Speech.of(question), thing, n, numberOptions(n, opts, r))
     }
 
+    /**
+     * "Find the number SEVEN." Up to five at first, then ten, then twenty. From level three the
+     * wrong choices include look-alikes (6 and 9, 1 and 7, 12 and 21).
+     */
+    fun numeral(level: Int, seed: Long, purpose: String): NumberChallenge {
+        val r = Random(seed)
+        val (max, opts) = when (level) {
+            1 -> 5 to 2
+            2 -> 10 to 3
+            3 -> 10 to 4
+            4 -> 20 to 3
+            else -> 20 to 4
+        }
+        val n = r.nextInt(1, max + 1)
+        val lookAlike = mapOf(6 to 9, 9 to 6, 1 to 7, 7 to 1, 2 to 5, 5 to 2, 3 to 8, 8 to 3, 12 to 21, 13 to 31, 10 to 1, 11 to 17, 17 to 11, 16 to 19, 19 to 16)
+        val tricky = lookAlike[n]?.takeIf { level >= 3 && it in 1..max }
+        val others = (1..max).filter { it != n && it != tricky }.shuffled(r)
+        val options = (listOfNotNull(n, tricky) + others).take(opts).shuffled(r)
+        return NumberChallenge(level, seed, Speech.of("$purpose Find the number ${number(n).uppercase()}."), n, options)
+    }
+
     /** [story] decides the words; it gets have, more and total and says them. */
     fun add(level: Int, seed: Long, thing: Thing, story: (have: Int, more: Int, missing: Boolean) -> String): AddChallenge {
         val r = Random(seed)
@@ -94,7 +115,7 @@ object ChallengeFactory {
             else -> 4
         }
         val options = (listOf(next) + runes.filter { it != next }.take(optionCount - 1)).shuffled(r)
-        val prompt = Speech.of("The ancient door opens only when its magic symbols are in order. Which symbol comes next?")
+        val prompt = Speech.of("The door opens only when its magic symbols are in the right order. Which symbol comes next?")
         return PatternChallenge(level, seed, prompt, shown, next, options)
     }
 
@@ -119,9 +140,9 @@ object ChallengeFactory {
         }
         val options = (listOf(letter) + pool.filter { it != letter }.shuffled(r).take(optionCount - 1)).shuffled(r)
         val ask = when (mode) {
-            LetterMode.NAME -> "$purpose Find the rune $letter. $letter, as in $word."
-            LetterMode.SOUND -> "$purpose It starts with the sound ${Words.LETTER_SOUNDS.getValue(letter)}. Which rune makes that sound?"
-            LetterMode.FIRST_SOUND -> "$purpose The magic word is ${word.uppercase()}. Which rune does ${word.uppercase()} start with?"
+            LetterMode.NAME -> "$purpose Find the letter $letter. $letter, as in $word."
+            LetterMode.SOUND -> "$purpose Which letter makes the sound ${Words.LETTER_SOUNDS.getValue(letter)}?"
+            LetterMode.FIRST_SOUND -> "$purpose The magic word is ${word.uppercase()}. What letter does ${word.uppercase()} start with?"
         }
         return LetterChallenge(level, seed, Speech.of(ask), letter, word, mode, options)
     }
@@ -136,7 +157,7 @@ object ChallengeFactory {
             else -> if (r.nextBoolean()) TraceShape.CIRCLE else TraceShape.TRIANGLE
         }
         val tolerance = 0.14f - 0.012f * level
-        return TraceChallenge(level, seed, Speech.of("Draw the magic path with your finger, $goal"), shape, path(shape, r), tolerance)
+        return TraceChallenge(level, seed, Speech.of("Draw the magic path with your finger $goal"), shape, path(shape, r), tolerance)
     }
 
     /** Evenly spaced points along the path, left to right (or around, for shapes). */

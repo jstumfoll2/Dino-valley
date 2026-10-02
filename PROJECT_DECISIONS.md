@@ -823,7 +823,7 @@ A "play that one again" button could replay a seed.
 **Status:** Accepted · 2026-10-02
 
 **Decision:** Every challenge, roll and kind choice earns stars (XP) in one of
-the brief's five attributes. Stars add up to hero levels (60, 140, 240, 360, …),
+the brief's five attributes. Stars add up to hero levels (180, 420, 720, 1080, …),
 and levels unlock a feather hat, the Guardian class, a star cape, the
 Spellkeeper class and later rewards. Each class has a power: the Knight rerolls
 a low die once, the Wizard gets hints one step sooner, the Ranger peeks behind
@@ -872,3 +872,50 @@ files need right now).
 
 **What might cause us to change it:** The log grows large, or a parent view needs
 queries. Then it moves to Room.
+
+### 43. The narrator is Kokoro, a natural voice that runs on the phone
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** The narrator speaks with Kokoro (the int8 English model, voice
+"af_bella"), run on the phone through sherpa-onnx. Both are Apache-2.0, so they
+stay F-Droid friendly. They are too big for git, so CI downloads them
+(`scripts/fetch-voice.sh`) and packs them into the app, which grows to about
+120 MB and runs on 64-bit ARM phones. Sentences are made one at a time while the
+previous one plays, and recent ones are kept. The phone's own text-to-speech
+takes over if the model can't load. The child's recording of the dragon's name
+is trimmed of silence and brought to the same loudness as the narrator.
+
+**Why we made it:** After the first playtest Jason found the phone's voice too
+robotic and chose Kokoro over a smaller voice (Piper) or tuning the phone's
+voice.
+
+**Alternatives considered:** Piper (smaller and faster, less natural); the
+phone's voice tuned; recorded family lines with a computer voice for the
+changing parts (still a good later layer).
+
+**What might cause us to change it:** Pauses before speech are too long on his
+phone, or the download size becomes a problem.
+
+### 44. Two dice to add, and hearts
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** Every roll uses two dice, and the child adds them up before the
+roll counts. A wrong first answer pops one of three hearts, and the narrator
+counts the dots together with him, lighting each one, before he tries again.
+Hearts never run out: when the last one pops, the baby dragon shares a magic
+berry and they all come back. Hearts left at the end earn bonus stars. At every
+fork a clue says where treasure is; any door can be taken, but only the clue's
+door has the treasure. After each room behind a door, a chest with a magic lock
+asks for a number or a letter. The map is shown at the start and above every fork.
+
+**Why we made it:** Jason's playtest notes: not enough learning, roll two dice
+and count the total with something at stake, a real map, and door colors said
+out loud.
+
+**Alternatives considered:** Losing a heart for every wrong answer (too harsh);
+a wrong total sending the hero the wrong way (kept for the map clue instead).
+
+**What might cause us to change it:** Hearts make him anxious rather than
+careful.

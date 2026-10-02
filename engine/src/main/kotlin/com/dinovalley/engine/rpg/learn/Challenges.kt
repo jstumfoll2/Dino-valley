@@ -107,6 +107,19 @@ data class AddChallenge(
     override val answer get() = options.indexOf(solution)
 }
 
+/** Find a written number among other numbers (numeral recognition, no dots to count). */
+data class NumberChallenge(
+    override val level: Int,
+    override val seed: Long,
+    override val prompt: List<Speech>,
+    val number: Int,
+    val options: List<Int>,
+) : PickOne {
+    override val skill get() = Skill.NUMBERS
+    override val optionCount get() = options.size
+    override val answer get() = options.indexOf(number)
+}
+
 data class ColorChallenge(
     override val level: Int,
     override val seed: Long,

@@ -5,10 +5,26 @@ import com.dinovalley.engine.rpg.hero.Attribute
 import com.dinovalley.engine.rpg.hero.Unlock
 import com.dinovalley.engine.rpg.learn.Challenge
 import com.dinovalley.engine.rpg.learn.MapChallenge
+import com.dinovalley.engine.rpg.world.RoomKind
 import com.dinovalley.engine.rpg.world.Stop
 
 /** Where a beat happens. The app paints a background for each. */
 enum class Place { CAMP, GATE, RUNE_HALL, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, GOBLIN_DEN, WORKSHOP, LAIR, MAP }
+
+/** Where each kind of room is drawn. */
+fun placeOf(kind: RoomKind): Place = when (kind) {
+    RoomKind.GATE -> Place.GATE
+    RoomKind.RUNE_DOOR -> Place.RUNE_HALL
+    RoomKind.BRIDGE -> Place.BRIDGE
+    RoomKind.CRYSTAL_CAVE -> Place.CRYSTAL_CAVE
+    RoomKind.LIBRARY -> Place.LIBRARY
+    RoomKind.TUNNEL -> Place.TUNNEL
+    RoomKind.MIRROR_HALL -> Place.MIRROR_HALL
+    RoomKind.VAULT -> Place.VAULT
+    RoomKind.GOBLIN_DEN -> Place.GOBLIN_DEN
+    RoomKind.WORKSHOP -> Place.WORKSHOP
+    RoomKind.LAIR -> Place.LAIR
+}
 
 /** Who can be on screen. COMPANION is the child's baby dragon. */
 enum class Actor { HERO, COMPANION, GOBLIN, WIZARD, DRAGON, RUBY, SHADOW }
@@ -31,6 +47,9 @@ enum class ChoicePicture { SHARE_SNACK, SING_SONG, TIPTOE, MAKE_FRIENDS, CAST_SP
 
 data class Choice(val picture: ChoicePicture, val said: String)
 
+/** Things drawn along with a challenge. */
+enum class Prop { NONE, CHEST }
+
 enum class LootKind { COINS, GEM, MAGIC_KEY, POTION, TREASURE }
 
 data class Loot(val kind: LootKind, val count: Int, val words: String)
@@ -47,23 +66,29 @@ sealed interface Beat {
 
     /**
      * A learning challenge. [oops] is the funny thing that happens on a first miss; [yay] is
-     * said on success. Reply [Reply.Solved].
+     * said on success. [prop] is drawn with it (a chest with a magic lock). Reply [Reply.Solved].
      */
-    data class Ask(override val scene: Scene, val challenge: Challenge, val oops: List<Speech>, val yay: List<Speech>) : Beat
+    data class Ask(
+        override val scene: Scene,
+        val challenge: Challenge,
+        val oops: List<Speech>,
+        val yay: List<Speech>,
+        val prop: Prop = Prop.NONE,
+    ) : Beat
 
     /**
-     * Roll the die. The roll is decided by the seed so adventures can be replayed; the app
-     * animates to [value]. With [askSum] the child is asked "[value] + [bonus]?" before the
-     * result counts. [reroll] is the Knight's second roll, offered after a 1 or 2.
+     * Roll two dice and add them up. The rolls are decided by the seed so adventures can be
+     * replayed; the app animates to [dice] and asks for the total. A wrong first answer costs a
+     * heart. [reroll] is the Knight's second roll, offered after a low total.
      */
     data class Roll(
         override val scene: Scene,
         val why: List<Speech>,
-        val value: Int,
-        val bonus: Int,
-        val askSum: Boolean,
-        val reroll: Int?,
-    ) : Beat
+        val dice: List<Int>,
+        val reroll: List<Int>?,
+    ) : Beat {
+        val total: Int get() = dice.sum()
+    }
 
     /** A story choice between pictures. Reply [Reply.Picked]. */
     data class Choose(override val scene: Scene, val prompt: List<Speech>, val options: List<Choice>) : Beat
@@ -105,7 +130,7 @@ sealed interface Reply {
     /** A challenge finished: how many tries and hints it took, and how long. */
     data class Solved(val tries: Int, val hints: Int, val millis: Long) : Reply
 
-    /** The die was rolled; [usedReroll] if the Knight rolled again; [sumTries] tries at the sum (0 if not asked). */
+    /** The dice were rolled; [usedReroll] if the Knight rolled again; [sumTries] tries at adding them up. */
     data class Rolled(val usedReroll: Boolean, val sumTries: Int) : Reply
 
     /** A choice or door was picked, after [tries] (more than 1 only for a map clue). */

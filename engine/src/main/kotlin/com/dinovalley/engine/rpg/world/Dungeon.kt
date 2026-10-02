@@ -34,7 +34,7 @@ sealed interface Stop {
     data class Fork(val doors: List<Room>, val treasureDoor: Int?) : Stop
 }
 
-/** A small dungeon, new every adventure: gate, fork, goblin den, fork, workshop, lair. */
+/** A small dungeon, new every adventure: gate, fork, fork, goblin den, fork, workshop, lair. */
 data class DungeonMap(val name: String, val stops: List<Stop>)
 
 object DungeonGenerator {
@@ -43,8 +43,8 @@ object DungeonGenerator {
 
     /**
      * Rooms are dealt like cards: skills practiced least recently (and lowest) are more likely,
-     * with enough shuffle that two adventures never look alike. One fork hides treasure behind
-     * a door; finding it from a clue is the map challenge.
+     * with enough shuffle that two adventures never look alike. Every fork hides treasure behind
+     * one door; finding it from a clue is the map challenge.
      */
     fun generate(seed: Long, skills: SkillBook): DungeonMap {
         val r = Random(seed)
@@ -58,25 +58,29 @@ object DungeonGenerator {
             }
         var nextId = 0
         fun room(kind: RoomKind, hue: Hue, side: Side) = Room(nextId++, kind, hue, side)
-        val treasureFork = r.nextInt(2)
+        val wideFork = r.nextInt(3)
         val mapsLevel = skills.level(Skill.MAPS)
         fun fork(index: Int, kinds: List<RoomKind>): Stop.Fork {
-            val wide = index == treasureFork && mapsLevel >= 2
+            val wide = index == wideFork && mapsLevel >= 2
             val chosen = if (wide) kinds.take(3) else kinds.take(2)
             val sides = if (chosen.size == 3) listOf(Side.LEFT, Side.MIDDLE, Side.RIGHT) else listOf(Side.LEFT, Side.RIGHT)
             val hues = Hue.entries.shuffled(r)
             val doors = chosen.mapIndexed { i, k -> room(k, hues[i], sides[i]) }
-            return Stop.Fork(doors, if (index == treasureFork) r.nextInt(doors.size) else null)
+            return Stop.Fork(doors, r.nextInt(doors.size))
         }
-        val firstKinds = dealt.take(3)
-        val secondKinds = dealt.drop(3).take(3)
+        // Seven learning rooms over three forks: each fork shows two doors (three at the wide
+        // one), so the third fork borrows the rooms the first two only show when wide.
+        val firstKinds = dealt.subList(0, 3)
+        val secondKinds = dealt.subList(3, 6)
+        val thirdKinds = listOf(dealt[6], dealt[2], dealt[5])
         return DungeonMap(
             name,
             listOf(
                 Stop.Landmark(room(RoomKind.GATE, Hue.ORANGE, Side.MIDDLE)),
                 fork(0, firstKinds),
-                Stop.Landmark(room(RoomKind.GOBLIN_DEN, Hue.GREEN, Side.MIDDLE)),
                 fork(1, secondKinds),
+                Stop.Landmark(room(RoomKind.GOBLIN_DEN, Hue.GREEN, Side.MIDDLE)),
+                fork(2, thirdKinds),
                 Stop.Landmark(room(RoomKind.WORKSHOP, Hue.PURPLE, Side.MIDDLE)),
                 Stop.Landmark(room(RoomKind.LAIR, Hue.RED, Side.MIDDLE)),
             ),
