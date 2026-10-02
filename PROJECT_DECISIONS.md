@@ -5,7 +5,7 @@ someone might later ask "why did we do it this way?". Don't delete old
 entries; if we change our minds, mark the old one **Superseded by #N** and add
 a new one.
 
-Entries 1–27 were made on 2026-10-02 together with
+Entries 1–33 were made on 2026-10-02 together with
 [`ARCHITECTURE.md`](ARCHITECTURE.md). Jason approved the architecture the
 same day, so they are **Accepted**.
 
@@ -565,3 +565,123 @@ doesn't have here, and is hard to animate in layers).
 **What might cause us to change it:** Wanting a hand-illustrated or
 generated art style that vector shapes can't match; that art would be
 dropped in as assets and the layered-parts approach kept.
+
+---
+
+### 28. Support Android 8 and up; target Android 16
+
+**Status:** Accepted · 2026-10-02 (Jason's phone runs Android 15, his wife's
+Android 16)
+
+**Decision:** `minSdk 26`, `compileSdk` and `targetSdk 36` (Android 16). Both
+family phones get every feature, including on-device voice answers (Android 12+).
+
+**Why we made it:** Targeting the newest Android keeps the app installable
+and F-Droid-friendly; a low minimum costs nothing for this app.
+
+**Alternatives considered:** `minSdk 31` (simpler voice-input code, but
+excludes older hand-me-down phones).
+
+**What might cause us to change it:** A Jetpack library raising its minimum.
+
+---
+
+### 29. A play session is 5 rounds
+
+**Status:** Accepted · 2026-10-02 (Jason)
+
+**Decision:** After 5 rounds (about 10–15 minutes) the dino gets sleepy and
+the session ends gently. Parents will be able to change it.
+
+**Why we made it:** Healthy, natural stopping point without timers or
+pressure.
+
+**Alternatives considered:** No limit; a visible timer (pressure).
+
+**What might cause us to change it:** Playtests showing he wants shorter or
+longer sessions.
+
+---
+
+### 30. English now, Spanish later
+
+**Status:** Accepted · 2026-10-02 (Jason: "English only. Future goal add in
+basic Spanish.")
+
+**Decision:** Ship English only. Keep every spoken and written line behind
+prompt keys with per-language files (`prompts.en.json`, `audio/en/`), and
+keep number words and letter sets per language, so Spanish is a content
+addition (`prompts.es.json`, `audio/es/`, Spanish letter set including Ñ).
+
+**Why we made it:** Decision #7 already separates words from activities, so
+being ready for Spanish costs nothing now.
+
+**Alternatives considered:** Hard-coding English strings (cheap now, painful
+later).
+
+**What might cause us to change it:** Nothing expected.
+
+---
+
+### 31. Built to be publishable on F-Droid
+
+**Status:** Accepted · 2026-10-02 (Jason: "I want to post to F-Droid
+eventually"); licence choice pending
+
+**Decision:** Keep the app F-Droid-ready from the start: only free-software
+dependencies (AndroidX, Kotlin), no Google Play Services, no tracking, no
+network, reproducible build from source with the Gradle wrapper, an
+F-Droid-style application id (`io.github.jstumfoll2.dungeonquest`), and
+store-listing metadata in `fastlane/metadata/android/` when we publish.
+Before publishing we need a free-software licence for the code and a
+Creative Commons licence for art and voice recordings.
+
+**Why we made it:** Avoiding a proprietary dependency now is far easier
+than removing one later.
+
+**Alternatives considered:** Google Play (needs a developer account and
+Families policy review); family-only sideloading forever.
+
+**What might cause us to change it:** Deciding not to publish.
+
+---
+
+### 32. Working name "Dino Valley"
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** The app is called "Dino Valley" on the phone. The repo stays
+`dungeonquest`; the code package is `com.dungeonquest` and the install id is
+`io.github.jstumfoll2.dungeonquest`.
+
+**Why we made it:** The game needs a name a family would recognise on the
+home screen. Changing the display name later is free; the install id should
+stay fixed once installed.
+
+**Alternatives considered:** Renaming the repo now (churn for no gain).
+
+**What might cause us to change it:** Your son naming the dino; the app can
+take its name.
+
+---
+
+### 33. Builds come from GitHub Actions, signed with a shared debug key
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** Every pull request builds and tests the app on GitHub
+Actions. Every push to `main` replaces a "latest" pre-release with
+`dino-valley.apk`, so the newest build is one tap away on the phone. Builds
+are signed with a debug key kept in the repo, so each new build installs
+over the old one without erasing progress.
+
+**Why we made it:** Nobody in the family needs Android Studio. Claude's
+own environment can't download the Android SDK, so CI is also where the app
+is compiled and checked.
+
+**Alternatives considered:** A random debug key per build (every update
+would need an uninstall); a private release key (needed only for a store,
+and F-Droid signs its own builds).
+
+**What might cause us to change it:** Publishing outside F-Droid, which
+would need a private release key kept out of the repo.
