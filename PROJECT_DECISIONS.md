@@ -5,15 +5,15 @@ someone might later ask "why did we do it this way?". Don't delete old
 entries; if we change our minds, mark the old one **Superseded by #N** and add
 a new one.
 
-Entries 1–26 were proposed on 2026-10-02 together with
-[`ARCHITECTURE.md`](ARCHITECTURE.md) and are **Proposed** until you both
-agree. Change the status to **Accepted** (or edit them) as you review.
+Entries 1–27 were made on 2026-10-02 together with
+[`ARCHITECTURE.md`](ARCHITECTURE.md). Jason approved the architecture the
+same day, so they are **Accepted**.
 
 ---
 
 ### 1. Two Gradle modules: `:app` (Android) and `:engine` (pure Kotlin)
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** All game rules, content models, generators, evaluators,
 difficulty and activity selection live in a plain Kotlin/JVM module with no
@@ -36,7 +36,7 @@ pass them in through interfaces instead).
 
 ### 2. Manual dependency injection with one `AppContainer`
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Wire objects by hand in an `AppContainer` created by the
 `Application` class. No Hilt or Dagger.
@@ -54,7 +54,7 @@ many screens needing scoped objects.
 
 ### 3. Unidirectional data flow; the round is a pure state machine
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Composables send events to a ViewModel, which forwards them to
 `GameSession` (in `:engine`). `GameSession` moves between explicit states
@@ -77,7 +77,7 @@ inside one composable.
 
 ### 4. Separate Skill, ActivityTemplate, and ActivityInstance; difficulty is per skill
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** A *skill* is what is learned ("counting"), with a level 1–5 per
 child. A *template* is a reusable, themed way to practise it ("count Mama
@@ -98,7 +98,7 @@ that they are really different templates.
 
 ### 5. Typed activity parameters via a sealed hierarchy and a `"type"` field
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Common template fields are shared; type-specific fields live in
 an `"activity"` block whose `"type"` selects a Kotlin subclass
@@ -120,7 +120,7 @@ content alone without shipping code (unlikely; new types need new UI anyway).
 
 ### 6. Content is a bundled JSON pack, validated by a unit test
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Skills, templates, areas, prompts and rewards live as JSON in
 `app/src/main/assets/content/`. `ContentValidator` checks references, ranges,
@@ -142,7 +142,7 @@ updates (would require downloads, which conflicts with #18).
 
 ### 7. Words and sounds are referenced by keys, not embedded
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Templates reference `PromptKey`s like `count.how_many`. A
 per-language `prompts.<lang>.json` maps keys to text and an audio clip.
@@ -161,7 +161,7 @@ reachable from `:engine`, and splits content across two systems).
 
 ### 8. Generators produce the full scene layout
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** A generator outputs every object's sprite, position (normalized
 0–1), scale, rotation and group. The UI only draws it.
@@ -180,7 +180,7 @@ scenes, where the UI owns positions after the start.
 
 ### 9. All randomness is seeded and the seed is stored
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Generation uses an injected `GameRandom`; each item stores its seed.
 
@@ -195,7 +195,7 @@ exactly in a test.
 
 ### 10. Rules-based difficulty with first-try accuracy and hysteresis
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Per skill, look at the last 8 first-try results at the current
 level. Up one level when ≥ 85% with at least 5 items and the last 3 correct.
@@ -218,7 +218,7 @@ justify a model (#11).
 
 ### 11. `LearnerModel` interface is the seam for future ML
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Activity selection and learner updates go through
 `LearnerModel`. `RuleBasedLearnerModel` is the only implementation now; an
@@ -236,7 +236,7 @@ replace one part; we'd then split the interface.
 
 ### 12. Room with an append-only outcome log as the source of truth
 
-**Status:** Proposed · 2026-10-02 (introduced in Phase 2)
+**Status:** Accepted · 2026-10-02 (introduced in Phase 2)
 
 **Decision:** Store every finished question in `item_outcome`; `skill_state`
 is a cache rebuildable by replaying the log. All rows carry `profileId` and
@@ -255,7 +255,7 @@ history); raw SQLite (more boilerplate); SQLDelight (fine, but third-party).
 
 ### 13. Settings in a Room table, not DataStore
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** A one-row `app_settings` table.
 
@@ -269,9 +269,9 @@ is opened, or many settings.
 
 ---
 
-### 14. No navigation library for the weekend; Navigation Compose in Phase 2
+### 14. No navigation library for the first prototype; Navigation Compose in Phase 2
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** The prototype switches between 2 screens with a `when`.
 Adopt Navigation Compose once there are map, play, reward, sticker book and
@@ -289,7 +289,7 @@ back stack forever.
 
 ### 15. Animation with Compose's built-in APIs and a layered character
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Springs, transitions, `graphicsLayer` and `Canvas`. The
 character is a few layered parts (body, head, eyes, mouths) animated in code.
@@ -311,7 +311,7 @@ animations in a dedicated tool.
 **Status:** Accepted · 2026-10-02 (required by #22: he can't read)
 
 **Decision:** A handful of recorded lines (numbers, "Let's count!", "How
-many?", encouragement) ship in the weekend prototype. Built-in audio APIs only.
+many?", encouragement) ship in the first prototype. Built-in audio APIs only.
 
 **Why we made it:** A non-reader can't play without hearing instructions, so
 basic audio can't wait for Phase 5. A familiar family voice is warmer than TTS
@@ -327,7 +327,7 @@ record (then TTS for the long tail, recorded for the core).
 
 ### 17. No numeric score; progress and rewards are things
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** A round shows 5 nest spots filling up; rewards are hatching
 baby dinos, stickers and fossils. No points, no lives, no daily streaks.
@@ -345,7 +345,7 @@ to count up (we could count collected dinos, which is also counting practice).
 
 ### 18. No INTERNET permission; no cloud backup of learning data
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** The manifest doesn't request INTERNET. Learning data is
 excluded from cloud backup but allowed in device-to-device transfer.
@@ -363,7 +363,7 @@ would need an explicit privacy review first (spec §21).
 
 ### 19. Hints escalate; every question ends in success
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Wrong answer → "let's look again" → app counts together with
 highlights → only two choices remain with the right one glowing. The item
@@ -400,9 +400,9 @@ portrait.
 
 ### 21. First prototype optimizes delight, not completeness
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
-**Decision:** Weekend 1 builds one character, one background, one counting
+**Decision:** The first prototype builds one character, one background, one counting
 activity, great animations and real voice lines, then a playtest. No map,
 database, JSON, or difficulty engine yet, but the counting logic still lives
 in `:engine`.
@@ -413,7 +413,7 @@ round?". Answer that before building the complicated parts.
 **Alternatives considered:** Building the full MVP skeleton first (risks a
 correct but joyless app).
 
-**What might cause us to change it:** Nothing; this is the plan for weekend 1.
+**What might cause us to change it:** Nothing; this is the plan for the first prototype.
 
 ---
 
@@ -444,7 +444,7 @@ spoken.
 
 ### 23. Voice input is optional, on-device only, and arrives after the prototype
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Let him answer out loud ("three!") using Android's on-device
 `SpeechRecognizer` (Android 12+), mapped to the same `ChildResponse` a tap
@@ -496,7 +496,7 @@ abstract without more counting/visual groundwork first.
 
 ### 25. One `FIND_SYMBOL` activity type for numerals and letters
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02
 
 **Decision:** Replace the counting-only `CHOOSE_NUMBER` with `FIND_SYMBOL`,
 which has a `symbolSet` (numerals, uppercase, lowercase) and a `mode`
@@ -517,7 +517,7 @@ activity type rather than a mode.
 
 ### 26. Built-in playtest feedback tool, saved on the phone and shared by hand
 
-**Status:** Proposed · 2026-10-02 (Jason asked for an easy way to report bugs
+**Status:** Accepted · 2026-10-02 (Jason asked for an easy way to report bugs
 during playtests)
 
 **Decision:** A two-finger press and hold anywhere pauses the game and opens a
@@ -526,9 +526,9 @@ The report automatically saves a screenshot, the current state and seed, the
 last ~100 events, a learner snapshot and device/volume info. Crashes are
 captured the same way. Reports stay in app-private storage until an adult
 shares them through Android's share sheet. A `playtest` GitHub issue
-template turns them into issues. Weekend 1 uses the phone's screen recorder
-and, if time allows, a minimal screenshot-and-state capture; the full tool
-is the first item in Phase 2.
+template turns them into issues. The first prototype has crash capture and a
+minimal screenshot-and-state capture (plus the phone's screen recorder); the
+full tool is the first item in Phase 2.
 
 **Why we made it:** You can't take notes while watching a preschooler.
 Seeds and event logs make "it did something weird" reproducible. Sharing by
@@ -540,3 +540,28 @@ Crashlytics (needs network, sends data to a third party); paper notes only
 
 **What might cause us to change it:** Testers outside the family, which
 would need an easier upload path and a privacy review first.
+
+---
+
+### 27. Claude implements; the family directs
+
+**Status:** Accepted · 2026-10-02 (Jason: "you are going to be implementing
+everything. We are only here for direction and guidance.")
+
+**Decision:** Claude writes all code, tests, art (as vector drawings in code)
+and build automation. A GitHub Actions workflow builds an installable APK on
+every push, so nobody needs Android Studio to try a build. The family makes
+the creative calls, records voice lines, and runs playtests.
+
+**Why we made it:** That's how the family wants to work. Vector art drawn in
+code is consistent, animatable in layers, tiny, and something Claude can
+produce directly, which is why it replaces AI image generation for the
+in-game art.
+
+**Alternatives considered:** The family writes code with AI help (the
+spec's original plan); AI-generated raster art (needs an image tool Claude
+doesn't have here, and is hard to animate in layers).
+
+**What might cause us to change it:** Wanting a hand-illustrated or
+generated art style that vector shapes can't match; that art would be
+dropped in as assets and the layered-parts approach kept.

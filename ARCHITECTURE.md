@@ -5,9 +5,10 @@ meaningful choice below is also recorded in [`PROJECT_DECISIONS.md`](PROJECT_DEC
 with alternatives and "what would make us change it".
 
 This document answers the twelve questions in section 30 of the spec. It is
-written for two people: one who will write most of the Kotlin, and one who will
-design the experience. Sections marked **For the experience designer** are the
-parts where the creative decisions live.
+written for the family directing the project. **Claude implements
+everything** (code, art, tests, builds); you two set direction, make the
+creative calls, record voices, and run playtests with your son. Sections
+marked **For the experience designer** are where the creative decisions live.
 
 ---
 
@@ -73,7 +74,7 @@ What this changes in the design:
 - **Letters move into the MVP.** The spec put letters in Phase 4. They now
   arrive in Phase 2, right after the content pack exists, as a
   `letter_recognition` skill. `letter_sounds` follows in Phase 3.
-- **The weekend prototype stays counting**, because counting eggs is the
+- **The first prototype stays counting**, because counting eggs is the
   most delightful first toy and its answer buttons already teach numerals
   1–5.
 - **Letter order is content, not code.** Start with the letters in his own
@@ -133,7 +134,7 @@ Tap        ───────────────────────
   it hears something, it repeats what it heard ("Three? Let's check!") so a
   misheard word is never a silent wrong answer. A mis-recognition doesn't
   count as a wrong first try.
-- **When:** after the weekend prototype, as an experiment in Phase 2–3,
+- **When:** after the first prototype, as an experiment in Phase 2–3,
   starting with number answers only (a tiny vocabulary is the easiest case to
   recognise). It needs the `RECORD_AUDIO` permission, which a parent grants
   once.
@@ -516,7 +517,7 @@ This covers every field listed in spec §8 (`correctAttempts` is
 ```text
 MainActivity
 └── DungeonQuestTheme
-    └── AppNavigation                     (weekend: a simple `when(screen)`; Phase 2: Navigation Compose)
+    └── AppNavigation                     (prototype: a simple `when(screen)`; Phase 2: Navigation Compose)
         ├── HomeScreen                    big Play button, character waving, sleepy/awake by time of day
         │     └── ParentGate (hidden: hold top-right corner 3 s) → ParentScreen
         ├── MapScreen                     Phase 2: Dino Valley with 3–4 stops, locked stops are "foggy"
@@ -860,7 +861,7 @@ why they are content (JSON), not code.
 
 Details:
 
-- **Weekend prototype uses no database at all.** Progress is in memory. Room
+- **The first prototype uses no database at all.** Progress is in memory. Room
   arrives in Phase 2 when there is something worth keeping.
 - **Sprite and prompt lookups are explicit maps**, not `getIdentifier()`
   reflection. A content test fails if JSON references a sprite id that has no
@@ -1035,14 +1036,14 @@ in `gradle/libs.versions.toml`.
 
 | Dependency | Needed when | Why / what problem | Could we do it natively? | Maintenance |
 |---|---|---|---|---|
-| Compose BOM, `ui`, `foundation`, `material3`, `ui-tooling-preview` | Weekend | The UI toolkit you chose. BOM keeps Compose versions consistent. | It *is* the native toolkit. | Low; one version to bump. |
-| `activity-compose` | Weekend | Hosts Compose in `MainActivity`. | No. | Low. |
-| `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` | Weekend | ViewModels survive rotation; `collectAsStateWithLifecycle`. | Partially, with more code. | Low; Jetpack. |
-| `kotlinx-coroutines-core` | Weekend (engine) | `StateFlow` for session state, Room's suspend APIs later. | No; it's Kotlin's official async library. | Low. |
+| Compose BOM, `ui`, `foundation`, `material3`, `ui-tooling-preview` | Prototype | The UI toolkit you chose. BOM keeps Compose versions consistent. | It *is* the native toolkit. | Low; one version to bump. |
+| `activity-compose` | Prototype | Hosts Compose in `MainActivity`. | No. | Low. |
+| `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` | Prototype | ViewModels survive rotation; `collectAsStateWithLifecycle`. | Partially, with more code. | Low; Jetpack. |
+| `kotlinx-coroutines-core` | Prototype (engine) | `StateFlow` for session state, Room's suspend APIs later. | No; it's Kotlin's official async library. | Low. |
 | `kotlinx-serialization-json` + plugin | Phase 2 (content pack) | Typed JSON → data classes, including the sealed `activity` types. Works in pure-Kotlin `:engine`. | `org.json` is built into Android but is untyped, verbose, and not available in a JVM module. | Low; JetBrains. |
 | Room (`runtime`, `ktx`, `compiler`) + KSP plugin | Phase 2 | Learner database: typed queries, migrations, Flow. | Raw `SQLiteOpenHelper` works but means hand-written SQL plumbing and migrations. | Low-medium; migrations need care when schema changes. |
-| `navigation-compose` | Phase 2 (optional) | Back stack, system back handling, per-screen ViewModels once there are 5+ screens. | A `when(screen)` + `BackHandler` is fine for 2–3 screens, which is why the weekend skips it. | Low. |
-| JUnit, `kotlinx-coroutines-test`, Compose `ui-test-junit4` | Weekend | Tests. | No. | Low. |
+| `navigation-compose` | Phase 2 (optional) | Back stack, system back handling, per-screen ViewModels once there are 5+ screens. | A `when(screen)` + `BackHandler` is fine for 2–3 screens, which is why the prototype skips it. | Low. |
+| JUnit, `kotlinx-coroutines-test`, Compose `ui-test-junit4` | Prototype | Tests. | No. | Low. |
 
 **Deliberately not used:** Hilt/Dagger (manual DI is enough), Retrofit/OkHttp
 (no network), Firebase/analytics/crash SDKs (privacy), Lottie (Compose
@@ -1058,37 +1059,71 @@ Compose compiler Gradle plugin.
 
 ---
 
-## 11. Realistic first-weekend plan
+## 11. Realistic first-prototype plan
 
 **Goal: a delightful 2-minute toy, not a foundation.** Success test: *does he
 grab the phone and ask to play again?* We cut everything except what makes one
 counting game feel magical, but we still put the counting logic in `:engine`
-so the weekend's work isn't thrown away.
+so the prototype's work isn't thrown away.
 
-### Before the weekend (an evening, mostly the experience designer)
+### Who does what
 
-- **Pick the character with your son.** Show him 3–4 AI-generated concepts
-  (dino variations), let him choose and name it. He'll care more about a
-  friend he named.
-- Lock a tiny style: flat shapes, thick soft outlines, 5-colour palette, big
-  eyes. Write it as the first page of `art-bible/`.
-- Decide the round's story in one sentence: *"Mama Dino's eggs rolled away;
-  help her count them back into the nest."*
-
-### Saturday
-
-| Who | Morning | Afternoon |
-|---|---|---|
-| **Developer** | New project from Android Studio's Empty Activity template; add `:engine` module; landscape, full-screen, no INTERNET permission. In `:engine`: `CountObjectsGenerator` (levels hard-coded in Kotlin, no JSON yet), evaluator with the 3-step hint ladder, `GameSession` state machine, unit tests. | `PlayScreen`: background, character, eggs placed from the generated `Scene`. Eggs pop in one by one with a spring. Tapping an egg makes it wiggle, shows a big number above it, and plays the number sound. Big round answer buttons showing numeral **and** dots. |
-| **Experience designer** | Final character as **layered parts** (body, head, 2 eye states, 3 mouths: smile, open "ooh", big grin). One background (valley, nest, a volcano puffing in the distance). Egg sprites in 2–3 patterns. | Record voice lines on a phone in a quiet room: "Let's count!", "one" … "five", "How many eggs?", "Let's count together!", "You did it!", "Yay!", a giggle. A few sound effects (pop, boing, chime). |
-
-### Sunday
-
-| Morning | Afternoon |
+| Claude (builds) | You two (direct) |
 |---|---|
-| **Make it feel good.** Correct: character squash-and-stretch jump, **the eggs hatch into that many baby dinos** (the reward *is* the quantity), leaf/star burst, chime. Wrong: character tilts head, "hmm", eggs gently re-count themselves with highlights, try again; third try leaves two choices. Idle: blink, breathe, look at whatever was tapped. A round = 5 questions; a progress nest with 5 spots fills up; end with a big hatch party and a "play again?" button that's just a giant egg. | **Playtest with your son** (the most important hour). Turn on the phone's screen recorder. One parent plays nothing, just watches and writes in `PLAYTEST_LOG.md`: where he tapped first, what he said, what made him laugh, where he looked confused, whether he asked for another round. Then fix the *one* thing that mattered most. |
+| All code, tests, and the build that installs on the phone | Approve the character, colours and feel |
+| Draws the character, background and eggs as vector art in code | Pick and name the dino with your son |
+| Writes the voice script and wires in clips | Record the voice lines (a family voice beats a robot) |
+| Placeholder text-to-speech clips until your recordings arrive | Run playtests and send reports |
+| Fixes what playtests find | Decide what matters most next |
 
-### Explicitly not this weekend
+### Step 1: before building (your input)
+
+- **Choose the character with your son.** Claude draws 3–4 dino variations
+  as a page you can show him; he picks one and names it. He'll care more
+  about a friend he named.
+- Lock a tiny style: flat shapes, thick soft outlines, 5-colour palette, big
+  eyes. It becomes the first page of `art-bible/`.
+- The round's story in one sentence: *"Mama Dino's eggs rolled away; help her
+  count them back into the nest."*
+
+### Step 2: the build (Claude)
+
+1. Android project with `:app` and `:engine`; landscape, full-screen, no
+   INTERNET permission; a GitHub Actions workflow that builds an installable
+   APK on every push.
+2. In `:engine`: `CountObjectsGenerator` (levels hard-coded in Kotlin, no JSON
+   yet), evaluator with the 3-step hint ladder, `GameSession` state machine,
+   unit tests.
+3. `PlayScreen`: background, the chosen character as layered vector parts
+   (body, head, 2 eye states, 3 mouths), eggs placed from the generated
+   `Scene`. Eggs pop in one by one with a spring. Tapping an egg makes it
+   wiggle, shows a big number, and says the number. Big round answer buttons
+   show the numeral **and** dots.
+4. **Make it feel good.** Correct: character squash-and-stretch jump, **the
+   eggs hatch into that many baby dinos** (the reward *is* the quantity),
+   leaf/star burst, chime. Wrong: character tilts head, "hmm", eggs gently
+   re-count themselves with highlights, try again; third try leaves two
+   choices. Idle: blink, breathe, look at whatever was tapped. A round = 5
+   questions; a nest with 5 spots fills up; end with a hatch party and a
+   "play again?" button that's a giant egg.
+5. Crash capture and a minimal two-finger-hold screenshot-and-state report.
+
+### Step 3: voices (you, any time)
+
+Claude provides a script of ~25 short lines ("Let's count!", "one" … "ten",
+"How many eggs?", "Let's count together!", "You did it!", a giggle). Record
+them on a phone in a quiet room and drop the files in the project; Claude
+trims and wires them in, replacing the placeholder voice.
+
+### Step 4: playtest (you, the most important hour)
+
+Install the APK from GitHub on the phone, turn on the phone's screen
+recorder and Android's app pinning, and let him play. One parent just
+watches and notes where he tapped first, what he said, what made him laugh,
+where he looked confused, and whether he asked for another round. Share what
+you saw in the project, and Claude fixes the one thing that mattered most.
+
+### Explicitly not in the first prototype
 
 Map, Room, JSON content, difficulty engine, the other two activity types, parent
 mode, settings. The back button simply returns to the home screen; use
@@ -1125,7 +1160,7 @@ where your answer would change something soon.
    Choose the number = find a numeral (number recognition). Separate skills.
 6. ~~Audio can't wait for Phase 5.~~ **Answered: he can't read, so voice
    is required from day one** (see "The no-reading rule" above). Recorded
-   voice lines ship in the weekend prototype; voice *input* is an optional
+   voice lines ship in the first prototype; voice *input* is an optional
    experiment in Phase 2–3; full narration polish stays in Phase 5.
    Recorded family voices beat Android TTS for warmth and work offline.
 7. ~~Phone or tablet?~~ **Answered: phone.** Landscape, phone-first, layouts in
@@ -1255,10 +1290,9 @@ loads `report.json` and regenerates the exact question from its seed.
 
 ### When
 
-- **Weekend 1:** use Android's built-in **screen recorder** during the first
-  playtest (it captures audio, taps and his reactions for free). If there's
-  time Sunday morning, add the `CrashRecorder` and a two-finger hold that
-  saves a screenshot plus state. That's about an hour of work.
+- **First prototype:** the `CrashRecorder` and a two-finger hold that saves
+  a screenshot plus state. During playtests, also use Android's built-in
+  **screen recorder** (it captures audio, taps and his reactions for free).
 - **Phase 2, first item:** the full tool (tags, voice notes, report list,
   share). It goes first because every later feature is tuned through it.
 
