@@ -5,10 +5,14 @@ family project. Kotlin + Jetpack Compose. No accounts, no ads, no network, no
 AI at runtime: AI helps us during development, and the finished game runs on
 rules, procedural generation, good game design, and local data.
 
-**Status:** architecture proposal, no code yet.
+**Status:** architecture agreed, no code yet.
+
+**Who does what:** Claude implements everything (code, art, tests, builds).
+The family directs: creative calls, voice recordings, and playtests with the
+real player.
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): project structure, engine design,
-  data model, difficulty rules, content schema, dependencies, the first-weekend
+  data model, difficulty rules, content schema, dependencies, the first-prototype
   plan, and open questions.
 - [`PROJECT_DECISIONS.md`](PROJECT_DECISIONS.md): every meaningful
   architectural choice, why we made it, what else we considered, and what
