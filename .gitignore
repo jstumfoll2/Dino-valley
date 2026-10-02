@@ -8,3 +8,6 @@ captures/
 .kotlin/
 art/out/
 __pycache__/
+# Fetched by scripts/fetch-voice.sh at build time
+app/src/main/jniLibs/
+app/src/main/assets/kokoro/
