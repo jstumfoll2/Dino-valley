@@ -22,20 +22,19 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 
 enum class DinoMood { Idle, Talking, Thinking, Happy }
 
 /**
- * The dino friend, drawn from layered shapes in a 200×200 box (sketch A from the picker page,
- * a placeholder until your son picks one). Breathes and blinks on its own; hops when happy and
- * tilts its head when thinking.
+ * The dino friend: the little T. rex your son picked, drawn from layered shapes in a 200×200
+ * box. Breathes and blinks on its own, talks while narrating, hops when happy, and tilts its head
+ * and looks up when thinking.
  */
 @Composable
 fun Dino(mood: DinoMood, modifier: Modifier = Modifier) {
@@ -93,48 +92,49 @@ fun Dino(mood: DinoMood, modifier: Modifier = Modifier) {
             translate(left, top)
             scale(unit, unit, pivot = Offset.Zero)
         }) {
-            drawStego(blink = blink, mouthOpen = mood == DinoMood.Happy || (mood == DinoMood.Talking && talk > 0.5f))
+            drawRex(
+                blink = blink,
+                mouthOpen = mood == DinoMood.Happy || (mood == DinoMood.Talking && talk > 0.5f),
+                lookUp = mood == DinoMood.Thinking,
+            )
         }
     }
 }
 
-private val Body = Color(0xFF6CC24A)
-private val BodyShade = Color(0xFF4FA332)
-private val Tail = Color(0xFF5DB83D)
-private val Plate = Color(0xFFFF9F43)
-private val Belly = Color(0xFFE3F5C4)
-private val Cheek = Color(0xCCFF9FB0)
+private val Body = Color(0xFFFF8A3D)
+private val BodyShade = Color(0xFFE46D20)
+private val Tail = Color(0xFFF07A2C)
+private val Belly = Color(0xFFFFD9A8)
+private val Cheek = Color(0xD9FF9FB0)
 private val Eye = Color(0xFF1F2A22)
 
-private fun DrawScope.drawStego(blink: Float, mouthOpen: Boolean) {
-    drawPath(Path().apply { moveTo(52f, 140f); quadraticTo(20f, 140f, 8f, 118f); quadraticTo(30f, 128f, 56f, 122f); close() }, Tail)
-    listOf(
-        listOf(58f, 98f, 66f, 70f, 80f, 96f),
-        listOf(80f, 90f, 92f, 58f, 106f, 88f),
-        listOf(104f, 92f, 116f, 66f, 126f, 96f),
-    ).forEach { p ->
-        val plate = Path().apply { moveTo(p[0], p[1]); lineTo(p[2], p[3]); lineTo(p[4], p[5]); close() }
-        drawPath(plate, Plate)
-        drawPath(plate, Plate, style = Stroke(width = 8f, join = StrokeJoin.Round))
+/** The little T. rex your son picked (sketch C). */
+private fun DrawScope.drawRex(blink: Float, mouthOpen: Boolean, lookUp: Boolean) {
+    drawPath(Path().apply { moveTo(60f, 150f); quadraticTo(22f, 160f, 6f, 140f); quadraticTo(34f, 140f, 60f, 128f); close() }, Tail)
+    leg(66f, 156f, BodyShade)
+    drawOval(Body, topLeft = Offset(46f, 78f), size = Size(92f, 100f))
+    drawOval(Belly, topLeft = Offset(72f, 108f), size = Size(56f, 64f))
+    leg(98f, 158f, Body)
+    rotate(30f, pivot = Offset(134f, 122f)) {
+        drawOval(Body, topLeft = Offset(125f, 117f), size = Size(18f, 10f))
     }
-    leg(62f, 150f, BodyShade)
-    leg(112f, 150f, BodyShade)
-    drawOval(Body, topLeft = Offset(36f, 88f), size = Size(120f, 84f))
-    drawOval(Belly, topLeft = Offset(60f, 126f), size = Size(80f, 40f))
-    leg(74f, 154f, Body)
-    leg(124f, 154f, Body)
-    drawCircle(Body, radius = 32f, center = Offset(150f, 104f))
-    drawOval(Cheek, topLeft = Offset(159f, 113f), size = Size(14f, 10f))
-    withTransform({ scale(1f, blink, pivot = Offset(156f, 96f)) }) {
-        drawCircle(Color.White, radius = 11f, center = Offset(156f, 96f))
-        drawCircle(Eye, radius = 6.5f, center = Offset(159f, 97f))
-        drawCircle(Color.White, radius = 2.4f, center = Offset(161.5f, 94f))
+    drawPath(Path().apply { moveTo(74f, 78f); lineTo(82f, 66f); lineTo(88f, 78f); close() }, BodyShade)
+    drawPath(Path().apply { moveTo(62f, 92f); lineTo(68f, 80f); lineTo(76f, 91f); close() }, BodyShade)
+    drawOval(Body, topLeft = Offset(76f, 38f), size = Size(92f, 72f))
+    drawOval(Cheek, topLeft = Offset(139f, 83f), size = Size(14f, 10f))
+    val look = if (lookUp) -3.5f else 0f
+    withTransform({ scale(1f, blink, pivot = Offset(126f, 64f)) }) {
+        drawCircle(Color.White, radius = 11f, center = Offset(126f, 64f))
+        drawCircle(Eye, radius = 6.5f, center = Offset(129f, 65f + look))
+        drawCircle(Color.White, radius = 2.4f, center = Offset(131.5f, 62f + look))
     }
     if (mouthOpen) {
-        drawPath(Path().apply { moveTo(158f, 112f); quadraticTo(170f, 130f, 180f, 110f); close() }, Eye)
+        drawPath(Path().apply { moveTo(130f, 86f); quadraticTo(150f, 112f, 166f, 82f); close() }, Eye)
+        drawPath(Path().apply { moveTo(140f, 88f); lineTo(144f, 94f); lineTo(148f, 88f); close() }, Color.White)
+        drawPath(Path().apply { moveTo(152f, 87f); lineTo(156f, 93f); lineTo(160f, 87f); close() }, Color.White)
     } else {
         drawPath(
-            Path().apply { moveTo(160f, 116f); quadraticTo(170f, 122f, 178f, 114f) },
+            Path().apply { moveTo(132f, 90f); quadraticTo(150f, 100f, 164f, 86f) },
             Eye,
             style = Stroke(width = 3.5f, cap = StrokeCap.Round),
         )
@@ -142,5 +142,5 @@ private fun DrawScope.drawStego(blink: Float, mouthOpen: Boolean) {
 }
 
 private fun DrawScope.leg(x: Float, y: Float, color: Color) {
-    drawRoundRect(color, topLeft = Offset(x, y), size = Size(18f, 30f), cornerRadius = CornerRadius(9f, 9f))
+    drawRoundRect(color, topLeft = Offset(x, y), size = Size(20f, 28f), cornerRadius = CornerRadius(10f, 10f))
 }

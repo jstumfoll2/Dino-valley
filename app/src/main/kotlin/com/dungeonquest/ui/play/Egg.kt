@@ -106,7 +106,7 @@ private fun DrawScope.drawEgg(color: Color, glow: Float, hatch: Float) {
     if (hatch > 0f) {
         val r = eggW * 0.36f
         val cy = top + eggH * 0.55f - hatch * eggH * 0.45f
-        drawCircle(Color(0xFF8BD46A), radius = r, center = Offset(w / 2f, cy))
+        drawCircle(Color(0xFFFFA05C), radius = r, center = Offset(w / 2f, cy))
         drawCircle(Color.White, radius = r * 0.28f, center = Offset(w / 2f - r * 0.35f, cy - r * 0.15f))
         drawCircle(Color.White, radius = r * 0.28f, center = Offset(w / 2f + r * 0.35f, cy - r * 0.15f))
         drawCircle(Color(0xFF1F2A22), radius = r * 0.15f, center = Offset(w / 2f - r * 0.3f, cy - r * 0.12f))
