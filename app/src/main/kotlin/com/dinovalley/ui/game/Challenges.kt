@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -32,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -48,6 +50,10 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -63,6 +69,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.dinovalley.R
 import com.dinovalley.audio.Narrator
+import com.dinovalley.audio.Sfx
 import com.dinovalley.engine.model.Speech
 import com.dinovalley.engine.rpg.learn.AddChallenge
 import com.dinovalley.engine.rpg.learn.Coach
@@ -80,9 +87,14 @@ import com.dinovalley.engine.rpg.learn.RecipeChallenge
 import com.dinovalley.engine.rpg.learn.RecipeStep
 import com.dinovalley.engine.rpg.learn.Thing
 import com.dinovalley.engine.rpg.learn.TraceChallenge
+import com.dinovalley.engine.rpg.learn.SortChallenge
+import com.dinovalley.engine.rpg.learn.SkipCountChallenge
+import com.dinovalley.engine.rpg.learn.PuzzleChallenge
+import com.dinovalley.engine.rpg.learn.Sortable
 import com.dinovalley.engine.rpg.learn.Words
 import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Prop
+import com.dinovalley.engine.rpg.run.Say
 import com.dinovalley.ui.art.Art
 import com.dinovalley.ui.art.RuneIcon
 import kotlinx.coroutines.CoroutineScope
@@ -122,6 +134,7 @@ private class Turn(
     val ladder: Ladder,
     private val sparkle: Boolean,
     private val narrator: Narrator,
+    private val sfx: Sfx,
     private val scope: CoroutineScope,
     val say: (List<Speech>) -> Unit,
     private val celebrate: () -> Unit,
@@ -130,25 +143,43 @@ private class Turn(
     var done by mutableStateOf(false)
         private set
 
+    /** True while a wrong answer's feedback plays; taps wait for it, so guessing fast doesn't pay. */
+    var busy by mutableStateOf(false)
+        private set
+
+    private var lastMiss = 0L
+
     /**
-     * A wrong answer. The first one is a funny story moment; later ones come with help. Returns
-     * the hint tier to show. [again] is said last, given that tier.
+     * A wrong answer: an "uh-oh" sound right away, then a funny story moment the first time and
+     * help after that. Misses in quick succession (tapping everything) get "slow down" instead.
+     * Returns the hint tier to show. [again] is said last, given that tier.
      */
     fun miss(again: (tier: Int) -> List<Speech> = { beat.challenge.prompt }): Int {
         ladder.misses += 1
         val tier = ladder.tier
+        val now = System.currentTimeMillis()
+        val rushing = ladder.misses >= 2 && now - lastMiss < RUSH_MILLIS
+        lastMiss = now
+        sfx.play("wrong", 0.9f)
+        busy = true
         scope.launch {
-            when {
-                ladder.misses == 1 && tier == 0 -> {
-                    narrator.speak(beat.oops)
-                    narrator.speak("Let's try again!")
+            try {
+                when {
+                    rushing -> narrator.speak(Say.SLOW_DOWN)
+                    ladder.misses == 1 && tier == 0 -> {
+                        narrator.speak(beat.oops)
+                        narrator.speak(Say.TRY_AGAIN)
+                    }
+                    ladder.misses == 1 -> {
+                        narrator.speak(beat.oops)
+                        narrator.speak(Say.SPARKLE)
+                    }
+                    tier >= 2 -> narrator.speak(Speech.of(Say.GLOW))
+                    else -> narrator.speak(Speech.of(Say.WHISPER))
                 }
-                ladder.misses == 1 -> {
-                    narrator.speak(beat.oops)
-                    narrator.speak("Sparkle magic! Your wizard power gives you a hint.")
-                }
-                tier >= 2 -> narrator.speak(Speech.of("Look! {name} makes the right one glow!"))
-                else -> narrator.speak(Speech.of("{name} whispers a hint!"))
+            } finally {
+                busy = false
+                lastMiss = System.currentTimeMillis()
             }
             narrator.speak(again(tier))
         }
@@ -158,6 +189,7 @@ private class Turn(
     fun win() {
         if (done) return
         done = true
+        sfx.play("right")
         celebrate()
         scope.launch {
             say(beat.yay)
@@ -165,6 +197,11 @@ private class Turn(
             delay(400)
             solved(ladder.tries, ladder.hints, ladder.millis)
         }
+    }
+
+    private companion object {
+        /** A miss this soon after the last one's feedback ended means guessing, not thinking. */
+        const val RUSH_MILLIS = 1500L
     }
 }
 
@@ -192,7 +229,8 @@ private class Zone(val w: Dp, val h: Dp) {
 fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celebrate: () -> Unit, solved: (Int, Int, Long) -> Unit) {
     val narrator = LocalNarrator.current
     val scope = rememberCoroutineScope()
-    val turn = remember { Turn(beat, Ladder(sparkle), sparkle, narrator, scope, say, celebrate, solved) }
+    val sfx = LocalSfx.current
+    val turn = remember { Turn(beat, Ladder(sparkle), sparkle, narrator, sfx, scope, say, celebrate, solved) }
     val c = beat.challenge
     LaunchedEffect(Unit) {
         // The memory doors say their own words: first what to remember, then the question.
@@ -214,6 +252,9 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
             is TraceChallenge -> TraceRoom(c, turn, zone)
             is MemoryChallenge -> MemoryRoom(c, turn, zone)
             is RecipeChallenge -> PotionRoom(c, turn, zone)
+            is SortChallenge -> SortRoom(c, turn, zone)
+            is SkipCountChallenge -> PondRoom(c, turn, zone)
+            is PuzzleChallenge -> PuzzleRoom(c, turn, zone)
         }
     }
 }
@@ -227,10 +268,13 @@ private class Pick(private val turn: Turn, private val c: PickOne) {
     var wrongTick by mutableIntStateOf(0)
     var chosen by mutableIntStateOf(-1)
 
+    /** Answers already tried: crossed out, so the child sees what didn't work. */
+    val tried = mutableStateListOf<Int>()
+
     fun visible(i: Int) = keep?.contains(i) ?: true
 
     fun pick(i: Int) {
-        if (turn.done || i < 0 || !visible(i)) return
+        if (turn.done || turn.busy || i < 0 || !visible(i) || i in tried) return
         val v = Coach.judge(c, i, turn.ladder.coachTry)
         turn.ladder.noteHints(v.hints)
         if (v.correct) {
@@ -239,6 +283,7 @@ private class Pick(private val turn: Turn, private val c: PickOne) {
         } else {
             wrong = i
             wrongTick += 1
+            tried += i
             v.keep?.let { keep = it }
             v.glow?.let { glow = it }
             turn.miss()
@@ -256,7 +301,7 @@ private fun Tile(pick: Pick, i: Int, modifier: Modifier, content: @Composable Bo
         modifier
             .graphicsLayer {
                 translationX = shake.value
-                alpha = fade
+                alpha = if (i in pick.tried) minOf(fade, 0.6f) else fade
                 scaleX = pop
                 scaleY = pop
             }
@@ -265,6 +310,24 @@ private fun Tile(pick: Pick, i: Int, modifier: Modifier, content: @Composable Bo
     ) {
         if (pick.glow == i) GlowRing(Modifier.fillMaxSize())
         content()
+        if (i in pick.tried) WrongMark(Modifier.fillMaxSize())
+    }
+}
+
+/** A big soft red cross over an answer that was tried and wasn't right. */
+@Composable
+fun WrongMark(modifier: Modifier) {
+    val pop = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 500f)) }
+    Canvas(modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }) {
+        val w = size.minDimension
+        val c = Offset(size.width / 2, size.height / 2)
+        val r = w * 0.32f
+        val stroke = w * 0.12f
+        for (sign in listOf(1f, -1f)) {
+            drawLine(Color.White, c + Offset(-r, -r * sign), c + Offset(r, r * sign), stroke * 1.5f, StrokeCap.Round)
+            drawLine(Color(0xFFE5484D), c + Offset(-r, -r * sign), c + Offset(r, r * sign), stroke, StrokeCap.Round)
+        }
     }
 }
 
@@ -285,7 +348,7 @@ private fun CountRoom(c: CountChallenge, turn: Turn, z: Zone) {
     ThingPile(c.thing, c.count, 0, z.left, z.right, z.h * 0.22f, z.h * 0.7f, counted) { i ->
         if (i !in counted) {
             counted += i
-            narrator.blurt(Words.capital(counted.size))
+            narrator.blurt(Say.count(counted.size))
         }
     }
     Numbers(c.options, c.count, pick, turn, z)
@@ -521,8 +584,11 @@ private fun MapPick(c: MapChallenge, turn: Turn, z: Zone) {
 @Composable
 private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
     val narrator = LocalNarrator.current
-    val n = c.path.size
-    val covered = remember { mutableStateListOf<Boolean>().apply { repeat(n) { add(false) } } }
+    val sfx = LocalSfx.current
+    val strokes = c.strokes
+    // One stroke at a time, in the order it is written; each fills in as the finger covers it.
+    var active by remember { mutableIntStateOf(0) }
+    val covered = remember { strokes.map { s -> mutableStateListOf<Boolean>().apply { repeat(s.size) { add(false) } } } }
     val trail = remember { mutableStateListOf<Offset>() }
     var guide by remember { mutableStateOf(false) }
     val cardTop = z.h * 0.22f
@@ -530,11 +596,13 @@ private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
     val cardH = z.h * 0.72f
     val t = rememberInfiniteTransition(label = "trace")
     val pulse by t.animateFloat(0.7f, 1.1f, infiniteRepeatable(tween(650), RepeatMode.Reverse), label = "pulse")
-    val travel by t.animateFloat(0f, 1f, infiniteRepeatable(tween(2600)), label = "travel")
-    val glowDone by animateFloatAsState(if (turn.done) 1.4f else 1f, spring(dampingRatio = 0.4f), label = "crystal")
+    val travel by t.animateFloat(0f, 1f, infiniteRepeatable(tween(2200)), label = "travel")
+    val glowDone by animateFloatAsState(if (turn.done) 1f else 0f, tween(600), label = "lit")
 
-    fun reachable(i: Int): Boolean =
-        i == 0 || i == n - 1 || (maxOf(0, i - 4)..minOf(n - 1, i + 4)).any { it != i && covered[it] }
+    fun reachable(k: Int, i: Int): Boolean {
+        val cov = covered[k]
+        return i == 0 || (maxOf(0, i - 3)..minOf(cov.size - 1, i + 3)).any { it != i && cov[it] }
+    }
 
     Canvas(
         Modifier
@@ -543,24 +611,28 @@ private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
-                    if (turn.done) return@awaitEachGesture
+                    if (turn.done || turn.busy) return@awaitEachGesture
                     trail.clear()
                     var gained = 0
                     val tol = c.tolerance * size.height
                     fun touch(p: Offset) {
+                        if (turn.done) return
+                        val k = active
+                        val stroke = strokes[k]
+                        val cov = covered[k]
                         // Fill in between finger samples so quick strokes still count.
                         val last = trail.lastOrNull()
                         val steps = if (last == null) 1 else ((p - last).getDistance() / (tol / 2)).toInt().coerceIn(1, 40)
-                        for (k in 1..steps) {
-                            val q = if (last == null) p else last + (p - last) * (k / steps.toFloat())
+                        for (step in 1..steps) {
+                            val q = if (last == null) p else last + (p - last) * (step / steps.toFloat())
                             var changed = true
                             while (changed) {
                                 changed = false
-                                for (i in 0 until n) {
-                                    if (covered[i]) continue
-                                    val pt = Offset(c.path[i].x * size.width, c.path[i].y * size.height)
-                                    if ((pt - q).getDistance() <= tol && reachable(i)) {
-                                        covered[i] = true
+                                for (i in stroke.indices) {
+                                    if (cov[i]) continue
+                                    val pt = Offset(stroke[i].x * size.width, stroke[i].y * size.height)
+                                    if ((pt - q).getDistance() <= tol && reachable(k, i)) {
+                                        cov[i] = true
                                         gained += 1
                                         changed = true
                                     }
@@ -568,7 +640,17 @@ private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
                             }
                         }
                         trail += p
-                        if (!turn.done && covered.count { it } >= n * 0.85f) turn.win()
+                        if (cov.count { it } >= cov.size * 0.85f) {
+                            for (i in cov.indices) cov[i] = true
+                            trail.clear()
+                            if (k == strokes.lastIndex) {
+                                turn.win()
+                            } else {
+                                active = k + 1
+                                sfx.play("poof")
+                                narrator.blurt(Say.NEXT_LINE)
+                            }
+                        }
                     }
                     touch(down.position)
                     while (true) {
@@ -580,52 +662,73 @@ private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
                     }
                     if (turn.done) return@awaitEachGesture
                     if (gained == 0 && trail.size > 3) {
-                        val tier = turn.miss { Speech.of("Start at the green star and follow the dots to the crystal.") }
+                        val tier = turn.miss { Speech.of(Say.TRACE_HELP) }
                         if (tier >= 1) {
                             guide = true
                             turn.ladder.noteHints(1)
                         }
                     } else if (gained > 0) {
-                        narrator.blurt("Keep going!")
+                        narrator.blurt(Say.KEEP_GOING)
                     }
                 }
             },
     ) {
-        val pts = c.path.map { Offset(it.x * size.width, it.y * size.height) }
-        val stroke = size.height * 0.04f
+        val stroke = size.height * 0.035f
         drawRoundRect(Color(0xAA1C1830), cornerRadius = CornerRadius(28.dp.toPx()))
-        val line = Path().apply {
-            moveTo(pts[0].x, pts[0].y)
-            pts.drop(1).forEach { lineTo(it.x, it.y) }
-        }
-        drawPath(line, Color(0x44FFE680), style = Stroke(c.tolerance * size.height * 1.4f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-        pts.forEach { drawCircle(Color(0xCCFFF3C4), stroke * 0.28f, it) }
-        // The magic that's been drawn so far.
-        for (i in 1 until n) {
-            if (covered[i] && covered[i - 1]) drawLine(Palette.Gold, pts[i - 1], pts[i], stroke, StrokeCap.Round)
+        strokes.forEachIndexed { k, pts0 ->
+            val pts = pts0.map { Offset(it.x * size.width, it.y * size.height) }
+            val path = Path().apply {
+                moveTo(pts[0].x, pts[0].y)
+                pts.drop(1).forEach { lineTo(it.x, it.y) }
+            }
+            val now = k == active && !turn.done
+            // The letter's shape, wide and soft, so the child sees the whole thing.
+            drawPath(path, if (now) Color(0x55FFE680) else Color(0x26FFE680), style = Stroke(c.tolerance * size.height * 1.3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            if (now) pts.forEach { drawCircle(Color(0xCCFFF3C4), stroke * 0.26f, it) }
+            // What has been drawn: gold.
+            val cov = covered[k]
+            for (i in 1 until pts.size) {
+                if (cov[i] && cov[i - 1]) drawLine(lerp(Palette.Gold, Color.White, glowDone * 0.6f), pts[i - 1], pts[i], stroke, StrokeCap.Round)
+            }
+            if (now) {
+                // Arrows along the stroke show which way to go.
+                val every = maxOf(3, pts.size / 4)
+                for (i in every until pts.size - 1 step every) {
+                    val a = pts[i - 1]
+                    val b = pts[i + 1]
+                    val d = (b - a).let { it / maxOf(1f, it.getDistance()) }
+                    val n = Offset(-d.y, d.x)
+                    val tip = pts[i] + d * stroke * 0.9f
+                    drawLine(Color(0xFFFFF3C4), tip, tip - d * stroke * 1.1f + n * stroke * 0.8f, stroke * 0.3f, StrokeCap.Round)
+                    drawLine(Color(0xFFFFF3C4), tip, tip - d * stroke * 1.1f - n * stroke * 0.8f, stroke * 0.3f, StrokeCap.Round)
+                }
+                // Where to start: a green glowing spot.
+                drawCircle(Color(0x6636B24A), stroke * 2.2f * pulse, pts[0])
+                drawCircle(Color(0xFF36B24A), stroke * 0.9f, pts[0])
+                drawCircle(Color.White, stroke * 0.9f, pts[0], style = Stroke(stroke * 0.25f))
+                if (guide) {
+                    val p = pts[(travel * (pts.size - 1)).toInt().coerceIn(0, pts.size - 1)]
+                    drawCircle(Color(0x88FFFFFF), stroke * 1.6f, p)
+                    drawCircle(Color.White, stroke * 0.7f, p)
+                }
+            }
         }
         for (i in 1 until trail.size) drawLine(Color(0x88FFFFFF), trail[i - 1], trail[i], stroke * 0.4f, StrokeCap.Round)
-        // Where to start: a green glowing spot.
-        drawCircle(Color(0x6636B24A), stroke * 2.2f * pulse, pts[0])
-        drawCircle(Color(0xFF36B24A), stroke * 0.9f, pts[0])
-        drawCircle(Color.White, stroke * 0.9f, pts[0], style = Stroke(stroke * 0.25f))
-        if (guide && !turn.done) {
-            val p = pts[(travel * (n - 1)).toInt().coerceIn(0, n - 1)]
-            drawCircle(Color(0x88FFFFFF), stroke * 1.6f, p)
-            drawCircle(Color.White, stroke * 0.7f, p)
-        }
+        if (glowDone > 0f) drawRoundRect(Color(0xFFFFE680).copy(alpha = 0.18f * glowDone), cornerRadius = CornerRadius(28.dp.toPx()))
     }
-    // The glowing crystal at the end of the path.
-    val end = c.path.last()
-    val gem = z.h * 0.12f
-    Image(
-        painterResource(R.drawable.art_gem_blue), null,
-        Modifier.at(z.left + cardW * end.x, cardTop + cardH * end.y, gem, gem).graphicsLayer {
-            val s = (if (turn.done) glowDone else pulse) * 1f
-            scaleX = s
-            scaleY = s
-        },
-    )
+    if (c.glyph == null) {
+        // A path or shape leads to a glowing crystal.
+        val end = c.path.last()
+        val gem = z.h * 0.12f
+        Image(
+            painterResource(R.drawable.art_gem_blue), null,
+            Modifier.at(z.left + cardW * end.x, cardTop + cardH * end.y, gem, gem).graphicsLayer {
+                val s = if (turn.done) 1.4f else pulse
+                scaleX = s
+                scaleY = s
+            },
+        )
+    }
 }
 
 // ------------------------------------------------------------------ memory: the mirror doors
@@ -665,18 +768,18 @@ private fun MemoryRoom(c: MemoryChallenge, turn: Turn, z: Zone) {
                     scaleY = pop
                 }
                 .clickable(NoRipple, null) {
-                    if (!hidden || peeking || turn.done || i in found) return@clickable
+                    if (!hidden || peeking || turn.done || turn.busy || i in found) return@clickable
                     val want = c.sequence[step]
                     if (i == want) {
                         found += i
                         step += 1
                         glow = -1
-                        narrator.blurt("The ${c.doors[i].word} door!")
+                        narrator.blurt(Say.doorName(c.doors[i]))
                         if (step == c.sequence.size) turn.win()
                     } else {
                         wrong = i
                         wrongTick += 1
-                        val tier = turn.miss { if (c.sequence.size == 1) c.prompt else Speech.of("Which door comes next?") }
+                        val tier = turn.miss { if (c.sequence.size == 1) c.prompt else Speech.of(Say.WHICH_NEXT_DOOR) }
                         if (tier >= 1) {
                             turn.ladder.noteHints(1)
                             scope.launch {
@@ -758,21 +861,21 @@ private fun PotionRoom(c: RecipeChallenge, turn: Turn, z: Zone) {
     }
 
     fun drop(i: Ingredient) {
-        if (turn.done || have >= need || keep?.contains(i) == false) return
+        if (turn.done || turn.busy || have >= need || keep?.contains(i) == false) return
         if (fits(i)) {
             val n = (added[i] ?: 0) + 1
             added[i] = n
             keep = null
             glow = null
             splash(Art.color(i.hue))
-            narrator.blurt(Words.capital(n) + "!")
+            narrator.blurt(Say.count(n))
             if (added.values.sum() >= need) {
                 if (c.stirs == 0) {
                     turn.win()
                 } else {
                     scope.launch {
                         delay(700)
-                        val l = Speech.of("Now stir ${Words.number(c.stirs)} times! Tap the spoon.")
+                        val l = Speech.of(Say.stir(c.stirs))
                         turn.say(l)
                         narrator.speak(l)
                     }
@@ -783,7 +886,7 @@ private fun PotionRoom(c: RecipeChallenge, turn: Turn, z: Zone) {
             wrongTick += 1
             splash(Art.color(i.hue))
             val target = nextStep()?.ingredient ?: return
-            val tier = turn.miss { tier -> if (tier >= 1) Speech.of("Look at the recipe!") else c.riddle ?: c.prompt }
+            val tier = turn.miss { tier -> if (tier >= 1) Speech.of(Say.LOOK_RECIPE) else c.riddle ?: c.prompt }
             if (tier >= 1) {
                 showCard = true
                 keep = setOf(target, i)
@@ -799,7 +902,7 @@ private fun PotionRoom(c: RecipeChallenge, turn: Turn, z: Zone) {
     fun stir() {
         if (!stirring || turn.done || stirs >= c.stirs) return
         stirs += 1
-        narrator.blurt(Words.capital(stirs) + "!")
+        narrator.blurt(Say.count(stirs))
         scope.launch { spin.animateTo(spin.value + 360f, tween(550)) }
         if (stirs == c.stirs) turn.win()
     }
@@ -905,5 +1008,352 @@ private fun RecipeCard(c: RecipeChallenge, show: Boolean, added: Map<Ingredient,
                 }
             }
         }
+    }
+}
+
+// ------------------------------------------------------------------ sorting: the goblins' storeroom
+
+/** A thing to sort, drawn: a gem in its color and size, or the thing itself. */
+@Composable
+private fun SortableImage(item: Sortable, size: Dp) {
+    if (item.thing == Thing.GEM) {
+        val s = if (item.size == GemSize.BIG) 1f else 0.55f
+        Image(painterResource(Art.gem(item.hue)), null, Modifier.size(size * s))
+    } else {
+        Image(painterResource(Art.thing(item.thing)), null, Modifier.size(size * 0.9f))
+    }
+}
+
+/**
+ * Drag every thing into its basket. Each basket wears a tag showing what belongs in it. A
+ * thing dropped in the wrong basket bounces back out.
+ */
+@Composable
+private fun SortRoom(c: SortChallenge, turn: Turn, z: Zone) {
+    val n = c.baskets.size
+    val basketW = minOf(z.h * 0.34f, z.width / (n * 1.3f))
+    val basketH = basketW * (200f / 220f)
+    val basketY = z.h * 0.78f
+    val basketXs = z.row(n, basketW)
+    val count = c.items.size
+    val cols = (count + 1) / 2
+    val item = minOf(z.h * 0.14f, z.width / (cols * 1.35f))
+    val homes = List(count) { i ->
+        val row = i / cols
+        val inRow = if (row == 0) cols else count - cols
+        val col = i % cols
+        z.cx + item * 1.3f * (col - (inRow - 1) / 2f) to z.h * (0.32f + 0.17f * row)
+    }
+    val placed = remember { mutableStateMapOf<Int, Int>() } // item -> basket
+
+    // The baskets: back, the things already in it, front, and the tag.
+    basketXs.forEachIndexed { b, x ->
+        Image(painterResource(R.drawable.art_basket_back), null, Modifier.at(x, basketY, basketW, basketH))
+        val inside = placed.filterValues { it == b }.keys.sorted()
+        inside.forEachIndexed { k, i ->
+            val dx = basketW * 0.16f * ((k % 4) - 1.5f)
+            val dy = -basketH * (0.12f + 0.08f * (k / 4))
+            Box(Modifier.at(x + dx, basketY + dy, item * 0.7f, item * 0.7f), contentAlignment = Alignment.Center) {
+                SortableImage(c.items[i], item * 0.7f)
+            }
+        }
+        Image(painterResource(R.drawable.art_basket_front), null, Modifier.at(x, basketY, basketW, basketH))
+        Box(Modifier.at(x, basketY - basketH * 0.66f, basketW * 0.42f, basketW * 0.42f).spot(), contentAlignment = Alignment.Center) {
+            SortableImage(c.baskets[b], basketW * 0.32f)
+        }
+    }
+
+    // The things still to sort.
+    c.items.forEachIndexed { i, thing ->
+        if (i !in placed) key(i) { SortItem(c, i, thing, homes[i], item, turn, basketXs, basketY, basketW, basketH, placed, count) }
+    }
+}
+
+/** One thing to sort, dragged by the finger; it drops into the right basket or bounces back. */
+@Composable
+private fun SortItem(
+    c: SortChallenge, i: Int, thing: Sortable, home: Pair<Dp, Dp>, item: Dp, turn: Turn,
+    basketXs: List<Dp>, basketY: Dp, basketW: Dp, basketH: Dp, placed: MutableMap<Int, Int>, count: Int,
+) {
+    val sfx = LocalSfx.current
+    val density = LocalDensity.current
+    run {
+        val (hx, hy) = home
+        val dx = remember { Animatable(0f) }
+        val dy = remember { Animatable(0f) }
+        val scope = rememberCoroutineScope()
+        var dragging by remember { mutableStateOf(false) }
+        Box(
+            Modifier
+                .at(hx, hy, item, item)
+                .graphicsLayer {
+                    translationX = dx.value
+                    translationY = dy.value
+                    val s = if (dragging) 1.2f else 1f
+                    scaleX = s
+                    scaleY = s
+                }
+                .pointerInput(i) {
+                    detectDragGestures(
+                        onDragStart = {
+                            if (!turn.busy && !turn.done) {
+                                dragging = true
+                                sfx.play("tap", 0.5f)
+                            }
+                        },
+                        onDrag = { change, amount ->
+                            if (dragging) {
+                                change.consume()
+                                scope.launch {
+                                    dx.snapTo(dx.value + amount.x)
+                                    dy.snapTo(dy.value + amount.y)
+                                }
+                            }
+                        },
+                        onDragEnd = {
+                            if (!dragging) return@detectDragGestures
+                            dragging = false
+                            // Which basket is it over?
+                            val px = with(density) { hx.toPx() } + dx.value
+                            val py = with(density) { hy.toPx() } + dy.value
+                            val over = basketXs.indexOfFirst { bx ->
+                                val cx = with(density) { bx.toPx() }
+                                val cy = with(density) { basketY.toPx() }
+                                val hw = with(density) { (basketW * 0.6f).toPx() }
+                                val hh = with(density) { (basketH * 0.75f).toPx() }
+                                px in (cx - hw)..(cx + hw) && py in (cy - hh * 1.3f)..(cy + hh)
+                            }
+                            when {
+                                over == c.home[i] -> {
+                                    placed[i] = over
+                                    sfx.play("poof", 0.6f)
+                                    if (placed.size == count) turn.win()
+                                }
+                                over >= 0 -> {
+                                    turn.miss { emptyList() }
+                                    scope.launch { dx.animateTo(0f, spring(dampingRatio = 0.5f)) }
+                                    scope.launch { dy.animateTo(0f, spring(dampingRatio = 0.5f)) }
+                                }
+                                else -> {
+                                    scope.launch { dx.animateTo(0f, spring(dampingRatio = 0.6f)) }
+                                    scope.launch { dy.animateTo(0f, spring(dampingRatio = 0.6f)) }
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            dragging = false
+                            scope.launch { dx.animateTo(0f) }
+                            scope.launch { dy.animateTo(0f) }
+                        },
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            SortableImage(thing, item)
+        }
+    }
+}
+
+// ------------------------------------------------------------------ counting by jumps: the frog pond
+
+/**
+ * Lily pads across the pond, each holding the same number of things. The first pads show the
+ * count so far (2, 4, 6); the last asks for its number. Tapping a pad says its count.
+ */
+@Composable
+private fun PondRoom(c: SkipCountChallenge, turn: Turn, z: Zone) {
+    val pick = remember { Pick(turn, c) }
+    val narrator = LocalNarrator.current
+    val n = c.shown
+    val pad = minOf(z.h * 0.3f, z.width / (n * 1.12f))
+    val xs = z.row(n, pad)
+    val t = rememberInfiniteTransition(label = "pond")
+    val pulse by t.animateFloat(0.85f, 1.15f, infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "pulse")
+    xs.forEachIndexed { k, x ->
+        val y = z.h * (0.46f + 0.05f * kotlin.math.sin(k * 1.7f))
+        Box(Modifier.at(x, y, pad, pad).clickable(NoRipple, null) { narrator.blurt(Say.count(c.step * (k + 1))) }) {
+            Image(painterResource(R.drawable.art_lily_pad), null, Modifier.fillMaxSize())
+            // The things on this pad, in a little cluster.
+            val thing = pad * if (c.step <= 3) 0.3f else 0.2f
+            for (j in 0 until c.step) {
+                val a = j * 2 * Math.PI / c.step
+                val r = if (c.step == 1) 0f else 0.18f
+                Image(
+                    painterResource(Art.thing(c.thing)), null,
+                    Modifier.at(pad * (0.5f + r * kotlin.math.cos(a).toFloat()), pad * (0.42f + r * 0.8f * kotlin.math.sin(a).toFloat()), thing, thing),
+                )
+            }
+        }
+        // The count so far, under each pad; the last one is the question.
+        val last = k == n - 1
+        val label = if (last && !turn.done) "?" else "${c.step * (k + 1)}"
+        val fs = with(LocalDensity.current) { (pad * 0.24f).toSp() }
+        Box(
+            Modifier.at(x, y + pad * 0.5f, pad * 0.44f, pad * 0.36f)
+                .graphicsLayer { if (last && !turn.done) { scaleX = pulse; scaleY = pulse } }
+                .background(if (last) Palette.Gold else Palette.Paper, RoundedCornerShape(50))
+                .border(3.dp, Palette.PaperEdge, RoundedCornerShape(50)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(label, fontSize = fs, lineHeight = fs, fontWeight = FontWeight.Black, color = Palette.Ink)
+        }
+    }
+    Numbers(c.options, c.total, pick, turn, z)
+}
+
+// ------------------------------------------------------------------ puzzles: the broken mosaic
+
+/**
+ * A picture in pieces. Drag each piece onto its place in the frame; it clicks in when it's close.
+ * With [PuzzleChallenge.ghost] a faint copy of the picture shows where each piece goes.
+ */
+@Composable
+private fun PuzzleRoom(c: PuzzleChallenge, turn: Turn, z: Zone) {
+    val image = ImageBitmap.imageResource(Art.puzzle(c.picture))
+    val frameW = minOf(z.width * 0.56f, z.h * 0.66f * 16f / 9f)
+    val frameH = frameW * 9f / 16f
+    val frameLeft = z.left
+    val frameTop = z.h * 0.6f - frameH / 2
+    val pw = frameW / c.cols
+    val ph = frameH / c.rows
+    val placed = remember { mutableStateListOf<Int>() }
+    var hint by remember { mutableIntStateOf(-1) }
+    // Loose pieces wait to the right of the frame, in a shuffled order.
+    val order = remember { (0 until c.pieces).shuffled(kotlin.random.Random(c.seed)) }
+    val areaLeft = frameLeft + frameW + z.width * 0.04f
+    val areaW = z.right - areaLeft
+    val looseCols = if (c.pieces <= 4) 1 else 2
+    val scale = minOf(1f, (areaW / looseCols / (pw * 1.08f)), (z.h * 0.76f / ((c.pieces + looseCols - 1) / looseCols) / (ph * 1.1f)))
+
+    fun slotCenter(p: Int): Pair<Dp, Dp> = (frameLeft + pw * (p % c.cols) + pw / 2) to (frameTop + ph * (p / c.cols) + ph / 2)
+
+    // The frame, with the ghost picture or just its outline.
+    Canvas(Modifier.offset(frameLeft, frameTop).size(frameW, frameH)) {
+        drawRect(Color(0xCC1C1830))
+        if (c.ghost) {
+            drawImage(image, dstSize = IntSize(size.width.toInt(), size.height.toInt()), alpha = 0.28f)
+        }
+        for (k in 1 until c.cols) drawLine(Color(0x88FFF3C4), Offset(size.width * k / c.cols, 0f), Offset(size.width * k / c.cols, size.height), 3f)
+        for (k in 1 until c.rows) drawLine(Color(0x88FFF3C4), Offset(0f, size.height * k / c.rows), Offset(size.width, size.height * k / c.rows), 3f)
+    }
+    // Pieces in place.
+    placed.forEach { p -> PuzzlePiece(image, c, p, Modifier.at(slotCenter(p).first, slotCenter(p).second, pw, ph)) }
+    if (hint >= 0 && hint !in placed) GlowRing(Modifier.at(slotCenter(hint).first, slotCenter(hint).second, pw * 0.7f, ph * 0.7f))
+    Box(Modifier.offset(frameLeft, frameTop).size(frameW, frameH).border(5.dp, if (turn.done) Palette.Gold else Palette.PaperEdge, RoundedCornerShape(6.dp)))
+
+    order.forEachIndexed { slot, p ->
+        if (p !in placed) key(p) { LoosePiece(image, c, p, slot, looseCols, areaLeft, areaW, scale, pw, ph, z, turn, frameLeft, frameTop, frameW, frameH, placed, ::slotCenter) { hint = it } }
+    }
+}
+
+/** A puzzle piece waiting beside the frame; drag it to its place. */
+@Composable
+private fun LoosePiece(
+    image: ImageBitmap, c: PuzzleChallenge, p: Int, slot: Int, looseCols: Int, areaLeft: Dp, areaW: Dp, scale: Float, pw: Dp, ph: Dp,
+    z: Zone, turn: Turn, frameLeft: Dp, frameTop: Dp, frameW: Dp, frameH: Dp, placed: MutableList<Int>,
+    slotCenter: (Int) -> Pair<Dp, Dp>, setHint: (Int) -> Unit,
+) {
+    val sfx = LocalSfx.current
+    val density = LocalDensity.current
+    run {
+        val col = slot % looseCols
+        val row = slot / looseCols
+        val hx = areaLeft + areaW * ((col + 0.5f) / looseCols)
+        val hy = z.h * 0.24f + ph * scale * 1.1f * (row + 0.5f)
+        val dx = remember { Animatable(0f) }
+        val dy = remember { Animatable(0f) }
+        val scope = rememberCoroutineScope()
+        var dragging by remember { mutableStateOf(false) }
+        val tilt = remember { ((p * 53) % 13 - 6).toFloat() }
+        Box(
+            Modifier
+                .at(hx, hy, pw, ph)
+                .graphicsLayer {
+                    translationX = dx.value
+                    translationY = dy.value
+                    val s = if (dragging) 1f else scale
+                    scaleX = s
+                    scaleY = s
+                    rotationZ = if (dragging) 0f else tilt
+                    shadowElevation = if (dragging) 16f else 6f
+                }
+                .pointerInput(p) {
+                    detectDragGestures(
+                        onDragStart = {
+                            if (!turn.busy && !turn.done) {
+                                dragging = true
+                                sfx.play("tap", 0.5f)
+                            }
+                        },
+                        onDrag = { change, amount ->
+                            if (dragging) {
+                                change.consume()
+                                scope.launch {
+                                    dx.snapTo(dx.value + amount.x)
+                                    dy.snapTo(dy.value + amount.y)
+                                }
+                            }
+                        },
+                        onDragEnd = {
+                            if (!dragging) return@detectDragGestures
+                            dragging = false
+                            val px = with(density) { hx.toPx() } + dx.value
+                            val py = with(density) { hy.toPx() } + dy.value
+                            // The empty slot nearest to where it was dropped, if it's in the frame.
+                            val near = (0 until c.pieces).filter { it !in placed }.minByOrNull { q ->
+                                val (sx, sy) = slotCenter(q)
+                                kotlin.math.hypot(with(density) { sx.toPx() } - px, with(density) { sy.toPx() } - py)
+                            }
+                            val inFrame = with(density) {
+                                px in frameLeft.toPx()..(frameLeft + frameW).toPx() && py in frameTop.toPx()..(frameTop + frameH).toPx()
+                            }
+                            when {
+                                inFrame && near == p -> {
+                                    placed += p
+                                    setHint(-1)
+                                    sfx.play("unlock", 0.6f)
+                                    if (placed.size == c.pieces) turn.win()
+                                }
+                                inFrame -> {
+                                    val tier = turn.miss { emptyList() }
+                                    if (tier >= 1) {
+                                        setHint(p)
+                                        turn.ladder.noteHints(1)
+                                    }
+                                    scope.launch { dx.animateTo(0f, spring(dampingRatio = 0.55f)) }
+                                    scope.launch { dy.animateTo(0f, spring(dampingRatio = 0.55f)) }
+                                }
+                                else -> {
+                                    scope.launch { dx.animateTo(0f) }
+                                    scope.launch { dy.animateTo(0f) }
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            dragging = false
+                            scope.launch { dx.animateTo(0f) }
+                            scope.launch { dy.animateTo(0f) }
+                        },
+                    )
+                },
+        ) {
+            PuzzlePiece(image, c, p, Modifier.fillMaxSize())
+        }
+    }
+}
+
+/** One piece: its part of the picture, with a light edge. */
+@Composable
+private fun PuzzlePiece(image: ImageBitmap, c: PuzzleChallenge, p: Int, modifier: Modifier) {
+    Canvas(modifier) {
+        val sw = image.width / c.cols
+        val sh = image.height / c.rows
+        drawImage(
+            image,
+            srcOffset = IntOffset((p % c.cols) * sw, (p / c.cols) * sh),
+            srcSize = IntSize(sw, sh),
+            dstSize = IntSize(size.width.toInt(), size.height.toInt()),
+        )
+        drawRect(Color(0xCCFFF3C4), style = Stroke(3f))
     }
 }

@@ -928,6 +928,95 @@ CHOICES = {
 
 # ---------------------------------------------------------------- registry
 
+# ---------------------------------------------------------------- basket, lily pad
+
+def basket():
+    """A woven basket in two layers: 'back' (rim and the dark inside) and 'front' (the woven
+    wall and front rim), so the app can drop things between them and they land "in" it."""
+    o = "#4a2a12"
+    cx, rimy, rx, ry, bot = 110, 72, 96, 24, 184
+    defs = (
+        lg("bskInside", [(0, "#4a2a12"), (1, "#7a4a22")], 0, 0, 0, 1)
+        + lg("bskRim", [(0, "#f2c98a"), (1, "#b07a3e")], 0, 0, 0, 1)
+        + lg("bskStrand", [(0, "#f0c482"), (0.55, "#d29a52"), (1, "#a8692e")], 0, 0, 0, 1)
+        + lg("bskShade", [(0, "#000", 0), (0.7, "#000", 0), (1, "#000", 0.25)], 0, 0, 1, 0)
+        + f'<clipPath id="bskBody"><path d="M{cx - rx} {rimy} C{cx - rx + 4} 130 {cx - 76} {bot - 4} {cx - 56} {bot} '
+          f'L{cx + 56} {bot} C{cx + 76} {bot - 4} {cx + rx - 4} 130 {cx + rx} {rimy} A{rx} {ry} 0 0 1 {cx - rx} {rimy} Z"/></clipPath>'
+        + f'<clipPath id="bskIn"><ellipse cx="{cx}" cy="{rimy}" rx="{rx - 10}" ry="{ry - 7}"/></clipPath>'
+    )
+    near_arc = f'M{cx - rx + 5} {rimy} A{rx - 5} {ry - 3.5} 0 0 0 {cx + rx - 5} {rimy}'
+    far_arc = f'M{cx - rx + 5} {rimy} A{rx - 5} {ry - 3.5} 0 0 1 {cx + rx - 5} {rimy}'
+    def rope(arc):
+        return (f'<path d="{arc}" stroke="{o}" stroke-width="15" fill="none" stroke-linecap="round"/>'
+                f'<path d="{arc}" stroke="url(#bskRim)" stroke-width="10" fill="none" stroke-linecap="round"/>'
+                f'<path d="{arc}" stroke="#9a6430" stroke-width="10" fill="none" stroke-dasharray="3 9" opacity="0.7"/>')
+    # back: the far half of the rim and the inside wall, with weave rows showing inside
+    inner_rows = "".join(
+        f'<path d="M{cx - rx} {rimy - 14 + k * 9} Q{cx} {rimy - 30 + k * 9} {cx + rx} {rimy - 14 + k * 9}" stroke="#9a6430" stroke-width="3" fill="none" opacity="0.6"/>'
+        for k in range(4))
+    back = (
+        f'<g id="back">{shadow(cx, bot + 4, 84, 9, 0.22)}'
+        f'<ellipse cx="{cx}" cy="{rimy}" rx="{rx}" ry="{ry}" fill="url(#bskRim)" stroke="{o}" stroke-width="5"/>'
+        f'<ellipse cx="{cx}" cy="{rimy}" rx="{rx - 10}" ry="{ry - 7}" fill="url(#bskInside)" stroke="{o}" stroke-width="3"/>'
+        f'<g clip-path="url(#bskIn)">{inner_rows}</g>'
+        f'{rope(far_arc)}'
+        f'</g>'
+    )
+    # front: woven wall (rows of strands over upright stakes), then the near half of the rim
+    weave = ""
+    for j in range(8):
+        y0 = rimy + 10 + j * 14
+        for i in range(-1, 10):
+            x = cx - rx - 6 + i * 24 + (12 if j % 2 else 0)
+            u = (x - cx) / (rx + 10)
+            y = y0 + 18 * (1 - u * u)
+            ang = -36 * u * 18 / (rx + 10)
+            weave += (f'<rect x="{x - 12:.1f}" y="{y - 7:.1f}" width="24" height="14" rx="7" fill="url(#bskStrand)" stroke="{o}" stroke-width="2" '
+                      f'transform="rotate({ang:.1f} {x:.1f} {y:.1f})"/>')
+    stakes = "".join(
+        f'<path d="M{cx + dx} {rimy + 22} Q{cx + dx * 1.02:.1f} 140 {cx + dx * 0.78:.1f} {bot}" stroke="#7a4a1e" stroke-width="2.5" fill="none" opacity="0.55"/>'
+        for dx in (-84, -60, -36, -12, 12, 36, 60, 84))
+    body_d = (f'M{cx - rx} {rimy} C{cx - rx + 4} 130 {cx - 76} {bot - 4} {cx - 56} {bot} '
+              f'L{cx + 56} {bot} C{cx + 76} {bot - 4} {cx + rx - 4} 130 {cx + rx} {rimy} A{rx} {ry} 0 0 1 {cx - rx} {rimy} Z')
+    front = (
+        f'<g id="front">'
+        f'<path d="{body_d}" fill="#c48a48"/>'
+        f'<g clip-path="url(#bskBody)">{weave}{stakes}<rect x="0" y="0" width="220" height="200" fill="url(#bskShade)"/></g>'
+        f'<path d="{body_d}" fill="none" stroke="{o}" stroke-width="5" stroke-linejoin="round"/>'
+        f'{rope(near_arc)}'
+        f'<path d="M{cx - rx + 12} {rimy + 28} C{cx - rx + 16} 120 {cx - 74} 150 {cx - 62} 170" stroke="#fff" stroke-width="6" opacity="0.25" fill="none" stroke-linecap="round"/>'
+        f'</g>'
+    )
+    return doc(220, 200, defs, back + front)
+
+
+def lily_pad():
+    """A round lily pad floating on the water, seen from a little above: a stepping stone."""
+    o = "#1f4a22"
+    cx, cy, rx, ry = 120, 70, 106, 50
+    defs = (rg("padTop", [(0, "#a8e078"), (0.6, "#6cbf4e"), (1, "#3f9040")], cx=0.42, cy=0.35, r=0.75)
+            + lg("padEdge", [(0, "#3f8a3a"), (1, "#24602a")], 0, 0, 0, 1))
+    notch = 5  # degrees each side of the notch, which points toward the viewer's right
+    a0, a1 = math.radians(60 - notch), math.radians(60 + notch)
+    p0 = (cx + math.cos(a0) * rx, cy + math.sin(a0) * ry)
+    p1 = (cx + math.cos(a1) * rx, cy + math.sin(a1) * ry)
+    top = f'M{cx} {cy + 4} L{p0[0]:.1f} {p0[1]:.1f} A{rx} {ry} 0 1 0 {p1[0]:.1f} {p1[1]:.1f} Z'
+    veins = "".join(
+        f'<path d="M{cx} {cy + 4} Q{cx + math.cos(math.radians(a)) * rx * 0.4:.1f} {cy + math.sin(math.radians(a)) * ry * 0.4 + 3:.1f} '
+        f'{cx + math.cos(math.radians(a)) * rx * 0.86:.1f} {cy + math.sin(math.radians(a)) * ry * 0.86:.1f}" stroke="#4f9a3e" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>'
+        for a in range(100, 400, 36))
+    body = (
+        f'<ellipse cx="{cx}" cy="{cy + 14}" rx="{rx + 10}" ry="{ry + 10}" fill="none" stroke="#bff4ff" stroke-width="3" opacity="0.45"/>'
+        f'<ellipse cx="{cx}" cy="{cy + 16}" rx="{rx + 2}" ry="{ry + 4}" fill="#0e3a3a" opacity="0.25"/>'
+        f'<path d="{top}" fill="url(#padEdge)" stroke="{o}" stroke-width="5" stroke-linejoin="round" transform="translate(0 9)"/>'
+        f'<path d="{top}" fill="url(#padTop)" stroke="{o}" stroke-width="5" stroke-linejoin="round"/>'
+        f'{veins}'
+        f'<ellipse cx="{cx - 38}" cy="{cy - 22}" rx="34" ry="10" fill="#fff" opacity="0.3" transform="rotate(-8 {cx - 38} {cy - 22})"/>'
+        f'<circle cx="{cx + 46}" cy="{cy - 18}" r="4" fill="#fff" opacity="0.55"/><circle cx="{cx + 56}" cy="{cy - 10}" r="2.5" fill="#fff" opacity="0.45"/>'
+    )
+    return doc(240, 140, defs, body)
+
+
 def sprites() -> dict:
     out = {}
     for name, c in GEM_COLORS.items():
@@ -940,6 +1029,8 @@ def sprites() -> dict:
         out[f"door_{name}"] = (door(c), None)
     out["chest"] = (chest(), ["base", "lid-closed", "lid-open", "glow"])
     out["cauldron"] = (cauldron(), ["back", "brew", "front"])
+    out["basket"] = (basket(), ["back", "front"])
+    out["lily_pad"] = (lily_pad(), None)
     out["spoon"] = (spoon(), None)
     for kind in POTIONS:
         out[f"potion_{kind}"] = (potion(kind), None)

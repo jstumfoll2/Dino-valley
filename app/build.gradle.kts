@@ -11,16 +11,17 @@ android {
         applicationId = "io.github.jstumfoll2.dinovalley"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.5.0"
 
         // The narrator voice ships for 64-bit ARM phones only, which is every phone this targets.
         ndk { abiFilters += "arm64-v8a" }
     }
 
-    // The voice model is read straight from the APK; compressing it would only slow loading.
+    // The voice model and the recorded sentences and sounds are read straight from the APK;
+    // compressing them would only slow loading (and sound files are compressed already).
     androidResources {
-        noCompress += listOf("onnx", "bin")
+        noCompress += listOf("onnx", "bin", "ogg")
     }
 
     // A shared debug key, so every build from CI installs over the last one without

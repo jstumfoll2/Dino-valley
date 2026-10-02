@@ -1,9 +1,5 @@
 package com.dinovalley.ui.game
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -12,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,7 +22,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,16 +43,15 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import com.dinovalley.engine.model.Speech
+import com.dinovalley.engine.model.Voice
+import com.dinovalley.engine.rpg.run.Say
 import com.dinovalley.engine.rpg.hero.HeroClass
 import com.dinovalley.engine.rpg.hero.Progression
 import com.dinovalley.engine.rpg.run.Place
@@ -62,44 +62,23 @@ import com.dinovalley.ui.art.PictoIcon
 import com.dinovalley.ui.art.Rigs
 import kotlinx.coroutines.launch
 
-private fun classLine(c: HeroClass) = when (c) {
-    HeroClass.KNIGHT -> "The Knight! Brave and strong."
-    HeroClass.WIZARD -> "The Wizard! Full of magic."
-    HeroClass.RANGER -> "The Ranger! Sharp eyes that see behind doors."
-    HeroClass.GUARDIAN -> "The Guardian! Everyone wants to be your friend."
-    HeroClass.SPELLKEEPER -> "The Spellkeeper! Keeper of runes and stories."
-}
-
 /**
- * The camp: name the baby dragon by holding the microphone, pick a hero, and start an adventure.
+ * The camp: meet the baby dragon, pick a hero, and start an adventure. A grown-up can give the
+ * dragon a name with the pencil; the narrator says it from then on (decision #46).
  */
 @Composable
 fun TitleScreen(vm: GameViewModel) {
-    val context = LocalContext.current
     val narrator = LocalNarrator.current
-    val recorder = LocalNameRecorder.current
+    val dragon = LocalDragonName.current
+    val sfx = LocalSfx.current
     val scope = rememberCoroutineScope()
     val speaking by narrator.speaking.collectAsState()
     var dragonMood by remember { mutableStateOf(Mood.CALM) }
-    var listening by remember { mutableStateOf(false) }
+    var naming by remember { mutableStateOf(false) }
     val hero = vm.state.hero
 
-    val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        scope.launch {
-            if (granted) narrator.speak("Yay! Now hold the microphone button, and say my name!")
-            else narrator.speak("That's okay! You can call me ${com.dinovalley.audio.Narrator.DEFAULT_NAME}.")
-        }
-    }
-
     LaunchedEffect(Unit) {
-        if (recorder.hasName) {
-            narrator.speak(Speech.of("Welcome back, adventurer! {name} is ready. Pick your hero, then tap the big green button!"))
-        } else {
-            narrator.speak(
-                "Welcome to the Little Dungeon! This is your baby dragon. It doesn't have a name yet. " +
-                    "Hold the microphone button, and say its name!",
-            )
-        }
+        narrator.speak(Speech.of(if (vm.state.world.adventures == 0) Say.WELCOME_NEW else Say.WELCOME_BACK))
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -118,70 +97,47 @@ fun TitleScreen(vm: GameViewModel) {
             modifier = Modifier.align(Alignment.TopCenter).padding(top = h * 0.03f),
         )
 
-        // The hero and the dragon
-        Character(
-            Rigs.hero(hero.heroClass, vm.unlocked), if (speaking && !listening) Mood.TALKING else Mood.CALM,
-            Modifier.at(w * 0.2f, h * 0.62f, h * 0.62f, h * 0.62f),
-        )
+        // The hero and the dragon; the dragon does the talking here.
+        Character(Rigs.hero(hero.heroClass, vm.unlocked), Mood.CALM, Modifier.at(w * 0.2f, h * 0.62f, h * 0.62f, h * 0.62f))
         Character(
             Rigs.babyDragon,
             when {
-                listening -> Mood.LISTENING
                 dragonMood == Mood.HAPPY -> Mood.HAPPY
+                speaking -> Mood.TALKING
                 else -> Mood.CALM
             },
             Modifier.at(w * 0.4f, h * 0.7f, h * 0.48f, h * 0.48f),
+            voice = narrator::level,
         )
+
+        // The dragon's name tag; the pencil is for grown-ups.
+        val tag = h * 0.12f
+        Row(
+            Modifier
+                .at(w * 0.4f, h * 0.38f, w * 0.26f, tag)
+                .shadow(6.dp, RoundedCornerShape(50))
+                .background(Palette.Paper, RoundedCornerShape(50))
+                .border(3.dp, Palette.PaperEdge, RoundedCornerShape(50))
+                .clickable {
+                    sfx.play("tap")
+                    naming = true
+                    scope.launch { narrator.speak(Say.NAME_ASK) }
+                }
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        ) {
+            Text(
+                dragon.name, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black, color = Palette.Name,
+                fontSize = with(LocalDensity.current) { (tag * 0.5f).toSp() }, maxLines = 1,
+            )
+            Box(Modifier.size(tag * 0.7f).background(Palette.Berry, CircleShape), contentAlignment = Alignment.Center) {
+                PictoIcon(Picto.PENCIL, Color.White, Modifier.size(tag * 0.42f))
+            }
+        }
 
         // Level and stars
         LevelBadge(hero.level, Progression.progress(hero.totalXp), Modifier.align(Alignment.TopStart).padding(12.dp), h * 0.12f)
-
-        // Hold to name the dragon
-        val t = rememberInfiniteTransition(label = "mic")
-        val ring by t.animateFloat(1f, 1.35f, infiniteRepeatable(tween(500), RepeatMode.Reverse), label = "ring")
-        val mic = h * 0.17f
-        Box(Modifier.at(w * 0.4f, h * 0.3f, mic * 1.5f, mic * 1.5f), contentAlignment = Alignment.Center) {
-            if (listening) {
-                Box(Modifier.size(mic).graphicsLayer { scaleX = ring; scaleY = ring }.background(Palette.Berry.copy(alpha = 0.3f), CircleShape))
-            }
-            Box(
-                Modifier
-                    .size(mic)
-                    .shadow(8.dp, CircleShape)
-                    .background(if (listening) Color(0xFFC23A5E) else Palette.Berry, CircleShape)
-                    .border(4.dp, Color.White, CircleShape)
-                    .pointerInput(Unit) {
-                        detectTapGestures(onPress = {
-                            val allowed = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-                            if (!allowed) {
-                                askMic.launch(Manifest.permission.RECORD_AUDIO)
-                                return@detectTapGestures
-                            }
-                            narrator.stop()
-                            if (!recorder.start()) {
-                                scope.launch { narrator.speak("Hmm, I can't hear right now.") }
-                                return@detectTapGestures
-                            }
-                            listening = true
-                            tryAwaitRelease()
-                            listening = false
-                            val kept = recorder.stop()
-                            scope.launch {
-                                if (kept) {
-                                    dragonMood = Mood.HAPPY
-                                    narrator.speak(Speech.of("My name is {name}! I love my name! Let's go on an adventure!"))
-                                    dragonMood = Mood.CALM
-                                } else {
-                                    narrator.speak("I didn't hear you. Hold the button down the whole time you talk!")
-                                }
-                            }
-                        })
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                PictoIcon(Picto.MIC, Color.White, Modifier.size(mic * 0.58f))
-            }
-        }
 
         // Pick a hero
         Row(
@@ -202,10 +158,11 @@ fun TitleScreen(vm: GameViewModel) {
                         .border(if (chosen) 5.dp else 2.dp, if (chosen) Palette.Gold else Palette.PaperEdge, RoundedCornerShape(18.dp))
                         .clickable(enabled = true) {
                             if (open) {
+                                sfx.play("tap")
                                 vm.chooseClass(c)
-                                scope.launch { narrator.speak(classLine(c)) }
+                                scope.launch { narrator.speak(Say.heroLine(c)) }
                             } else {
-                                scope.launch { narrator.speak("This hero joins at level ${c.unlockLevel}. Keep adventuring!") }
+                                scope.launch { narrator.speak(Say.heroLocked(c.unlockLevel)) }
                             }
                         },
                     contentAlignment = Alignment.BottomCenter,
@@ -213,6 +170,7 @@ fun TitleScreen(vm: GameViewModel) {
                     Character(
                         Rigs.hero(c, vm.unlocked), if (chosen) Mood.HAPPY else Mood.CALM,
                         Modifier.fillMaxSize().padding(4.dp).graphicsLayer { alpha = if (open) 1f else 0.25f },
+                        animate = false,
                     )
                     if (!open) Text("${c.unlockLevel}", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Palette.Ink, modifier = Modifier.align(Alignment.Center))
                 }
@@ -222,10 +180,58 @@ fun TitleScreen(vm: GameViewModel) {
         RoundButton(
             Picto.NEXT, Palette.Go, h * 0.26f,
             Modifier.align(Alignment.BottomEnd).padding(end = 22.dp, bottom = 18.dp),
-            pulse = !listening,
+            pulse = true,
         ) {
+            sfx.play("tap")
             narrator.stop()
             vm.start()
+        }
+
+        if (naming) {
+            NameDialog(
+                current = dragon.name,
+                done = { typed ->
+                    naming = false
+                    if (typed != null && dragon.set(typed)) {
+                        dragonMood = Mood.HAPPY
+                        scope.launch {
+                            narrator.speak(Speech.of(Say.NAME_SET))
+                            dragonMood = Mood.CALM
+                        }
+                    }
+                },
+            )
+        }
+    }
+}
+
+/** For grown-ups: type the name the child chose. Picture buttons only for the child elsewhere. */
+@Composable
+private fun NameDialog(current: String, done: (String?) -> Unit) {
+    var text by remember { mutableStateOf(if (current == Voice.DEFAULT_NAME) "" else current) }
+    Dialog(onDismissRequest = { done(null) }) {
+        Column(
+            Modifier
+                .background(Palette.Paper, RoundedCornerShape(24.dp))
+                .border(3.dp, Palette.PaperEdge, RoundedCornerShape(24.dp))
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text("The baby dragon's name", fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black, fontSize = 22.sp, color = Palette.Ink)
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.take(16) },
+                singleLine = true,
+                placeholder = { Text(Voice.DEFAULT_NAME) },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { done(text) }),
+                textStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Palette.Name),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                RoundButton(Picto.HOME, Palette.Berry, 56.dp) { done(null) }
+                RoundButton(Picto.CHECK, Palette.Go, 56.dp) { done(text) }
+            }
         }
     }
 }

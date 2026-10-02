@@ -182,10 +182,24 @@ object Rigs {
 
 /**
  * Draws a [Rig] and brings it to life: breathing, blinking, a wagging tail, flapping wings,
- * a bobbing head, a talking mouth, and a hop when happy.
+ * a bobbing head, a talking mouth, and a hop when happy. With [voice], the mouth opens with the
+ * loudness of the words being heard, so it moves with the sound. [animate] false draws it still
+ * (small pictures, like the hero cards), which saves the phone work.
  */
 @Composable
-fun Character(rig: Rig, mood: Mood, modifier: Modifier = Modifier, facingLeft: Boolean = false, flap: Boolean = true) {
+fun Character(
+    rig: Rig,
+    mood: Mood,
+    modifier: Modifier = Modifier,
+    facingLeft: Boolean = false,
+    flap: Boolean = true,
+    voice: (() -> Float)? = null,
+    animate: Boolean = true,
+) {
+    if (!animate) {
+        StillCharacter(rig, mood, modifier, facingLeft)
+        return
+    }
     val idle = rememberInfiniteTransition(label = "idle")
     val breath by idle.animateFloat(0f, 1f, infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "breath")
     val wag by idle.animateFloat(-5f, 7f, infiniteRepeatable(tween(if (mood == Mood.HAPPY) 260 else 1300), RepeatMode.Reverse), label = "wag")
@@ -203,11 +217,16 @@ fun Character(rig: Rig, mood: Mood, modifier: Modifier = Modifier, facingLeft: B
         }
     }
     var mouthOpen by remember { mutableStateOf(false) }
-    LaunchedEffect(mood) {
+    LaunchedEffect(mood, voice) {
         mouthOpen = false
         while (mood == Mood.TALKING) {
-            delay(Random.nextLong(110, 190))
-            mouthOpen = !mouthOpen
+            if (voice != null) {
+                delay(40)
+                mouthOpen = voice() > 0.3f
+            } else {
+                delay(Random.nextLong(110, 190))
+                mouthOpen = !mouthOpen
+            }
         }
     }
     val hop = remember { Animatable(0f) }
@@ -264,4 +283,19 @@ fun Character(rig: Rig, mood: Mood, modifier: Modifier = Modifier, facingLeft: B
 @Composable
 private fun Layer(@DrawableRes id: Int, modifier: Modifier = Modifier) {
     Image(painterResource(id), contentDescription = null, modifier = modifier.fillMaxSize())
+}
+
+/** A character standing still: the same layers, no animation. */
+@Composable
+private fun StillCharacter(rig: Rig, mood: Mood, modifier: Modifier, facingLeft: Boolean) {
+    Box(modifier.aspectRatio(rig.aspect).graphicsLayer { scaleX = if (facingLeft) -1f else 1f }) {
+        for (piece in rig.pieces) {
+            if (piece.part == Part.FACE) {
+                Layer(rig.eyeOpen)
+                Layer(if (mood == Mood.HAPPY) rig.mouthHappy else rig.mouthCalm)
+            } else {
+                Layer(piece.res)
+            }
+        }
+    }
 }

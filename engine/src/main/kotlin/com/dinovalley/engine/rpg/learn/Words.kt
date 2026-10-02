@@ -7,7 +7,15 @@ object Words {
         "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
     )
 
-    fun number(n: Int): String = NUMBERS.getOrElse(n) { n.toString() }
+    private val TENS = listOf("", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety")
+
+    /** Numbers as words, up to a hundred. */
+    fun number(n: Int): String = when {
+        n in NUMBERS.indices -> NUMBERS[n]
+        n in 21..99 -> TENS[n / 10] + if (n % 10 == 0) "" else "-" + NUMBERS[n % 10]
+        n == 100 -> "one hundred"
+        else -> n.toString()
+    }
 
     fun capital(n: Int): String = number(n).replaceFirstChar { it.uppercase() }
 

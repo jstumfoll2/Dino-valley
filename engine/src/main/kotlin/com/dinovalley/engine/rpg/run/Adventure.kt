@@ -96,6 +96,9 @@ class Adventure(
 
     val finished: Boolean get() = beat is Beat.Finale
 
+    /** The beats already lined up after this one, so the app can get their words ready early. */
+    val upcoming: List<Beat> get() = queue.drop(1).map { it.beat }
+
     init {
         queue += camp()
         beat = queue.first().beat
@@ -216,7 +219,8 @@ class Adventure(
         }
         val prompt = clue?.prompt ?: Speech.of(lines.pickDoor())
         val peek = hero.heroClass.power == Power.KEEN_EYES
-        return Step(Beat.Doors(s, prompt, fork, clue, peek, stopIndex)) { reply ->
+        val offers = fork.doors.mapIndexed { i, d -> Speech.of(lines.doorOffer(d.hue.word.uppercase(), d.kind.activity, i, fork.doors.lastIndex)) }
+        return Step(Beat.Doors(s, prompt, fork, clue, peek, stopIndex, offers)) { reply ->
             val picked = reply as? Reply.Picked ?: Reply.Picked(0)
             val index = picked.index.coerceIn(fork.doors.indices)
             val room = fork.doors[index]
@@ -265,13 +269,22 @@ class Adventure(
             val s = scene(Place.RUNE_HALL)
             listOf(
                 tell(s, lines.runeDoor()),
-                ask(s, ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed()), lines.runeOops(), lines.runeYay()) { treasure(s) },
+                ask(s, ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed()), lines.runeOops(), lines.patternAgain()) {
+                    listOf(ask(s, ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed()), lines.runeOops(), lines.runeYay()) { treasure(s) })
+                },
             )
         }
         RoomKind.BRIDGE -> {
             val s = scene(Place.BRIDGE)
             val c = ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.STONE, "How many stones are on the bridge?")
-            listOf(tell(s, lines.bridge()), ask(s, c, lines.bridgeOops(), lines.bridgeYay()) { treasure(s) })
+            // Count the stones, then find the number that says how many: quantity, then symbol.
+            listOf(
+                tell(s, lines.bridge()),
+                ask(s, c, lines.bridgeOops(), "Yes, ${Words.number(c.count)}!") {
+                    val n = ChallengeFactory.numeral(level(Skill.NUMBERS), nextSeed(), lines.countThenFind(), c.count)
+                    listOf(ask(s, n, lines.bridgeOops(), lines.bridgeYay()) { treasure(s) })
+                },
+            )
         }
         RoomKind.CRYSTAL_CAVE -> {
             val s = scene(Place.CRYSTAL_CAVE, Actor.WIZARD)
@@ -280,24 +293,63 @@ class Adventure(
                 tell(s, lines.crystalCave()),
                 ask(s, c, lines.crystalOops(), lines.crystalYay()) {
                     gems++
-                    listOf(found(s.copy(mood = Mood.HAPPY), Loot(LootKind.GEM, 1, "a ${c.target.hue.word} gem"), "You got a shiny ${c.target.hue.word} gem!")) + treasure(s)
+                    val again = ChallengeFactory.color(level(Skill.COLORS), nextSeed(), lines.colorAgain() + " She")
+                    listOf(
+                        found(s.copy(mood = Mood.HAPPY), Loot(LootKind.GEM, 1, "a ${c.target.hue.word} gem"), "You got a shiny ${c.target.hue.word} gem!"),
+                        ask(s, again, lines.crystalOops(), lines.crystalYay()) { treasure(s) },
+                    )
                 },
             )
         }
         RoomKind.LIBRARY -> {
             val s = scene(Place.LIBRARY)
             val c = ChallengeFactory.letter(level(Skill.LETTERS), nextSeed(), lines.letterPurpose())
-            listOf(tell(s, lines.library()), ask(s, c, lines.libraryOops(), lines.libraryYay()) { treasure(s) })
+            listOf(
+                tell(s, lines.library()),
+                ask(s, c, lines.libraryOops(), "Yes! That's the letter ${c.letter}.") {
+                    val again = ChallengeFactory.letter(level(Skill.LETTERS), nextSeed(), lines.letterAgain())
+                    listOf(ask(s, again, lines.libraryOops(), lines.libraryYay()) { treasure(s) })
+                },
+            )
         }
         RoomKind.TUNNEL -> {
             val s = scene(Place.TUNNEL)
-            val c = ChallengeFactory.trace(level(Skill.TRACING), nextSeed(), lines.traceGoal())
-            listOf(tell(s, lines.tunnel()), ask(s, c, lines.tunnelOops(), lines.tunnelYay()) { treasure(s) })
+            val c = ChallengeFactory.write(level(Skill.TRACING), nextSeed(), lines.writePurpose())
+            listOf(
+                tell(s, lines.tunnel()),
+                ask(s, c, lines.tunnelOops(), lines.tunnelYay()) {
+                    val n = ChallengeFactory.write(level(Skill.TRACING), nextSeed(), lines.writeAgain(), number = true)
+                    listOf(ask(s, n, lines.tunnelOops(), lines.tunnelYay()) { treasure(s) })
+                },
+            )
         }
         RoomKind.MIRROR_HALL -> {
             val s = scene(Place.MIRROR_HALL)
             val c = ChallengeFactory.memory(level(Skill.MEMORY), nextSeed())
             listOf(tell(s, lines.mirrorHall()), ask(s, c, lines.mirrorOops(), lines.mirrorYay()) { treasure(s) })
+        }
+        RoomKind.STOREROOM -> {
+            val s = scene(Place.STOREROOM)
+            val c = ChallengeFactory.sort(level(Skill.SORTING), nextSeed())
+            listOf(tell(s, lines.storeroom()), ask(s, c, lines.storeroomOops(), lines.storeroomYay()) { treasure(s) })
+        }
+        RoomKind.POND -> {
+            val s = scene(Place.POND)
+            val c = ChallengeFactory.skipCount(level(Skill.SKIP_COUNTING), nextSeed())
+            listOf(
+                tell(s, lines.pond()),
+                ask(s, c, lines.pondOops(), lines.pondYay()) {
+                    listOf(
+                        tell(s, lines.pondAgain()),
+                        ask(s, ChallengeFactory.skipCount(level(Skill.SKIP_COUNTING), nextSeed()), lines.pondOops(), lines.pondYay()) { treasure(s) },
+                    )
+                },
+            )
+        }
+        RoomKind.MOSAIC_HALL -> {
+            val s = scene(Place.MOSAIC_HALL)
+            val c = ChallengeFactory.puzzle(level(Skill.PUZZLES), nextSeed())
+            listOf(tell(s, lines.mosaic()), ask(s, c, lines.mosaicOops(), lines.mosaicYay()) { treasure(s) })
         }
         RoomKind.VAULT -> vault()
         RoomKind.GOBLIN_DEN -> den()

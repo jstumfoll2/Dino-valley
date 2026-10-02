@@ -1507,6 +1507,407 @@ def scene_map():
     return d.svg(grain=0.1, vignette=0.3)
 
 
+# --------------------------------------------------------------------------------------------
+# Storeroom, cave pond and mosaic hall (sorting, skip-counting and jigsaw games)
+# --------------------------------------------------------------------------------------------
+
+def crate(x, y, w, h, wood="#b5804a", dark="#7a4e2a", face=False):
+    """Wooden crate standing with its bottom-left corner at (x, y)."""
+    t = y - h
+    out = (f'<rect x="{x}" y="{t}" width="{w}" height="{h}" rx="5" fill="{wood}" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+           f'<rect x="{x + 8}" y="{t + 8}" width="{w - 16}" height="{h - 16}" rx="3" fill="none" stroke="{dark}" stroke-width="4" opacity="0.7"/>'
+           f'<path d="M{x + 12} {t + 12} L{x + w - 12} {y - 12}" stroke="{dark}" stroke-width="12" stroke-linecap="round" opacity="0.8"/>'
+           f'<path d="M{x + 12} {t + 12} L{x + w - 12} {y - 12}" stroke="{wood}" stroke-width="6" stroke-linecap="round"/>')
+    for f in (0.36, 0.64):
+        out += f'<path d="M{x + 6} {t + h * f:.0f} L{x + w - 6} {t + h * f:.0f}" stroke="{dark}" stroke-width="3" opacity="0.45"/>'
+    for cx, cy in ((x + 14, t + 14), (x + w - 14, t + 14), (x + 14, y - 14), (x + w - 14, y - 14)):
+        out += f'<circle cx="{cx}" cy="{cy}" r="3.5" fill="{INK}" opacity="0.55"/>'
+    out += f'<path d="M{x + 8} {t + 6} L{x + w * 0.5:.0f} {t + 6}" stroke="#f0c88e" stroke-width="5" opacity="0.6" stroke-linecap="round"/>'
+    if face:  # a goblin doodle chalked on the crate
+        cx, cy = x + w * 0.5, t + h * 0.5
+        out += (f'<g stroke="#f6ecd6" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.85">'
+                f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{w * 0.17:.0f}"/>'
+                f'<path d="M{cx - w * 0.17:.0f} {cy - 6:.0f} L{cx - w * 0.3:.0f} {cy - 18:.0f} M{cx + w * 0.17:.0f} {cy - 6:.0f} L{cx + w * 0.3:.0f} {cy - 18:.0f}"/>'
+                f'<path d="M{cx - 10:.0f} {cy + 6:.0f} Q{cx:.0f} {cy + 16:.0f} {cx + 10:.0f} {cy + 6:.0f}"/></g>'
+                f'<circle cx="{cx - 8:.0f}" cy="{cy - 5:.0f}" r="3.5" fill="#f6ecd6"/><circle cx="{cx + 8:.0f}" cy="{cy - 5:.0f}" r="3.5" fill="#f6ecd6"/>')
+    return out
+
+
+def sack(d, x, y, w, h, col="#d9bf8a", dark="#a8885a", tie="#8a5a33", lean=0, open_top=False):
+    """A plump burlap sack sitting on y, centred on x."""
+    l, rr, t = x - w / 2, x + w / 2, y - h
+    g = d.lin([(0, col), (1, dark)], 0, 0, 1, 1)
+    neck = w * 0.16
+    body = (f'M{x - neck:.0f} {t + h * 0.18:.0f} C{l - w * 0.08:.0f} {t + h * 0.3:.0f} {l - w * 0.1:.0f} {y - 4:.0f} {l + w * 0.12:.0f} {y:.0f} '
+            f'L{rr - w * 0.12:.0f} {y:.0f} C{rr + w * 0.1:.0f} {y - 4:.0f} {rr + w * 0.08:.0f} {t + h * 0.3:.0f} {x + neck:.0f} {t + h * 0.18:.0f} Z')
+    out = f'<g transform="rotate({lean} {x} {y})"><path d="{body}" fill="{g}" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+    if open_top:
+        out += (f'<ellipse cx="{x:.0f}" cy="{t + h * 0.16:.0f}" rx="{neck * 1.9:.0f}" ry="{neck * 0.6:.0f}" fill="{dark}" stroke="{INK}" stroke-width="4"/>'
+                f'<ellipse cx="{x:.0f}" cy="{t + h * 0.17:.0f}" rx="{neck * 1.4:.0f}" ry="{neck * 0.38:.0f}" fill="#f2dca0"/>')
+    else:
+        out += (f'<path d="M{x - neck:.0f} {t + h * 0.18:.0f} L{x - neck * 1.6:.0f} {t:.0f} L{x + neck * 1.6:.0f} {t:.0f} L{x + neck:.0f} {t + h * 0.18:.0f} Z" fill="{col}" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>'
+                f'<path d="M{x - neck * 1.2:.0f} {t + h * 0.17:.0f} L{x + neck * 1.2:.0f} {t + h * 0.17:.0f}" stroke="{tie}" stroke-width="8" stroke-linecap="round"/>')
+    out += (f'<path d="M{l + w * 0.18:.0f} {t + h * 0.4:.0f} Q{l + w * 0.1:.0f} {t + h * 0.7:.0f} {l + w * 0.2:.0f} {y - 12:.0f}" stroke="#fff6dc" stroke-width="6" fill="none" opacity="0.35" stroke-linecap="round"/>'
+            f'<path d="M{x - w * 0.05:.0f} {t + h * 0.45:.0f} L{x + w * 0.22:.0f} {t + h * 0.45:.0f} L{x + w * 0.22:.0f} {t + h * 0.68:.0f} L{x - w * 0.05:.0f} {t + h * 0.68:.0f} Z" '
+            f'fill="{dark}" stroke="{INK}" stroke-width="3" stroke-dasharray="6 5" opacity="0.8"/></g>')
+    return out
+
+
+def apple(x, y, s=1.0, col="#e04a3a"):
+    return (f'<path d="M{x:.0f} {y - 18 * s:.0f} C{x - 26 * s:.0f} {y - 30 * s:.0f} {x - 26 * s:.0f} {y + 12 * s:.0f} {x:.0f} {y + 12 * s:.0f} '
+            f'C{x + 26 * s:.0f} {y + 12 * s:.0f} {x + 26 * s:.0f} {y - 30 * s:.0f} {x:.0f} {y - 18 * s:.0f} Z" fill="{col}" stroke="{INK}" stroke-width="{3.5 * s:.1f}"/>'
+            f'<path d="M{x:.0f} {y - 18 * s:.0f} L{x + 3 * s:.0f} {y - 28 * s:.0f}" stroke="#6a4226" stroke-width="{3.5 * s:.1f}" stroke-linecap="round"/>'
+            f'<path d="M{x + 3 * s:.0f} {y - 24 * s:.0f} q{10 * s:.0f} {-8 * s:.0f} {16 * s:.0f} {-2 * s:.0f} q{-8 * s:.0f} {6 * s:.0f} {-16 * s:.0f} {2 * s:.0f} Z" fill="#6aa84a"/>'
+            f'<ellipse cx="{x - 8 * s:.0f}" cy="{y - 8 * s:.0f}" rx="{4 * s:.1f}" ry="{6 * s:.1f}" fill="#fff" opacity="0.5"/>')
+
+
+def onion_string(r, x, y0, n, s=1.0):
+    out = f'<path d="M{x} {y0} L{x} {y0 + n * 30 * s:.0f}" stroke="#c9a46a" stroke-width="4"/>'
+    for k in range(n):
+        y = y0 + 26 * s + k * 30 * s
+        ox = x + (12 if k % 2 else -12) * s
+        col = r.choice(["#e0a85a", "#c97a4a", "#f2d3a0"])
+        out += (f'<path d="M{ox:.0f} {y - 22 * s:.0f} Q{ox - 20 * s:.0f} {y - 4 * s:.0f} {ox:.0f} {y + 12 * s:.0f} Q{ox + 20 * s:.0f} {y - 4 * s:.0f} {ox:.0f} {y - 22 * s:.0f} Z" '
+                f'fill="{col}" stroke="{INK}" stroke-width="2.5" stroke-opacity="0.7"/>'
+                f'<path d="M{ox - 4 * s:.0f} {y - 10 * s:.0f} Q{ox - 6 * s:.0f} {y:.0f} {ox - 2 * s:.0f} {y + 6 * s:.0f}" stroke="#fff6dc" stroke-width="2.5" fill="none" opacity="0.5"/>')
+    return out
+
+
+def scene_storeroom():
+    d = Doc(114)
+    r = d.r
+    wall = d.lin([(0, "#5a3e2c"), (0.25, "#8a6244"), (0.75, "#9c7350"), (1, "#7e5a3e")])
+    d.add(f'<rect width="{W}" height="{H}" fill="{wall}"/>')
+    # plank wall, faded over the centre-right play area
+    mask = d.fade_mask(1300, 620, 700, 470, 0.25)
+    planks = ""
+    x = 0
+    while x < W:
+        w = r.uniform(90, 140)
+        planks += (f'<rect x="{x:.0f}" y="60" width="{w:.0f}" height="770" fill="{r.choice(["#8e6546", "#9a7050", "#83603f"])}"/>'
+                   f'<path d="M{x:.0f} 60 L{x:.0f} 830" stroke="#5a3e2a" stroke-width="5"/>')
+        for _ in range(2):
+            ky = r.uniform(120, 780)
+            planks += f'<ellipse cx="{x + w * r.uniform(0.3, 0.7):.0f}" cy="{ky:.0f}" rx="6" ry="10" fill="none" stroke="#5a3e2a" stroke-width="3" opacity="0.6"/>'
+        x += w
+    d.add(f'<g mask="{mask}" opacity="0.9">{planks}</g>')
+    d.add(glow(d, 1300, 600, 760, "#ffe0b0", 0.22, ry=440))
+    # ceiling beam with hanging onions and sausages (edges only)
+    d.add(f'<rect x="0" y="0" width="{W}" height="64" fill="#4a3222" stroke="{INK}" stroke-width="5"/>'
+          f'<path d="M0 56 L{W} 56" stroke="#7a5236" stroke-width="5" opacity="0.6"/>')
+    for x, n in [(60, 6), (140, 4), (1610, 4), (1860, 6)]:
+        d.add(onion_string(r, x, 64, n, 1.0))
+    sx0, sx1 = 1660, 1800
+    d.add(f'<path d="M{sx0} 64 Q{(sx0 + sx1) / 2} 120 {sx1} 64" stroke="#c9a46a" stroke-width="4" fill="none"/>')
+    for k in range(5):
+        t = (k + 0.5) / 5
+        x = sx0 + (sx1 - sx0) * t
+        y = 64 + 56 * 4 * t * (1 - t)
+        d.add(f'<path d="M{x:.0f} {y:.0f} q-8 40 6 70" stroke="#a8432f" stroke-width="18" fill="none" stroke-linecap="round"/>'
+              f'<path d="M{x:.0f} {y:.0f} q-8 40 6 70" stroke="#d8644a" stroke-width="9" fill="none" stroke-linecap="round" opacity="0.8"/>')
+    # a hanging lantern on the left
+    d.add(lantern(d, 300, 64, 240, 0.9, "#ffcf6a"))
+    # wall shelves on the left, crammed with jars, pots and a cheese
+    for y in (320, 470):
+        d.add(f'<path d="M30 {y + 16} L50 {y + 60} M330 {y + 16} L310 {y + 60}" stroke="#5a3a22" stroke-width="10" stroke-linecap="round"/>')
+        d.add(shelf_board(0, 380, y))
+    for x, col, k, s in [(40, "#ffcf4a", 2, 0.9), (100, "#e07a5a", 1, 0.85), (160, "#7fd0a0", 0, 0.8)]:
+        d.add(bottle(x, 320, s, col, k, "#f4e8d0"))
+    d.add(f'<path d="M210 320 L210 268 Q250 250 290 268 L290 320 Z" fill="#f2c94c" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>'
+          f'<path d="M210 268 Q250 284 290 268" stroke="{INK}" stroke-width="3" fill="none" opacity="0.6"/>'
+          f'<circle cx="236" cy="296" r="7" fill="#d9a830"/><circle cx="268" cy="304" r="5" fill="#d9a830"/>')
+    d.add(f'<path d="M300 320 L310 280 L360 280 L370 320 Z" fill="#c4703f" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>'
+          f'<rect x="304" y="272" width="62" height="12" rx="5" fill="#a85a32" stroke="{INK}" stroke-width="3"/>')
+    d.add(crate(24, 470, 110, 86))
+    d.add(sack(d, 210, 470, 100, 110, open_top=True))
+    for k, x in enumerate((196, 214, 230)):
+        d.add(apple(x, 360 + (k % 2) * 6, 0.55, ["#e04a3a", "#7cc04a", "#f2b23a"][k]))
+    d.add(bottle(310, 470, 0.9, "#b58cff", 1, "#f4e8d0"))
+    # floor
+    fl = d.lin([(0, "#9a6a44"), (1, "#5e3c26")])
+    d.add(f'<rect x="0" y="830" width="{W}" height="250" fill="{fl}"/>')
+    d.add(floor_planks(r, 830, 1080, "#8a5e3c", "#a87650", "#4a2e1e", 6))
+    d.add(f'<rect x="0" y="822" width="{W}" height="14" fill="#4e3424"/>')
+    d.add(glow(d, 1300, 880, 560, "#ffc87a", 0.22, ry=110))
+    # the messy pile at the right edge: stacked crates, sacks and spilled apples
+    d.add(f'<ellipse cx="1800" cy="1010" rx="220" ry="26" fill="#2e1e14" opacity="0.35"/>')
+    d.add(crate(1700, 1010, 200, 190, face=True))
+    d.add(crate(1740, 820, 180, 150, "#c08a52"))
+    d.add(crate(1780, 670, 150, 120, "#a8743e"))
+    d.add(barrel(1890, 1030, 120, 150, "#9a5f36"))
+    d.add(f'<path d="M1650 860 L1690 640" stroke="{INK}" stroke-width="14" stroke-linecap="round"/><path d="M1650 860 L1690 640" stroke="#b07a4a" stroke-width="7" stroke-linecap="round"/>')
+    d.add(sack(d, 1660, 1012, 130, 150, "#e0c890", "#b0905c", lean=-6))
+    # spilled things along the bottom edge
+    d.add(sack(d, 1520, 1100, 140, 120, lean=-70, open_top=True))
+    for x, y in [(1400, 1062), (1372, 1048), (1340, 1066), (1300, 1056), (1426, 1040)]:
+        d.add(f'<ellipse cx="{x}" cy="{y}" rx="9" ry="6" fill="#f2dca0" stroke="{INK}" stroke-width="2" stroke-opacity="0.5"/>')
+    for x, y, col in [(1180, 1058, "#e04a3a"), (1050, 1070, "#7cc04a"), (1880, 1050, "#e04a3a"), (60, 1060, "#f2b23a")]:
+        d.add(apple(x, y, 0.9, col))
+    # a dropped spoon and a cork near the left corner
+    d.add(f'<path d="M120 1050 L230 1032" stroke="{INK}" stroke-width="12" stroke-linecap="round"/>'
+          f'<path d="M120 1050 L230 1032" stroke="#c9a46a" stroke-width="6" stroke-linecap="round"/>'
+          f'<ellipse cx="246" cy="1029" rx="22" ry="13" fill="#c9a46a" stroke="{INK}" stroke-width="4" transform="rotate(-10 246 1029)"/>')
+    d.add(motes(r, 22, 0, W, 120, 820, "#ffe6b0", 1.5, 3, avoid=(740, 230, 1880, 1030)))
+    return d.svg(vignette=0.3)
+
+
+def lily_pad(d, x, y, rx, flower=False, rot=0):
+    ry = rx * 0.42
+    g = d.rad([(0, "#9ad86a"), (0.7, "#5fae45"), (1, "#3f8a3a")], cx=0.45, cy=0.4)
+    a0, a1 = math.radians(rot - 18), math.radians(rot + 18)
+    p0 = (x + math.cos(a0) * rx, y + math.sin(a0) * ry)
+    p1 = (x + math.cos(a1) * rx, y + math.sin(a1) * ry)
+    out = (f'<ellipse cx="{x}" cy="{y + 6}" rx="{rx + 4}" ry="{ry + 3}" fill="#0e3a3a" opacity="0.3"/>'
+           f'<path d="M{x} {y} L{p0[0]:.0f} {p0[1]:.0f} A{rx} {ry:.0f} 0 1 0 {p1[0]:.0f} {p1[1]:.0f} Z" fill="{g}" stroke="#24502a" stroke-width="4" stroke-linejoin="round"/>')
+    for k in range(5):
+        a = math.radians(rot + 50 + k * 52)
+        out += f'<path d="M{x} {y} L{x + math.cos(a) * rx * 0.75:.0f} {y + math.sin(a) * ry * 0.75:.0f}" stroke="#3f8a3a" stroke-width="3" opacity="0.6"/>'
+    if flower:
+        fx, fy = x - rx * 0.3, y - ry * 0.2
+        for k in range(7):
+            a = -math.pi / 2 + (k - 3) * 0.42
+            out += (f'<ellipse cx="{fx + math.cos(a) * 14:.0f}" cy="{fy + math.sin(a) * 14:.0f}" rx="8" ry="17" fill="#ffb0cf" stroke="#c4508f" stroke-width="2.5" '
+                    f'transform="rotate({math.degrees(a) + 90:.0f} {fx + math.cos(a) * 14:.0f} {fy + math.sin(a) * 14:.0f})"/>')
+        out += f'<circle cx="{fx:.0f}" cy="{fy:.0f}" r="7" fill="#ffd34d" stroke="#c98a22" stroke-width="2"/>'
+    return out
+
+
+def frog(x, y, s=1.0, flip=False):
+    """A friendly round frog sitting with its bottom centre at (x, y)."""
+    tf = f'translate({x} {y}) scale({-s if flip else s} {s})'
+    o = "#24451c"
+    return (f'<g transform="{tf}">'
+            f'<ellipse cx="0" cy="2" rx="62" ry="12" fill="#0e2a2a" opacity="0.3"/>'
+            f'<path d="M-58 -4 C-70 -14 -60 -34 -40 -30 L-30 -4 Z M58 -4 C70 -14 60 -34 40 -30 L30 -4 Z" fill="#5fae45" stroke="{o}" stroke-width="4" stroke-linejoin="round"/>'
+            f'<path d="M-48 0 C-56 -50 -36 -78 0 -78 C36 -78 56 -50 48 0 Z" fill="#7cc75a" stroke="{o}" stroke-width="5" stroke-linejoin="round"/>'
+            f'<path d="M-26 -2 C-30 -30 -16 -44 0 -44 C16 -44 30 -30 26 -2 Z" fill="#e8f6b0"/>'
+            f'<circle cx="-24" cy="-80" r="18" fill="#7cc75a" stroke="{o}" stroke-width="5"/><circle cx="24" cy="-80" r="18" fill="#7cc75a" stroke="{o}" stroke-width="5"/>'
+            f'<circle cx="-24" cy="-80" r="11" fill="#fff"/><circle cx="24" cy="-80" r="11" fill="#fff"/>'
+            f'<circle cx="-21" cy="-79" r="6.5" fill="#1a1a10"/><circle cx="27" cy="-79" r="6.5" fill="#1a1a10"/>'
+            f'<circle cx="-19" cy="-82" r="2.4" fill="#fff"/><circle cx="29" cy="-82" r="2.4" fill="#fff"/>'
+            f'<path d="M-30 -54 Q0 -34 30 -54" stroke="{o}" stroke-width="4.5" fill="none" stroke-linecap="round"/>'
+            f'<ellipse cx="-34" cy="-50" rx="8" ry="5" fill="#ff9aa8" opacity="0.7"/><ellipse cx="34" cy="-50" rx="8" ry="5" fill="#ff9aa8" opacity="0.7"/>'
+            f'<path d="M-30 0 C-30 -14 -20 -18 -14 -10 L-10 0 Z M30 0 C30 -14 20 -18 14 -10 L10 0 Z" fill="#5fae45" stroke="{o}" stroke-width="3.5" stroke-linejoin="round"/>'
+            f'<ellipse cx="-30" cy="-64" rx="8" ry="5" fill="#fff" opacity="0.35"/></g>')
+
+
+def cattails(r, x, y, n, spread=60, h=200):
+    out = ""
+    for k in range(n):
+        bx = x + r.uniform(-spread, spread)
+        hh = h * r.uniform(0.7, 1.1)
+        lean = r.uniform(-30, 30)
+        out += f'<path d="M{bx:.0f} {y} Q{bx + lean * 0.3:.0f} {y - hh * 0.5:.0f} {bx + lean:.0f} {y - hh:.0f}" stroke="#4f8a3a" stroke-width="6" fill="none" stroke-linecap="round"/>'
+        if k % 2 == 0:
+            tx, ty = bx + lean * 0.9, y - hh * 0.9
+            out += f'<rect x="{tx - 9:.0f}" y="{ty - 10:.0f}" width="18" height="52" rx="9" fill="#8a5a33" stroke="{INK}" stroke-width="3" transform="rotate({lean * 0.4:.0f} {tx:.0f} {ty:.0f})"/>'
+        else:
+            out += (f'<path d="M{bx:.0f} {y} Q{bx + lean:.0f} {y - hh * 0.6:.0f} {bx + lean * 1.6 + 20:.0f} {y - hh * 0.75:.0f} Q{bx + lean * 0.5 + 6:.0f} {y - hh * 0.4:.0f} {bx + 10:.0f} {y} Z" '
+                    f'fill="#6aa84a" stroke="#3f7a35" stroke-width="2"/>')
+    return out
+
+
+def scene_pond():
+    d = Doc(115)
+    r = d.r
+    bg = d.rad([(0, "#5aa59c"), (0.55, "#3a7a80"), (1, "#1e4552")], cx=0.62, cy=0.5, r=0.72)
+    d.add(f'<rect width="{W}" height="{H}" fill="{bg}"/>')
+    mask = d.fade_mask(1300, 560, 700, 420, 0.15)
+    lumps = ""
+    for _ in range(30):
+        x, y = r.uniform(0, W), r.uniform(80, 760)
+        lumps += f'<path d="{smooth(blob_pts(r, x, y, r.uniform(80, 200), r.uniform(50, 120), 9, 0.2))}" fill="{r.choice(["#3a7276", "#46848a", "#326468"])}" opacity="0.6"/>'
+    d.add(f'<g mask="{mask}">{lumps}</g>')
+    d.add(glow(d, 1280, 560, 720, "#c8fff0", 0.22, ry=420))
+    # cave frame and stalactites
+    frame = d.lin([(0, "#1a3a44"), (1, "#24505a")])
+    d.add(f'<path d="M0 0 L{W} 0 L{W} {H} L0 {H} Z M40 900 Q10 520 110 270 Q300 80 700 60 Q1200 40 1620 90 Q1880 180 1890 470 Q1900 700 1890 900 Z" '
+          f'fill="{frame}" fill-rule="evenodd"/>')
+    d.add(stalactites(r, 0, 420, 50, 60, 190, "#1a3a44", "#0e2228"))
+    d.add(stalactites(r, 1540, 1920, 70, 60, 190, "#1a3a44", "#0e2228"))
+    d.add(stalactites(r, 420, 1540, 40, 30, 66, "#1a3a44", "#0e2228", (40, 80)))
+    # a thin waterfall at the right edge
+    fall = d.lin([(0, "#bff4ff", 0.9), (1, "#7fd8e8", 0.8)])
+    d.add(f'<path d="M1880 150 Q1870 400 1872 760 L1920 760 L1920 150 Z" fill="{fall}" stroke="#2a6a78" stroke-width="4"/>')
+    for k in range(4):
+        x = 1884 + k * 9
+        d.add(f'<path d="M{x} 170 Q{x - 6} 450 {x - 2} 750" stroke="#ffffff" stroke-width="3" fill="none" opacity="0.5"/>')
+    # glowing mushrooms on the left wall ledge, with a frog sitting there
+    ledge = smooth([(-20, 520), (120, 486), (300, 478), (380, 500), (360, 560), (200, 580), (-20, 590)])
+    d.add(f'<path d="{ledge}" fill="#2e5a5a" stroke="#0e2228" stroke-width="5"/>')
+    d.add(f'<path d="M20 500 Q160 470 330 486" stroke="#6fbf7a" stroke-width="12" fill="none" stroke-linecap="round" opacity="0.8"/>')
+    for x, y, s in [(40, 500, 0.9), (90, 492, 0.6), (330, 490, 0.75)]:
+        d.add(mushroom(d, x, y, s, "#7ff0e0", "#d8f0ee", 0.4))
+    d.add(frog(210, 484, 0.75))
+    for x, y, s in [(1700, 140, 0.8), (1760, 160, 0.6)]:
+        d.add(mushroom(d, x, y, s, "#b8ffcf", "#e0fff0", 0.35))
+    # the shore the hero stands on (left) and the pond (centre-right)
+    shore = d.lin([(0, "#6a8a6a"), (0.3, "#4f6e56"), (1, "#2e4438")])
+    d.add(f'<path d="M-20 800 Q500 780 760 800 Q1300 820 1940 790 L1940 1100 L-20 1100 Z" fill="{shore}"/>')
+    water = d.lin([(0, "#3f9aa8"), (0.5, "#2a7a8e"), (1, "#1a5470")])
+    pond = smooth([(700, 1100), (720, 960), (800, 860), (980, 822), (1400, 818), (1800, 812), (1960, 808), (1960, 1100)], closed=False)
+    d.add(f'<path d="{pond} Z" fill="{water}" stroke="#163a40" stroke-width="6"/>')
+    d.add(f'<path d="M790 870 Q900 832 1100 826 Q1500 822 1920 816" stroke="#a8f0f0" stroke-width="5" fill="none" opacity="0.5"/>')
+    d.add(f'<path d="M-20 800 Q500 780 760 800" stroke="#9ac89a" stroke-width="6" fill="none" opacity="0.5"/>')
+    d.add(grass_blades(r, 0, 700, 790, 840, 70, ["#5f9a5a", "#78b06a", "#4a7a4a"], 10, 26))
+    # soft reflections and ripples on the water
+    d.add(glow(d, 1280, 900, 520, "#c8fff0", 0.25, ry=70))
+    for _ in range(14):
+        x, y = r.uniform(820, 1900), r.uniform(860, 1060)
+        w = r.uniform(40, 110)
+        d.add(f'<path d="M{x - w:.0f} {y:.0f} Q{x:.0f} {y - 8:.0f} {x + w:.0f} {y:.0f}" stroke="#bff4ff" stroke-width="3" fill="none" opacity="0.35" stroke-linecap="round"/>')
+    # lily pads and stepping stones round the pond's edges
+    for x, y, rx in [(760, 1050, 50), (860, 1070, 44)]:
+        d.add(f'<ellipse cx="{x}" cy="{y + 6}" rx="{rx + 4}" ry="{rx * 0.36 + 3:.0f}" fill="#0e3a3a" opacity="0.3"/>'
+              f'<ellipse cx="{x}" cy="{y}" rx="{rx}" ry="{rx * 0.36:.0f}" fill="#9a9a8a" stroke="#3a3a30" stroke-width="4"/>'
+              f'<ellipse cx="{x - 8}" cy="{y - 4}" rx="{rx * 0.6:.0f}" ry="{rx * 0.16:.0f}" fill="#c8c8b8" opacity="0.7"/>')
+    d.add(lily_pad(d, 1040, 1066, 70, rot=-30))
+    d.add(lily_pad(d, 1880, 880, 60, True, rot=200))
+    d.add(lily_pad(d, 1820, 1056, 96, rot=-60))
+    d.add(frog(1820, 1056, 0.85, flip=True))
+    d.add(lily_pad(d, 1560, 1070, 54, True, rot=30))
+    # cattails at both edges
+    d.add(cattails(r, 30, 860, 6, 40, 220))
+    d.add(cattails(r, 1900, 830, 4, 20, 200))
+    # little stones and pebbles on the shore edge
+    for _ in range(10):
+        x, y = r.uniform(0, 680), r.uniform(1010, 1075)
+        d.add(f'<ellipse cx="{x:.0f}" cy="{y:.0f}" rx="{r.uniform(10, 22):.0f}" ry="{r.uniform(6, 10):.0f}" fill="{r.choice(["#7a8a7a", "#8a9a88", "#5e6e60"])}" stroke="#2e3a30" stroke-width="2" stroke-opacity="0.5"/>')
+    # fireflies
+    for _ in range(26):
+        x, y = r.uniform(0, W), r.uniform(120, 1000)
+        if 740 < x < 1880 and 240 < y < 1020:
+            continue
+        d.add(glow(d, x, y, 22, "#f8ff9a", 0.6) + f'<circle cx="{x:.0f}" cy="{y:.0f}" r="3.5" fill="#fbffc8"/>')
+    d.add(motes(r, 14, 760, 1860, 260, 780, "#e0fff0", 1.5, 2.5))
+    return d.svg(vignette=0.32, vig_color="#06161c")
+
+
+MOSAIC_GROUT = "#4a3a30"
+
+
+def mosaic_panel(d, r, x0, y0, w, h, tile=24, missing=0.1, hole=None):
+    """An arched picture mosaic (sun, sky, hills and a little tree) with some tiles missing.
+    hole = (cx, cy, radius) in panel fractions knocks out a cluster of tiles."""
+    out = ""
+    rx = w / 2
+    spring = y0 + rx
+    cx = x0 + rx
+    frame = d.lin([(0, "#e8d2a0"), (1, "#a8865a")], 0, 0, 1, 1)
+    out += f'<path d="{arch_path(x0 - 26, x0 + w + 26, spring, y0 + h + 26)}" fill="{frame}" stroke="{INK}" stroke-width="6"/>'
+    out += f'<path d="{arch_path(x0, x0 + w, spring, y0 + h)}" fill="{MOSAIC_GROUT}"/>'
+    fallen = []
+    ny, nx = int(h / tile) + 1, int(w / tile) + 1
+    for j in range(ny):
+        for i in range(nx):
+            tx, ty = x0 + i * tile, y0 + j * tile
+            mx, my = tx + tile / 2, ty + tile / 2
+            if mx > x0 + w - 2 or my > y0 + h - 2:
+                continue
+            if my < spring and (mx - cx) ** 2 + (my - spring) ** 2 > (rx - tile * 0.45) ** 2:
+                continue
+            u, v = (mx - x0) / w, (my - y0) / h
+            gone = r.random() < missing
+            if hole and (u - hole[0]) ** 2 + ((v - hole[1]) * h / w) ** 2 < hole[2] ** 2:
+                gone = r.random() < 0.85
+            if gone:
+                fallen.append(u)
+                continue
+            # the picture
+            hill1 = 0.72 + 0.06 * math.sin(u * 5.0 + 0.6)
+            hill2 = 0.8 + 0.05 * math.sin(u * 7.0 + 2.0)
+            su, sv = 0.66, 0.3
+            dsun = math.hypot(u - su, (v - sv) * h / w)
+            if v > hill2:
+                col = r.choice(["#4f9a4a", "#5aa852", "#468a40"])
+            elif v > hill1:
+                col = r.choice(["#78c060", "#86cc6a", "#6ab456"])
+            elif 0.24 < u < 0.3 and 0.52 < v <= hill1:
+                col = r.choice(["#8a5a33", "#7a4e2a"])
+            elif math.hypot(u - 0.27, (v - 0.48) * h / w) < 0.12:
+                col = r.choice(["#3f8a3a", "#4f9a44", "#367a34"])
+            elif dsun < 0.13:
+                col = r.choice(["#ffd34d", "#ffdf6a", "#f8c838"])
+            elif dsun < 0.19:
+                col = r.choice(["#ffb04a", "#ffa03a"])
+            else:
+                col = r.choice(["#7fc8f0", "#8fd2f4", "#72bce8"]) if v > 0.3 else r.choice(["#5aa8e0", "#66b2e6", "#4f9ad6"])
+            jx, jy = r.uniform(-1.5, 1.5), r.uniform(-1.5, 1.5)
+            out += f'<rect x="{tx + 2 + jx:.1f}" y="{ty + 2 + jy:.1f}" width="{tile - 4}" height="{tile - 4}" rx="3" fill="{col}"/>'
+    # a soft shine across the panel
+    out += f'<path d="{arch_path(x0, x0 + w, spring, y0 + h)}" fill="#ffffff" opacity="0.08"/>'
+    out += f'<path d="M{x0 + w * 0.12:.0f} {y0 + h * 0.2:.0f} L{x0 + w * 0.3:.0f} {y0 + h * 0.2:.0f} L{x0 + w * 0.12:.0f} {y0 + h * 0.6:.0f} Z" fill="#ffffff" opacity="0.1"/>'
+    # ledge under the panel
+    out += f'<rect x="{x0 - 44}" y="{y0 + h + 20}" width="{w + 88}" height="22" rx="8" fill="{frame}" stroke="{INK}" stroke-width="5"/>'
+    return out, fallen
+
+
+def scene_mosaic_hall():
+    d = Doc(116)
+    r = d.r
+    wall = d.lin([(0, "#7a5e48"), (0.3, "#b0906c"), (0.75, "#c4a47c"), (1, "#a88a66")])
+    d.add(f'<rect width="{W}" height="{H}" fill="{wall}"/>')
+    mask = d.fade_mask(1290, 600, 760, 500, 0.1)
+    d.add(f'<g mask="{mask}">{stone_blocks(r, 0, 120, W, 820, 160, 84, "#b8976e", "#c8a87e", "#a4855e", 0.6)}</g>')
+    d.add(glow(d, 1290, 600, 720, "#fff0d0", 0.3, ry=500))
+    # coffered ceiling band with a mosaic frieze
+    d.add(f'<rect x="0" y="0" width="{W}" height="96" fill="#6a4e3a"/>')
+    frieze = ""
+    cols = ["#c4513f", "#e0a83a", "#3f8ab5", "#f6e8c4"]
+    for k in range(0, W // 32 + 1):
+        x = k * 32
+        frieze += f'<rect x="{x + 3}" y="64" width="26" height="26" rx="3" fill="{cols[k % 4]}" opacity="{0.55 if 380 < x < 1540 else 0.95}"/>'
+    d.add(frieze)
+    d.add(f'<rect x="0" y="92" width="{W}" height="12" fill="#e8d2a0" stroke="{INK}" stroke-width="3" stroke-opacity="0.5"/>')
+    # the big broken mosaic on the left wall, and a smaller one on the right
+    panel, fallen = mosaic_panel(d, r, 50, 170, 300, 420, 25, 0.06, hole=(0.62, 0.55, 0.22))
+    d.add(panel)
+    panel2, fallen2 = mosaic_panel(d, r, 1700, 190, 200, 380, 25, 0.05, hole=(0.35, 0.3, 0.2))
+    d.add(panel2)
+    # pillars framing the hall
+    d.add(pillar(d, 450, 80, 104, 840, "#c4a47c", "#e8d2a8", "#8a6a4a"))
+    d.add(pillar(d, 1600, 80, 104, 840, "#c4a47c", "#e8d2a8", "#8a6a4a"))
+    for x in (450, 1600):
+        d.add(torch(d, x, 400, 0.9))
+    # floor: big calm stone slabs with a mosaic border strip
+    fl = d.lin([(0, "#b89a74"), (0.3, "#a4855e"), (1, "#7a5e44")])
+    d.add(f'<rect x="0" y="830" width="{W}" height="250" fill="{fl}"/>')
+    d.add(f'<rect x="0" y="822" width="{W}" height="16" fill="#e8d2a0"/>')
+    for k in range(1, 5):
+        y = 830 + 250 * (k / 5) ** 1.4
+        d.add(f'<path d="M0 {y:.0f} L{W} {y:.0f}" stroke="#6a4e3a" stroke-width="3" opacity="0.35"/>')
+    for k in range(-8, 9):
+        d.add(f'<path d="M{960 + k * 160} 838 L{960 + k * 440} 1080" stroke="#6a4e3a" stroke-width="3" opacity="0.3"/>')
+    strip = ""
+    for k in range(W // 36 + 1):
+        strip += f'<rect x="{k * 36 + 3}" y="1044" width="30" height="30" rx="4" fill="{cols[(k * 3) % 4]}" opacity="0.9"/>'
+    d.add(f'<rect x="0" y="1038" width="{W}" height="42" fill="{MOSAIC_GROUT}"/>{strip}')
+    d.add(glow(d, 1290, 860, 600, "#fff0d0", 0.22, ry=100))
+    # fallen tiles on the floor below each panel
+    tile_cols = ["#ffd34d", "#7fc8f0", "#78c060", "#5aa8e0", "#ffb04a"]
+    for _ in range(9):
+        x, y = r.uniform(30, 380), r.uniform(860, 920)
+        a = r.uniform(-40, 40)
+        d.add(f'<rect x="{x - 12:.0f}" y="{y - 8:.0f}" width="24" height="16" rx="3" fill="{r.choice(tile_cols)}" stroke="{INK}" stroke-width="2.5" transform="rotate({a:.0f} {x:.0f} {y:.0f})"/>')
+    for _ in range(5):
+        x, y = r.uniform(1700, 1910), r.uniform(1000, 1030)
+        a = r.uniform(-40, 40)
+        d.add(f'<rect x="{x - 12:.0f}" y="{y - 8:.0f}" width="24" height="16" rx="3" fill="{r.choice(tile_cols)}" stroke="{INK}" stroke-width="2.5" transform="rotate({a:.0f} {x:.0f} {y:.0f})"/>')
+    # a little bucket of spare tiles in the right corner
+    d.add(f'<path d="M1800 1030 L1790 950 L1890 950 L1880 1030 Z" fill="#8a6a4a" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+          f'<ellipse cx="1840" cy="950" rx="50" ry="12" fill="#5a3e2a" stroke="{INK}" stroke-width="4"/>'
+          f'<path d="M1792 950 Q1840 880 1888 950" stroke="{INK}" stroke-width="5" fill="none"/>')
+    for k, col in enumerate(tile_cols):
+        d.add(f'<rect x="{1806 + k * 14}" y="{936 + (k % 2) * 4}" width="16" height="12" rx="2" fill="{col}" stroke="{INK}" stroke-width="2"/>')
+    for _ in range(14):
+        x, y = r.uniform(0, W), r.uniform(120, 1030)
+        if 700 < x < 1880 and 240 < y < 1030:
+            continue
+        d.add(sparkle(x, y, r.uniform(6, 12), "#fff6e0", 0.7))
+    d.add(motes(r, 20, 0, W, 120, 820, "#fff0c8", 1.5, 3, avoid=(740, 230, 1880, 1030)))
+    return d.svg(vignette=0.28)
+
+
 def scenes() -> dict:
     return {
         "scene_camp": scene_camp(),
@@ -1522,4 +1923,7 @@ def scenes() -> dict:
         "scene_workshop": scene_workshop(),
         "scene_lair": scene_lair(),
         "scene_map": scene_map(),
+        "scene_storeroom": scene_storeroom(),
+        "scene_pond": scene_pond(),
+        "scene_mosaic_hall": scene_mosaic_hall(),
     }

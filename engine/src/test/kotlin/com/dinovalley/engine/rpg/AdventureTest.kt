@@ -14,6 +14,8 @@ import com.dinovalley.engine.rpg.learn.Skill
 import com.dinovalley.engine.rpg.learn.SkillBook
 import com.dinovalley.engine.rpg.learn.Thing
 import com.dinovalley.engine.rpg.learn.TraceChallenge
+import com.dinovalley.engine.rpg.learn.SortChallenge
+import com.dinovalley.engine.rpg.learn.PuzzleChallenge
 import com.dinovalley.engine.rpg.run.Adventure
 import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Place
@@ -34,7 +36,9 @@ class AdventureTest {
             is PickOne -> assertTrue(c.answer in 0 until c.optionCount, "answer missing in $c")
             is MemoryChallenge -> assertTrue(c.sequence.all { it in c.doors.indices } && c.sequence.toSet().size == c.sequence.size)
             is RecipeChallenge -> assertTrue(c.steps.all { it.ingredient in c.shelf && it.count >= 1 })
-            is TraceChallenge -> assertTrue(c.path.all { it.x in 0f..1f && it.y in 0f..1f })
+            is TraceChallenge -> assertTrue(c.strokes.isNotEmpty() && c.path.all { it.x in 0f..1f && it.y in 0f..1f })
+            is SortChallenge -> assertTrue(c.items.size == c.home.size && c.home.all { it in c.baskets.indices } && c.home.toSet().size == c.baskets.size)
+            is PuzzleChallenge -> assertTrue(c.pieces in 4..9)
         }
     }
 

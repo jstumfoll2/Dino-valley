@@ -736,7 +736,7 @@ grows too big. Right now all the art is under 1 MB.
 
 ### 36. The child names the dino with their own voice
 
-**Status:** Accepted · 2026-10-02
+**Status:** Superseded by #46 · 2026-10-02
 
 **Decision:** The cover has a big microphone button. While it is held, the
 phone records, and the dino tilts its head to listen. Then the dino says
@@ -919,3 +919,81 @@ a wrong total sending the hero the wrong way (kept for the map clue instead).
 
 **What might cause us to change it:** Hearts make him anxious rather than
 careful.
+
+### 45. Every narrator sentence is recorded when the app is built
+
+**Status:** Accepted · 2026-10-02 · refines #43
+
+**Decision:** The engine can list every sentence the game might say
+(`./gradlew :engine:voiceLines`, which plays thousands of simulated adventures
+and adds every screen phrase). CI speaks each one with the same Kokoro voice and
+packs them into the app as small Ogg Opus files named by a fingerprint of the
+voice and the sentence (`scripts/render-voice.py`, cached between builds). The
+phone plays those files. Kokoro on the phone only makes a sentence that is
+missing (for example one with a typed dragon name), and keeps it. All sound goes
+through one continuous audio stream, so endings are not clipped, and mouths move
+with how loud the voice is at each moment. While the current scene plays, the
+next scenes' sentences are loaded ahead; if a sentence still needs making, a
+loading bubble shows.
+
+**Why we made it:** Playtest three: speech started late and was cut off between
+scenes, mouths moved with no words, and the phone got hot. Making speech on the
+phone was the cause.
+
+**Alternatives considered:** Faster phone settings for Kokoro (still hot and
+slow); a smaller voice (less natural).
+
+**What might cause us to change it:** The app grows too big, or the build takes
+too long.
+
+### 46. A grown-up types the dragon's name; the narrator says it
+
+**Status:** Accepted · 2026-10-02 · supersedes #36
+
+**Decision:** The child's recording of the name is gone. The dragon is "Sparky"
+until a grown-up taps the pencil on the name tag on the cover and types a name.
+The narrator says it inside its own sentences. The microphone permission is no
+longer asked.
+
+**Why we made it:** Jason found the switch between the recorded name and the
+narrator's voice too jarring.
+
+**What might cause us to change it:** He wants his own voice back in the game
+in some other form.
+
+### 47. Sound effects instead of spoken noises
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** Story noises ("creak", "splash", "ribbit") are sound effects,
+written in story text as `[creak]` and played in place. Taps, right and wrong
+answers, dice and hearts have sounds too. The files are CC0 (Kenney and Ninja
+Adventure packs) or made by `scripts/make-sfx.py`; sources are in
+`docs/SOUND_CREDITS.md`. A wrong answer plays a soft "uh-oh", shows a red cross
+on that choice, and blocks taps until the hint has been said; tapping many
+answers quickly makes the narrator ask him to slow down and look.
+
+**Why we made it:** Jason asked for real sound effects instead of the voice
+saying "blub blub", and for clearer feedback because his son tapped everything
+until something was right.
+
+**What might cause us to change it:** A sound is scary or annoying to him.
+
+### 48. More kinds of learning, and doors choose the game
+
+**Status:** Accepted · 2026-10-02
+
+**Decision:** New rooms: a storeroom where things are dragged into baskets by
+color, kind or size; a frog pond for counting by 2s, 5s, 3s and 10s; a mosaic
+hall with a jigsaw puzzle; tracing real letters and numbers stroke by stroke in
+the tunnel. Other rooms now also ask to find the written number, letter or color
+after counting or matching. At each fork, every door's sign shows and the
+narrator says which game is behind it, so choosing a path means choosing the
+kind of puzzle.
+
+**Why we made it:** Jason asked for sorting, colors, writing letters, picking
+written numbers and letters, skip counting and puzzles, and for path choices to
+pick the puzzle type.
+
+**What might cause us to change it:** He always picks the same game, and some
+skills never get practiced.
