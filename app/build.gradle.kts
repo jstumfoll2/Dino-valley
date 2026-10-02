@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.dungeonquest"
+    namespace = "com.dinovalley"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.jstumfoll2.dungeonquest"
+        applicationId = "io.github.jstumfoll2.dinovalley"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
