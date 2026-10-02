@@ -5,7 +5,7 @@ someone might later ask "why did we do it this way?". Don't delete old
 entries; if we change our minds, mark the old one **Superseded by #N** and add
 a new one.
 
-Entries 1–23 were proposed on 2026-10-02 together with
+Entries 1–26 were proposed on 2026-10-02 together with
 [`ARCHITECTURE.md`](ARCHITECTURE.md) and are **Proposed** until you both
 agree. Change the status to **Accepted** (or edit them) as you review.
 
@@ -102,7 +102,7 @@ that they are really different templates.
 
 **Decision:** Common template fields are shared; type-specific fields live in
 an `"activity"` block whose `"type"` selects a Kotlin subclass
-(`CountObjectsSpec`, `ChooseNumberSpec`, `CompareGroupsSpec`) via
+(`CountObjectsSpec`, `FindSymbolSpec`, `CompareGroupsSpec`) via
 kotlinx.serialization polymorphism.
 
 **Why we made it:** Typos and missing fields fail at load/test time, not
@@ -466,3 +466,77 @@ voice to a server, violating our privacy rules); a custom on-device model
 **What might cause us to change it:** Playtests showing recognition works
 well for him (make it more prominent) or badly (shelve it), or the phone
 lacking on-device recognition (hide the feature on that device).
+
+---
+
+### 24. Numbers and letters are the core learning objective; letters join the MVP
+
+**Status:** Accepted · 2026-10-02 (Jason: "learning letters/numbers should be
+a key learning objective")
+
+**Decision:** Number recognition and letter recognition are the main
+progression. Counting, comparing, shapes and colours support them. Letter
+recognition moves from Phase 4 into Phase 2, and letter sounds follow in
+Phase 3. Letter order is content: it starts with the letters of his name
+(entered in parent mode, stored only on the phone) and keeps easily confused
+letters (b/d/p/q, M/W, E/F) apart until high levels.
+
+**Why we made it:** It's what you most want him to learn. The engine's
+skill/template split means adding letters is content and one activity type,
+not new architecture.
+
+**Alternatives considered:** Following the spec's order (counting only in
+the MVP, letters in Phase 4); alphabetical letter order (A–Z is arbitrary for
+a 4-year-old, and his own name is far more motivating).
+
+**What might cause us to change it:** Playtests showing letters are too
+abstract without more counting/visual groundwork first.
+
+---
+
+### 25. One `FIND_SYMBOL` activity type for numerals and letters
+
+**Status:** Proposed · 2026-10-02
+
+**Decision:** Replace the counting-only `CHOOSE_NUMBER` with `FIND_SYMBOL`,
+which has a `symbolSet` (numerals, uppercase, lowercase) and a `mode`
+(find by name, by quantity, by sound, match case). Numbers and letters share
+one generator, evaluator, hint ladder and composable.
+
+**Why we made it:** "Tap the one I say" is the same game for 3 and for B.
+One implementation means both get the same polish and the same bug fixes.
+
+**Alternatives considered:** Separate `CHOOSE_NUMBER` and `CHOOSE_LETTER`
+types (duplicated code that would drift apart).
+
+**What might cause us to change it:** Letter activities needing interaction
+that numbers don't (e.g. dragging pictures to letters); that becomes a new
+activity type rather than a mode.
+
+---
+
+### 26. Built-in playtest feedback tool, saved on the phone and shared by hand
+
+**Status:** Proposed · 2026-10-02 (Jason asked for an easy way to report bugs
+during playtests)
+
+**Decision:** A two-finger press and hold anywhere pauses the game and opens a
+report sheet with one-tap tags (including "he loved this") and an optional voice note.
+The report automatically saves a screenshot, the current state and seed, the
+last ~100 events, a learner snapshot and device/volume info. Crashes are
+captured the same way. Reports stay in app-private storage until an adult
+shares them through Android's share sheet. A `playtest` GitHub issue
+template turns them into issues. Weekend 1 uses the phone's screen recorder
+and, if time allows, a minimal screenshot-and-state capture; the full tool
+is the first item in Phase 2.
+
+**Why we made it:** You can't take notes while watching a preschooler.
+Seeds and event logs make "it did something weird" reproducible. Sharing by
+hand keeps the no-INTERNET rule (#18) intact.
+
+**Alternatives considered:** A crash/feedback SDK such as Firebase
+Crashlytics (needs network, sends data to a third party); paper notes only
+(miss the state needed to reproduce); a visible bug button (he'd tap it).
+
+**What might cause us to change it:** Testers outside the family, which
+would need an easier upload path and a privacy review first.

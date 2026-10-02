@@ -51,6 +51,44 @@ recognisers) — optional, swappable, never required to play.
 
 ---
 
+## Learning goals: numbers and letters come first
+
+**Recognising numbers and letters is the core learning objective.** Counting,
+comparing, shapes and colours support it, but the progression we care most
+about is:
+
+| | Numbers | Letters |
+|---|---|---|
+| Recognise | "Find the 3" among numeral tiles | "Find the B" among letter tiles |
+| Connect to meaning | Match a numeral to a quantity (3 ↔ three eggs) | Match a letter to its sound and a picture (B ↔ /b/ ↔ ball) |
+| Pair forms | Numeral ↔ number word, spoken | Uppercase ↔ lowercase (B ↔ b) |
+| Make it (later) | Trace the numeral with a finger | Trace the letter with a finger |
+
+What this changes in the design:
+
+- **One activity type serves both.** `FIND_SYMBOL` ("tap the one I say")
+  works for numerals and letters alike; only the symbol set, the audio, and
+  the helper picture differ (section 3). Numbers and letters get the same
+  engine, difficulty rules and hint ladder for the price of one.
+- **Letters move into the MVP.** The spec put letters in Phase 4. They now
+  arrive in Phase 2, right after the content pack exists, as a
+  `letter_recognition` skill. `letter_sounds` follows in Phase 3.
+- **The weekend prototype stays counting**, because counting eggs is the
+  most delightful first toy and its answer buttons already teach numerals
+  1–5.
+- **Letter order is content, not code.** Start with the letters in his own
+  name (set in parent mode, stored only on the phone), then visually distinct
+  uppercase letters. Easily confused letters (b/d/p/q, M/W, E/F) are kept
+  apart until the higher levels.
+- **Sounds are recorded with care.** Letter sounds are recorded as clean
+  sounds ("/b/", not "buh"), which is a job for the experience designer and
+  is listed in the art/audio bible.
+- **Tracing** (drawing a numeral or letter with a finger) is a Phase 3
+  activity checked by simple geometry against a stroke template: no ML. The
+  spec's Phase 7 drawing recognition can build on it later.
+
+---
+
 ## The no-reading rule (applies to everything below)
 
 He can't read, so **nothing in the game may depend on reading**. Every idea
@@ -112,6 +150,8 @@ dungeonquest/
 ├── PLAYTEST_LOG.md                 ← what the real tester did (start on day 1)
 ├── art-bible/                      ← style guide, palette, character sheets (not shipped)
 ├── content-tools/                  ← prompts we give an AI to draft content, review checklist
+├── .github/ISSUE_TEMPLATE/
+│   └── playtest.md                 ← how a playtest report becomes a GitHub issue (section 13)
 │
 ├── settings.gradle.kts             ← include(":app", ":engine")
 ├── build.gradle.kts
@@ -167,7 +207,7 @@ app is installed somewhere other than your own devices.
 |---|---|---|
 | `model` | IDs, skills, templates, instances, responses, outcomes | `Ids.kt`, `Skill.kt`, `ActivityTemplate.kt`, `ActivityInstance.kt`, `ChildResponse.kt`, `ItemOutcome.kt` |
 | `content` | Parse and validate the JSON content pack | `ContentCatalog.kt`, `ContentParser.kt`, `ContentValidator.kt` |
-| `activity` | One sub-package per activity type: generator + evaluator + hint ladder | `count/CountObjectsGenerator.kt`, `count/CountObjectsEvaluator.kt`, `choosenumber/…`, `compare/…`, `ActivityRegistry.kt` |
+| `activity` | One sub-package per activity type: generator + evaluator + hint ladder | `count/CountObjectsGenerator.kt`, `count/CountObjectsEvaluator.kt`, `findsymbol/…`, `compare/…`, `ActivityRegistry.kt` |
 | `learner` | Learner and skill state, confidence | `LearnerState.kt`, `SkillState.kt` |
 | `difficulty` | Difficulty rules | `DifficultyPolicy.kt`, `RuleBasedDifficultyPolicy.kt`, `DifficultyRules.kt` |
 | `intelligence` | The swappable "brain" (spec §18, §20) | `LearnerModel.kt`, `RuleBasedLearnerModel.kt` |
@@ -189,12 +229,13 @@ one new `ActivitySpec` subclass, and registering it. Nothing in `session/`,
 | `ui.home` | `HomeScreen` |
 | `ui.map` | `MapScreen` (Phase 2) |
 | `ui.play` | `PlayScreen`, `PlayViewModel`, `ActivityHost` |
-| `ui.play.activities` | One composable per activity type: `CountObjectsActivity`, `ChooseNumberActivity`, `CompareGroupsActivity` |
+| `ui.play.activities` | One composable per activity type: `CountObjectsActivity`, `FindSymbolActivity`, `CompareGroupsActivity` |
 | `ui.reward` | `RewardScreen`, `StickerBookScreen` |
 | `ui.parent` | `ParentGate`, `ParentScreen` |
 | `data.content` | `AssetContentSource` (reads JSON from `assets/`), `SpriteCatalog` (sprite id → drawable) |
 | `data.learner` | Room database, DAOs, entities, `LearnerRepository` |
 | `audio` | `SoundPlayer` (SoundPool for short effects), `Narrator` (prompt key → audio clip) |
+| `playtest` | The feedback tool (section 13): `FeedbackCapture`, `EventRecorder`, `CrashRecorder`, `FeedbackExporter` |
 
 **Dependency injection:** a single hand-written `AppContainer` created in the
 `Application` class that builds the database, content catalog, and engine
@@ -294,20 +335,23 @@ data class CountObjectsLevel(
     val objectSize: ObjectSize = ObjectSize.LARGE,
 ) : LevelSpec
 
-@Serializable @SerialName("CHOOSE_NUMBER")
-data class ChooseNumberSpec(
-    val sprites: List<SpriteId>,
-    override val levels: List<ChooseNumberLevel>,
+/** "Tap the one I say": numeral recognition AND letter recognition. */
+@Serializable @SerialName("FIND_SYMBOL")
+data class FindSymbolSpec(
+    val symbolSet: SymbolSet,
+    val sprites: List<SpriteId> = emptyList(),  // objects for BY_QUANTITY, pictures for BY_SOUND
+    override val levels: List<FindSymbolLevel>,
 ) : ActivitySpec
 
 @Serializable
-data class ChooseNumberLevel(
+data class FindSymbolLevel(
     override val level: Int,
-    val minNumber: Int,
-    val maxNumber: Int,
+    val pool: List<String>? = null,     // explicit symbols, e.g. ["1","2","3"]; null = parent's
+                                        // "starter letters" (his name) for letter templates
     val choiceCount: Int,
-    val showDotsUnderNumerals: Boolean, // scaffolding that fades out at higher levels
-    val mode: ChooseNumberMode,         // FIND_NUMERAL ("Which is 3?") or MATCH_QUANTITY
+    val mode: FindSymbolMode,
+    val showHelper: Boolean,            // dots under numerals / picture next to letters; fades out
+    val allowConfusable: Boolean = false, // b/d/p/q, M/W, 6/9 only together at high levels
 ) : LevelSpec
 
 @Serializable @SerialName("COMPARE_GROUPS")
@@ -328,7 +372,13 @@ data class CompareGroupsLevel(
 
 @Serializable enum class Arrangement { LINE, GRID, SCATTER, CLUSTERS }
 @Serializable enum class ObjectSize { LARGE, MEDIUM, SMALL }
-@Serializable enum class ChooseNumberMode { FIND_NUMERAL, MATCH_QUANTITY }
+@Serializable enum class SymbolSet { NUMERALS, UPPERCASE, LOWERCASE }
+@Serializable enum class FindSymbolMode {
+    BY_NAME,        // "Find the 3" / "Find the B"
+    BY_QUANTITY,    // numerals: "Which number tells how many eggs?"
+    BY_SOUND,       // letters: "Which letter says /b/, like ball?"
+    MATCH_CASE,     // letters: "Find the little b that goes with big B"
+}
 ```
 
 ### ActivityInstance: *one concrete question the child sees*
@@ -368,8 +418,8 @@ data class CountObjectsInstance(
     val tapToCount: Boolean,
 ) : ActivityInstance
 
-data class ChooseNumberInstance(/* common fields… */ val target: Int, val choices: List<Int>,
-    val showDots: Boolean, val mode: ChooseNumberMode) : ActivityInstance
+data class FindSymbolInstance(/* common fields… */ val symbolSet: SymbolSet, val target: String,
+    val choices: List<String>, val mode: FindSymbolMode, val showHelper: Boolean) : ActivityInstance
 
 data class CompareGroupsInstance(/* common fields… */ val leftCount: Int, val rightCount: Int,
     val askFewer: Boolean) : ActivityInstance
@@ -380,6 +430,7 @@ data class CompareGroupsInstance(/* common fields… */ val leftCount: Int, val 
 ```kotlin
 sealed interface ChildResponse {
     data class NumberChosen(val value: Int) : ChildResponse
+    data class SymbolChosen(val symbol: String) : ChildResponse
     data class GroupChosen(val side: Side) : ChildResponse
 }
 enum class Side { LEFT, RIGHT }
@@ -388,7 +439,7 @@ enum class Side { LEFT, RIGHT }
 sealed interface Hint {
     data object TryAgain : Hint                         // "Hmm, let's look again!" + gentle wiggle
     data object CountTogether : Hint                    // app counts aloud, highlighting each object
-    data class NarrowChoices(val keep: List<Int>) : Hint // only 2 buttons left, right one glows softly
+    data class NarrowChoices(val keep: List<String>) : Hint // only 2 buttons left, right one glows softly
 }
 
 data class Evaluation(val correct: Boolean, val nextHint: Hint?)
@@ -474,7 +525,7 @@ MainActivity
         │     ├── Character               state: Idle, Talking, Thinking, Cheering, Encouraging
         │     ├── ActivityHost            `when (instance)` → picks the composable:
         │     │     ├── CountObjectsActivity
-        │     │     ├── ChooseNumberActivity
+        │     │     ├── FindSymbolActivity  (numerals and letters)
         │     │     └── CompareGroupsActivity
         │     ├── HintOverlay             highlights, counting numbers floating above objects
         │     ├── RoundProgress           e.g. 5 empty nest spots that fill — not a score
@@ -781,13 +832,16 @@ the UI and storage never know which one is running (spec §18, §20).
 
 ### MVP skills and what the 5 levels mean
 
-| Level | Counting (`COUNT_OBJECTS`) | Number recognition (`CHOOSE_NUMBER`) | Comparing (`COMPARE_GROUPS`) |
-|---|---|---|---|
-| 1 | 1–3 big objects in a line, tap to count, 2 choices | Numerals 1–3 with dots underneath, 2 choices | 1 vs 4 ("more"), unlocks at counting L2 |
-| 2 | 1–5 in a line, 3 choices | 1–5 with dots, 3 choices | Difference ≥ 2, up to 5 |
-| 3 | 1–5 scattered | 1–5, no dots | Difference ≥ 1, up to 5 |
-| 4 | 1–7 scattered + 1–2 distractors | Match quantity to numeral, up to 7 | Ask "fewer" sometimes |
-| 5 | 1–10, clusters, no tap-to-count aid | 1–10 | Up to 10; bigger objects in the smaller group |
+| Level | Counting (`COUNT_OBJECTS`) | Number recognition (`FIND_SYMBOL`, numerals) | Letter recognition (`FIND_SYMBOL`, letters) | Comparing (`COMPARE_GROUPS`) |
+|---|---|---|---|---|
+| 1 | 1–3 big objects in a line, tap to count, 2 choices | Numerals 1–3 with dots underneath, 2 choices | 2 uppercase letters from his name, very different shapes, picture helper | 1 vs 4 ("more"), unlocks at counting L2 |
+| 2 | 1–5 in a line, 3 choices | 1–5 with dots, 3 choices | 3 choices, all name letters | Difference ≥ 2, up to 5 |
+| 3 | 1–5 scattered | 1–5, no dots | 3 choices, name letters + 6 common letters, no helper | Difference ≥ 1, up to 5 |
+| 4 | 1–7 scattered + 1–2 distractors | Match quantity to numeral, up to 7 | 4 choices, all uppercase, similar shapes allowed | Ask "fewer" sometimes |
+| 5 | 1–10, clusters, no tap-to-count aid | 1–10, 4 choices | Match uppercase to lowercase | Up to 10; bigger objects in the smaller group |
+
+`letter_sounds` (`BY_SOUND`) is its own skill in Phase 3, unlocked at
+letter recognition level 3.
 
 These numbers are a first guess to be tuned by watching your son, which is
 why they are content (JSON), not code.
@@ -832,6 +886,7 @@ content/
 ├── templates/
 │   ├── counting.json
 │   ├── number_recognition.json
+│   ├── letter_recognition.json
 │   └── comparing.json
 ├── prompts.en.json      prompt key → text + audio clip (one file per language)
 └── rewards.json         stickers/fossils and when they're given
@@ -892,13 +947,46 @@ content/
 }
 ```
 
+### A template (letters)
+
+```json
+{
+  "id": "find_letter_dino_footprints",
+  "skill": "letter_recognition",
+  "theme": "dino_valley",
+  "prompts": {
+    "intro": "letters.footprints.intro",
+    "question": "letters.find_letter",
+    "encourage": "letters.look_together",
+    "celebrate": "letters.footprints.celebrate"
+  },
+  "activity": {
+    "type": "FIND_SYMBOL",
+    "symbolSet": "UPPERCASE",
+    "levels": [
+      { "level": 1, "choiceCount": 2, "mode": "BY_NAME",    "showHelper": true },
+      { "level": 2, "choiceCount": 3, "mode": "BY_NAME",    "showHelper": true },
+      { "level": 3, "choiceCount": 3, "mode": "BY_NAME",    "showHelper": false, "pool": ["A","M","O","S","T","X"] },
+      { "level": 4, "choiceCount": 4, "mode": "BY_NAME",    "showHelper": false, "allowConfusable": true },
+      { "level": 5, "choiceCount": 3, "mode": "MATCH_CASE", "showHelper": false }
+    ]
+  }
+}
+```
+
+Levels 1–2 leave `pool` empty, so they use the parent's "starter letters"
+(the letters of his name). The prompt `letters.find_letter` is spoken with
+the target letter filled in from the `letter.B` clip.
+
 ### Skills and prompts
 
 ```json
 [
   { "id": "counting",           "domain": "MATH" },
   { "id": "number_recognition", "domain": "MATH", "unlockedWhen": [{ "skill": "counting", "minLevel": 2 }] },
-  { "id": "comparing",          "domain": "MATH", "unlockedWhen": [{ "skill": "counting", "minLevel": 2 }] }
+  { "id": "comparing",          "domain": "MATH", "unlockedWhen": [{ "skill": "counting", "minLevel": 2 }] },
+  { "id": "letter_recognition", "domain": "LITERACY" },
+  { "id": "letter_sounds",      "domain": "LITERACY", "unlockedWhen": [{ "skill": "letter_recognition", "minLevel": 3 }] }
 ]
 ```
 
@@ -907,7 +995,9 @@ content/
   "count.how_many":        { "text": "How many eggs?",            "audio": "count_how_many" },
   "count.eggs.intro":      { "text": "Mama Dino's eggs rolled away! Let's count them.", "audio": "count_eggs_intro" },
   "common.count_together": { "text": "Let's count together!",     "audio": "count_together" },
-  "number.1":              { "text": "one",                       "audio": "n1" }
+  "number.1":              { "text": "one",                       "audio": "n1" },
+  "letter.B":              { "text": "B",                         "audio": "letter_b_name" },
+  "letter_sound.B":        { "text": "/b/",                       "audio": "letter_b_sound" }
 }
 ```
 
@@ -996,7 +1086,7 @@ so the weekend's work isn't thrown away.
 
 | Morning | Afternoon |
 |---|---|
-| **Make it feel good.** Correct: character squash-and-stretch jump, **the eggs hatch into that many baby dinos** (the reward *is* the quantity), leaf/star burst, chime. Wrong: character tilts head, "hmm", eggs gently re-count themselves with highlights, try again; third try leaves two choices. Idle: blink, breathe, look at whatever was tapped. A round = 5 questions; a progress nest with 5 spots fills up; end with a big hatch party and a "play again?" button that's just a giant egg. | **Playtest with your son** (the most important hour). One parent plays nothing, just watches and writes in `PLAYTEST_LOG.md`: where he tapped first, what he said, what made him laugh, where he looked confused, whether he asked for another round. Then fix the *one* thing that mattered most. |
+| **Make it feel good.** Correct: character squash-and-stretch jump, **the eggs hatch into that many baby dinos** (the reward *is* the quantity), leaf/star burst, chime. Wrong: character tilts head, "hmm", eggs gently re-count themselves with highlights, try again; third try leaves two choices. Idle: blink, breathe, look at whatever was tapped. A round = 5 questions; a progress nest with 5 spots fills up; end with a big hatch party and a "play again?" button that's just a giant egg. | **Playtest with your son** (the most important hour). Turn on the phone's screen recorder. One parent plays nothing, just watches and writes in `PLAYTEST_LOG.md`: where he tapped first, what he said, what made him laugh, where he looked confused, whether he asked for another round. Then fix the *one* thing that mattered most. |
 
 ### Explicitly not this weekend
 
@@ -1007,8 +1097,8 @@ leave the app.
 
 ### Phase 2 order (for orientation)
 
-JSON content pack + validator → Room + learner log → difficulty policy and
-`RuleBasedLearnerModel` → `CHOOSE_NUMBER` → `COMPARE_GROUPS` → sticker book
+Playtest feedback tool (section 13) → JSON content pack + validator → Room + learner log → difficulty policy and
+`RuleBasedLearnerModel` → `FIND_SYMBOL` with numerals, then letters → `COMPARE_GROUPS` → sticker book
 → a three-stop Dino Valley map → minimal parent screen → voice-answer
 experiment (numbers only, on-device).
 
@@ -1063,9 +1153,114 @@ where your answer would change something soon.
 14. **Distribution.** Installing from Android Studio onto family devices
     needs no Play Store account. If you ever publish on Google Play, its
     Families policy applies; the no-network, no-SDK design already fits it.
-15. **Repo name vs. game.** The repo is "dungeonquest", the game is a dino
+15. ~~Are letters core?~~ **Answered: numbers and letters are the key
+    objective.** Letters move from Phase 4 into Phase 2 (see "Learning goals").
+16. **His name inside the app.** Starting letters with his name means the
+    app knows his name. *Default:* typed in parent mode, stored only on the
+    phone, never in the content pack or the repo.
+17. **Repo name vs. game.** The repo is "dungeonquest", the game is a dino
     valley for a preschooler. Harmless, but the app name and package should
     be decided before installing on anyone else's device.
+
+---
+
+## 13. Playtest feedback tool
+
+During a playtest you're watching a 4-year-old, not taking notes. Reporting a
+problem has to take **one gesture and a few seconds**, and the report has to
+contain enough to reproduce the problem later without asking "what was on
+screen?".
+
+### Capturing a report
+
+```text
+Two-finger press and hold for 2 s (anywhere, any screen)
+        │   game pauses; the dino "freezes" mid-pose
+        ▼
+Report sheet (adult-sized, behind the hold)
+   ┌─────────────────────────────────────────────────────────┐
+   │  [screenshot thumbnail]                                 │
+   │  What kind?   🔊 Sound   🖼 Looks wrong   😕 Confusing    │
+   │               😣 Too hard  🥱 Too easy   🐞 Broken  ⭐ He loved this │
+   │  🎙 Hold to record a voice note (up to 30 s)            │
+   │  [ Save & keep playing ]                                │
+   └─────────────────────────────────────────────────────────┘
+```
+
+- **Two-finger hold**, not a button. A visible button gets tapped by a
+  preschooler; a deliberate two-finger hold rarely does. The sheet itself
+  needs a tap on a tag or "Save", so an accidental trigger costs nothing.
+- **Tags are one tap**, and there's a positive tag. Knowing what he loved is
+  as valuable as knowing what broke.
+- **A voice note** is the fastest way to describe an audio or animation
+  problem ("the 'four' clip is cut off", "he thought the volcano was a
+  button"). It needs the `RECORD_AUDIO` permission, the same one voice
+  answers use. Notes are saved only on the phone, and only when an adult
+  records one.
+- **Shake to report** is a fallback. Some parents prefer it, but shaking also
+  happens when a child holds the phone, so it's off by default.
+
+### What a report contains (captured automatically)
+
+| Item | Why |
+|---|---|
+| Screenshot (PNG) | "Looks wrong" bugs need to be seen. |
+| Current screen + `SessionState`, template id, level, **seed** | Reproduce the exact question in a test (decision #9 stores seeds for this). |
+| Last ~100 events from an in-memory ring buffer: taps (with position), session events, audio clips started/finished, animation start/end | Explains audio overlaps, missed taps, "it skipped a step". |
+| Learner snapshot: skill levels and recent results | Explains "too hard / too easy". |
+| App version, content version, device model, Android version, volume level, whether audio was muted | Half of all "no sound" bugs are the volume. |
+| Tags, voice note, time | What the adult saw. |
+
+Crashes are captured too. A `CrashRecorder` installed in the `Application`
+class writes the stack trace plus the same event buffer to a report before
+the app dies. On the next launch, a small badge in parent mode says "1 new
+report".
+
+### Where reports go
+
+Everything stays on the phone until an adult sends it. Reports are saved as
+folders in app-private storage:
+
+```text
+files/playtest/2026-10-04_10-32-15/
+├── report.json        tags, state, events, learner snapshot, device info
+├── screenshot.png
+├── voice-note.m4a     (if recorded)
+└── crash.txt          (if it was a crash)
+```
+
+Parent mode has a **Playtest reports** list. Each report can be viewed,
+deleted, or shared. **Share all** zips them and opens Android's share sheet,
+so you can send them to yourself by email, Quick Share to a laptop, or to Google
+Drive. Sharing goes through the share sheet's own apps, so our app still has
+no INTERNET permission.
+
+From there, a report becomes a GitHub issue using the `playtest` issue
+template (screenshot, tags, steps, seed). You can also drop the zip into this
+project and ask Claude to triage it. A debug-only "replay report" screen
+loads `report.json` and regenerates the exact question from its seed.
+
+### How it fits the architecture
+
+- `:engine` needs nothing new. `SessionEvent`s and seeds already exist.
+- `:app` gets a `playtest` package: `EventRecorder` (ring buffer fed by the
+  ViewModel, `Narrator`, and a pointer-input modifier on the root),
+  `FeedbackCapture` (screenshot via `PixelCopy` + snapshot), `CrashRecorder`,
+  `FeedbackExporter` (zip + `FileProvider` + share intent), and the report
+  sheet composable.
+- **On in every build.** This is a family app, and playtests happen on the
+  real build. A parent setting can turn the gesture off later.
+- **No new dependencies.** Screenshot, zip, audio recording, `FileProvider`
+  and the share sheet are all built into Android and AndroidX core.
+
+### When
+
+- **Weekend 1:** use Android's built-in **screen recorder** during the first
+  playtest (it captures audio, taps and his reactions for free). If there's
+  time Sunday morning, add the `CrashRecorder` and a two-finger hold that
+  saves a screenshot plus state. That's about an hour of work.
+- **Phase 2, first item:** the full tool (tags, voice notes, report list,
+  share). It goes first because every later feature is tuned through it.
 
 ---
 
