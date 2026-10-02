@@ -5,7 +5,7 @@ someone might later ask "why did we do it this way?". Don't delete old
 entries; if we change our minds, mark the old one **Superseded by #N** and add
 a new one.
 
-Entries 1–21 were proposed on 2026-10-02 together with
+Entries 1–23 were proposed on 2026-10-02 together with
 [`ARCHITECTURE.md`](ARCHITECTURE.md) and are **Proposed** until you both
 agree. Change the status to **Accepted** (or edit them) as you review.
 
@@ -308,7 +308,7 @@ animations in a dedicated tool.
 
 ### 16. Recorded voice lines from day one; SoundPool/MediaPlayer for audio
 
-**Status:** Proposed · 2026-10-02
+**Status:** Accepted · 2026-10-02 (required by #22: he can't read)
 
 **Decision:** A handful of recorded lines (numbers, "Let's count!", "How
 many?", encouragement) ship in the weekend prototype. Built-in audio APIs only.
@@ -383,7 +383,7 @@ before choices appear.
 
 ### 20. Landscape, phone-first, normalized layout
 
-**Status:** Proposed · 2026-10-02 (pending: which device will he use?)
+**Status:** Accepted · 2026-10-02 (Jason confirmed he plays on a phone)
 
 **Decision:** Lock landscape; design for a phone; positions are relative so
 tablets scale up.
@@ -414,3 +414,55 @@ round?". Answer that before building the complicated parts.
 correct but joyless app).
 
 **What might cause us to change it:** Nothing; this is the plan for weekend 1.
+
+---
+
+### 22. The no-reading rule: every idea comes across by voice or visuals
+
+**Status:** Accepted · 2026-10-02 (Jason: "he can't read; the game needs to be
+voice input/output or visually simple enough to get the ideas across")
+
+**Decision:** Core gameplay never depends on reading. Every prompt is spoken
+and must have an audio clip (the content validator fails otherwise); tapping
+the character repeats the instruction; activities are demonstrated before
+they're asked; hints are visual; answer buttons show dots alongside numerals
+at low levels; navigation uses pictures, not words. The only symbols on
+screen are the ones being taught.
+
+**Why we made it:** Our player is four and can't read. Instructions he can't
+understand turn a game into a guessing exercise and frustration.
+
+**Alternatives considered:** Text with optional audio (fails our actual
+player); relying on Android TTS for all speech (robotic, offline voices not
+guaranteed).
+
+**What might cause us to change it:** Literacy activities in Phase 4 will put
+letters on screen on purpose, as the thing being taught. Instructions stay
+spoken.
+
+---
+
+### 23. Voice input is optional, on-device only, and arrives after the prototype
+
+**Status:** Proposed · 2026-10-02
+
+**Decision:** Let him answer out loud ("three!") using Android's on-device
+`SpeechRecognizer` (Android 12+), mapped to the same `ChildResponse` a tap
+produces. Start with numbers only, as a Phase 2–3 experiment, switched on by
+a parent. Tapping always works. Audio is never recorded or stored, nothing
+leaves the phone, and the app still has no INTERNET permission. The dino
+repeats what it heard, and a mis-recognition never counts as a wrong answer.
+
+**Why we made it:** Speaking is natural for a non-reader. The engine already
+treats input as an abstract response, so voice is an `:app`-only addition.
+Recognisers are unreliable on young children's speech, so voice must
+supplement taps, not replace them.
+
+**Alternatives considered:** Voice as the primary input (too error-prone for
+a 4-year-old's speech); cloud speech APIs (more accurate, but sends a child's
+voice to a server, violating our privacy rules); a custom on-device model
+(Phase 7 territory).
+
+**What might cause us to change it:** Playtests showing recognition works
+well for him (make it more prominent) or badly (shelve it), or the phone
+lacking on-device recognition (hide the feature on that device).

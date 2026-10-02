@@ -51,6 +51,57 @@ recognisers) — optional, swappable, never required to play.
 
 ---
 
+## The no-reading rule (applies to everything below)
+
+He can't read, so **nothing in the game may depend on reading**. Every idea
+has to come across through voice, pictures, and motion. This is a hard rule,
+not a preference, and the architecture enforces it in four places:
+
+1. **Every instruction is spoken.** Each `PromptKey` must have a recorded
+   audio clip, and `ContentValidator` fails the build if one doesn't.
+   On-screen text is optional decoration for parents.
+2. **Tap the character to hear it again.** The dino is always the "repeat"
+   button. A child who wasn't listening is never stuck.
+3. **Show, don't tell.** The first time he meets an activity, and after
+   every level change, the character demonstrates it (counts "1… 2… 3!"
+   while the eggs light up) before asking anything (`Introducing` state,
+   section 5). Answer buttons show **dots as well as numerals** at low levels,
+   and hints are visual: highlights, glowing choices, counting numbers
+   floating over objects.
+4. **The only symbols on screen are things being taught** (numerals,
+   later letters and shapes). Buttons are pictures: a big egg for "play
+   again", the dino's house for "home". `requiresReading: true` is rejected
+   by the validator for every template in the MVP.
+
+### Voice input (answering out loud)
+
+Speaking answers ("three!") is a natural fit for a non-reader, and the
+engine is already ready for it: the session receives a `ChildResponse` and
+doesn't care whether it came from a tap or a voice.
+
+```text
+Microphone ──▶ VoiceAnswerListener (:app) ──"three"──▶ NumberWords (en) ──▶ ChildResponse.NumberChosen(3)
+Tap        ──────────────────────────────────────────────────────────────▶ ChildResponse.NumberChosen(3)
+```
+
+- **On-device only.** Android's built-in `SpeechRecognizer` can run fully on
+  the phone (`createOnDeviceSpeechRecognizer`, Android 12+), so no audio
+  leaves the device and the app still needs no INTERNET permission. Audio is
+  never recorded or stored; only the recognised answer is used.
+- **Optional, never required.** Recognisers are much less accurate on a
+  4-year-old's voice than an adult's. Tapping always works, and voice is a
+  second way to answer, switched on in parent settings.
+- **Listening is visible.** When the mic is on, the dino cups its ear; when
+  it hears something, it repeats what it heard ("Three? Let's check!") so a
+  misheard word is never a silent wrong answer. A mis-recognition doesn't
+  count as a wrong first try.
+- **When:** after the weekend prototype, as an experiment in Phase 2–3,
+  starting with number answers only (a tiny vocabulary is the easiest case to
+  recognise). It needs the `RECORD_AUDIO` permission, which a parent grants
+  once.
+
+---
+
 ## 1. Recommended Android project structure
 
 ```text
@@ -877,7 +928,8 @@ content/
 - **Validated before it ships.** `ContentValidator` (in `:engine`) checks that
   ids are unique, every skill/sprite/prompt reference exists, every template
   has levels 1–5 exactly once, `min <= max`, `choiceCount` fits the range,
-  `requiresReading` is false for MVP, and so on. A unit test runs it on the real
+  `requiresReading` is false for MVP, every prompt key has an audio clip,
+  and so on. A unit test runs it on the real
   content pack, so **AI-generated content cannot ship unless it passes the
   validator and a human has reviewed the diff.** We also keep a JSON Schema
   file in `content-tools/` purely as documentation to paste into an AI
@@ -910,7 +962,8 @@ engine, any TTS/AI SDK. Sound uses Android's built-in `SoundPool` and
 `MediaPlayer`.
 
 **Platform settings:** minSdk 26 (Android 8, covers effectively every device
-still in a house), target/compile the latest stable SDK, Kotlin 2.x with the
+still in a house; on-device voice input needs Android 12+ and simply stays
+hidden on older phones), target/compile the latest stable SDK, Kotlin 2.x with the
 Compose compiler Gradle plugin.
 
 ---
@@ -956,7 +1009,8 @@ leave the app.
 
 JSON content pack + validator → Room + learner log → difficulty policy and
 `RuleBasedLearnerModel` → `CHOOSE_NUMBER` → `COMPARE_GROUPS` → sticker book
-→ a three-stop Dino Valley map → minimal parent screen.
+→ a three-stop Dino Valley map → minimal parent screen → voice-answer
+experiment (numbers only, on-device).
 
 ---
 
@@ -979,13 +1033,13 @@ where your answer would change something soon.
 5. **"Count objects" vs. "Choose the correct number" overlap.** *Default:*
    Count objects = tap each, then say how many (counting, one-to-one).
    Choose the number = find a numeral (number recognition). Separate skills.
-6. **Audio can't wait for Phase 5.** A non-reader cannot know what "Which
-   group has more?" means without hearing it. *Default:* a handful of
-   recorded voice lines from day one; full narration polish stays in Phase 5.
+6. ~~Audio can't wait for Phase 5.~~ **Answered: he can't read, so voice
+   is required from day one** (see "The no-reading rule" above). Recorded
+   voice lines ship in the weekend prototype; voice *input* is an optional
+   experiment in Phase 2–3; full narration polish stays in Phase 5.
    Recorded family voices beat Android TTS for warmth and work offline.
-7. **Phone or tablet? Whose device?** Affects layout, touch target sizes, and
-   art resolution. *Default:* landscape, designed for a phone, layouts in
-   normalized coordinates so a tablet just gets bigger.
+7. ~~Phone or tablet?~~ **Answered: phone.** Landscape, phone-first, layouts in
+   normalized coordinates so a tablet would just get bigger.
 8. **Counting range for MVP.** The table in §7 goes to 10 at level 5.
    *Default:* start there and tune from observation.
 9. **Backups.** Excluding data from cloud backup protects privacy but means a
