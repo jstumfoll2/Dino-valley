@@ -10,7 +10,7 @@ import importlib, json, os, re, subprocess, sys, shutil
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "src"))
 
-MODULES = ["heroes", "props", "dungeon_scenes", "cast", "creatures", "gear", "items"]
+MODULES = ["heroes", "props", "dungeon_scenes", "cast", "creatures", "gear", "items", "world"]
 RES = os.path.join(HERE, "..", "app", "src", "main", "res", "drawable-nodpi")
 CHAR_SCALE = 3  # sprites render at 3x their viewBox for crisp phone screens
 
