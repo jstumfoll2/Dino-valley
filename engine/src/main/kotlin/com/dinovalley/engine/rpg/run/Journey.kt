@@ -256,9 +256,9 @@ class Journey(
         val s = scene(Place.CAMP)
         val chapter = ArcPicker.chapter(world)
         val steps = mutableListOf<JStep>()
-        if (world.adventures > 0) {
-            steps += tell(s, say.pagesLine(world.pages).takeIf { world.pages > 0 })
-        }
+        // Before each adventure: which chapter of the Storybook this is, and how many pages are home.
+        steps += tell(s, say.chapter(chapter, arc.title))
+        if (world.adventures > 0 && world.pages > 0) steps += tell(s, say.pagesLine(world.pages))
         arc.setup.forEach { steps += tell(s, it) }
         steps += tell(JourneyStory.mapScene(this), JourneyStory.toTheMap(this, chapter))
         return steps
@@ -271,7 +271,7 @@ internal object JourneyStory {
     fun mapScene(j: Journey): Scene = Scene(Place.WORLD_MAP, j.cast)
 
     fun toTheMap(j: Journey, chapter: Int): String =
-        "This is Whisperwood. You are at ${j.kingdom.camp.name}, and the story ends at ${j.kingdom.location(j.arc.lairId).name}. Pick any road you like!"
+        "This is the kingdom of Whisperwood. You are at ${j.kingdom.camp.name}, and the story ends at ${j.kingdom.location(j.arc.lairId).name}. Many roads lead there. Visit the towns, make friends, and find what you need. Every friend you make could help!"
 }
 
 /** The XP and level bookkeeping used when an adventure ends. */

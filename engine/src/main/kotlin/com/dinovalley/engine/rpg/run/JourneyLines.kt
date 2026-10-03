@@ -236,6 +236,8 @@ internal class JourneyLines(private val r: Random) {
 
     fun peaceOops() = pick("<pet>Not quite! Try again, gently.", "<pet>Hmm, not that one. Have another look!")
 
+    fun chapter(n: Int, title: String) = "Chapter ${Words.number(n)}: $title."
+
     fun pageFound() = "A page of the Great Storybook, glowing softly! <pet>One more page is home!"
 
     fun pagesLine(p: Int) = if (p == 1) "One page of the Storybook is home." else "${Words.capital(p)} pages of the Storybook are home."

@@ -104,10 +104,19 @@ internal fun Journey.turnedBack(road: Road, from: String): List<JStep> {
 internal fun Journey.arrive(l: Location): List<JStep> {
     here = l.id
     val first = visited.add(l.id)
-    return when (l.kind) {
+    val story = if (first) moments(l) else emptyList()
+    return story + when (l.kind) {
         LocationKind.CAMP, LocationKind.TOWN -> townHub(l, first)
         LocationKind.DUNGEON -> dungeon(l, first)
         LocationKind.WILD -> wild(l, first)
         LocationKind.LAIR -> lairArrival(l)
+    }
+}
+
+/** What the story shows when the hero first reaches a place. */
+internal fun Journey.moments(l: Location): List<JStep> {
+    val s = sceneAt(l)
+    return arc.moments.filter { it.at == l.id && holds(it.needs) }.flatMap { m ->
+        listOf(tell(s, m.says)) + runEffects(m.effects, null, { emptyList() }, { emptyList() })
     }
 }

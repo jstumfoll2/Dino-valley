@@ -98,6 +98,8 @@ class JourneyTest {
             assertNotNull(Content.kingdom.locationOrNull(a.lairId)); assertNotNull(Content.kingdom.locationOrNull(a.keyDungeonId))
             assertNotNull(Content.item(a.keyItemId), a.keyItemId); assertNotNull(Content.monster(a.bossId), a.bossId)
             assertTrue(a.variants.isNotEmpty() && a.peaceSteps.isNotEmpty())
+            for (m in a.moments) assertNotNull(Content.kingdom.locationOrNull(m.at), "${a.id}: moment at unknown ${m.at}")
+            assertTrue(a.variants.size >= 3, "${a.id}: a story can be told more than one way")
         }
         for (npc in Content.npcs) {
             val ids = npc.nodes.map { it.id }
@@ -137,7 +139,7 @@ class JourneyTest {
         // Every line that can be spoken parses (no unknown speaker tags).
         val texts = Content.npcs.flatMap { n -> listOf(n.intro) + n.nodes.map { it.says } } +
             Content.monsters.flatMap { listOf(it.taunt, it.beaten, it.wins) } +
-            Content.arcs.flatMap { a -> a.setup + a.sealed + a.keyFound + a.gateOpens + a.ask + a.peaceSteps.flatMap { listOf(it.intro, it.yay) } + a.variants.flatMap { listOf(it.meeting, it.fightEnd, it.peaceEnd) } }
+            Content.arcs.flatMap { a -> a.setup + a.sealed + a.keyFound + a.gateOpens + a.ask + a.peaceSteps.flatMap { listOf(it.intro, it.yay) } + a.variants.flatMap { listOf(it.meeting, it.fightEnd, it.peaceEnd) } + a.moments.map { it.says } }
         for (t in texts) com.dinovalley.engine.model.Speech.of(t)
         // Every gift and quest item is somewhere a player can get it.
         val given = Content.npcs.flatMap { n -> n.nodes.flatMap { it.effects + it.options.flatMap { o -> o.effects } } }

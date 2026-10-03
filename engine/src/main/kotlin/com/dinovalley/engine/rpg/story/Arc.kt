@@ -15,6 +15,13 @@ data class Variant(
 data class PeaceStep(val kind: String, val intro: String, val yay: String)
 
 /**
+ * Something the story shows when the hero first reaches a place: a clue, a sign, a letter. It can
+ * need things to be true and can change things (a remembered fact, an item). This is how a story
+ * leaves its mark on the world the hero is already walking through.
+ */
+data class Moment(val at: String, val says: String, val needs: List<Cond> = emptyList(), val effects: List<Effect> = emptyList())
+
+/**
  * A story to play through in one adventure: where it ends, what you need to get there, who you
  * face, and what is said along the way. A story is data: add an Arc to a content pack to add a
  * story. People, places and items it names must exist in packs too. [variants] let one story be
@@ -42,5 +49,7 @@ data class Arc(
     val peaceLabel: String,
     val peaceSteps: List<PeaceStep>,
     val variants: List<Variant>,
+    /** Clues and scenes along the way, shown the first time the hero reaches each place. */
+    val moments: List<Moment> = emptyList(),
     val minChapter: Int = 1,
 )
