@@ -5,7 +5,7 @@ through, not one story with different names. This file tracks what exists and wh
 
 ## Built so far
 - Arc 1, "The Missing Pages" (Baron Grumblewick, the Storybook): the first, fully fleshed-out story. It is told three ways (the lonely Baron, the jealous Baron, the Baron under the ink's spell), with clues along the roads, and it can end by fighting or by listening.
-- The old stories (the dragon's prisoner, the lonely dragon, Ruby's quest) are not yet in the new kingdom. They are the first to port.
+- The old stories (the dragon's prisoner, the lonely dragon, Ruby's quest) are not yet in the new kingdom. They are the first to port. Until they are, the goblin, Ruby, the shadow and the big dragon's old voices are unused (their art and `Who` entries are kept).
 
 ## Wanted (each is a data entry in the arc library, plus new people, places and art)
 - A story where the villain is a friend in disguise and the hero must discover it.

@@ -1057,3 +1057,31 @@ voice was too high and fast.
 
 **What might cause us to change it:** The made sounds seem robotic to him; record a
 real voice for the letter sounds instead.
+
+### 51. The adventure is a journey across Whisperwood (issue #13)
+
+**Status:** Accepted · 2026-10-03
+
+**Decision:** The single-dungeon adventure is replaced by `Journey`: an open kingdom (17 places,
+30 roads: towns, wild places, four dungeons, two lairs) the child walks across by choosing roads on a painted map. Roads have
+terrain (road, forest, river, mountain, swamp); rivers and mountains are one-try puzzles, forests
+and swamps have monsters. Towns have people with their own lives (backstories, dialog choices
+shown as painted badges, what they remember), shops, and beds. Fights have as many rounds as the
+monster is strong; health is shown as numbers; gear changes how the hero looks. A wrong answer to a
+one-try puzzle shows the right one and turns the hero back, unless the bag holds a tool or a
+second-guess charm (a charm is used once per puzzle, so guessing until right never works; the baby
+dragon finds a lucky clover every third slip so nobody is stuck for good). Fainting loses a quarter
+of the coins and returns the hero to the nearest safe place. What the hero does for people is
+remembered across adventures and can open roads for good. The first story is "The Missing Pages"
+(Baron Grumblewick), told three ways; more stories are data (`Arc`, `Variant`).
+
+**Everything is open content.** People, monsters, items, places, roads, stories and shops are
+data in `ContentPack`s registered in `Content`. Art is found by name (`art_npc_<id>_*`,
+`art_monster_<id>_*`, `art_item_<id>`, `art_gear_<id>`, `art_scene_<place>`), and
+`ArtCoverageTest` fails when content has no picture. See `docs/design/adding-content.md`.
+
+**Why we made it:** Issue #13 and the plan review: replayability, a world of people living their
+own lives, choices with consequences, and a child who learns he cannot guess until it is right.
+
+**What might cause us to change it:** One try is too hard for him (tune `Journey.askOnce`, the
+charm shop prices, or the clover rate); journeys run too long; the map screen is hard to read.
