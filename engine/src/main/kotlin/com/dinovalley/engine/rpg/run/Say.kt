@@ -15,6 +15,7 @@ object Say {
     const val GLOW = "Look! {name} makes the right one glow!"
     const val WHISPER = "{name} whispers a hint!"
     const val SLOW_DOWN = "Whoa, slow down! Look carefully, then pick one."
+    const val ONE_TRY_MISS = "Oh no, that is not the one. Look, this is the right answer."
     const val NOT_THAT = "Not that one."
     const val KEEP_GOING = "Keep going!"
     const val NEXT_LINE = "Now the next line!"
@@ -66,7 +67,7 @@ object Say {
     fun all(choices: List<String>): List<String> = buildList {
         addAll(
             listOf(
-                TRY_AGAIN, SPARKLE, GLOW, WHISPER, SLOW_DOWN, NOT_THAT, KEEP_GOING, NEXT_LINE, TRACE_HELP, WHICH_NEXT_DOOR,
+                TRY_AGAIN, SPARKLE, GLOW, WHISPER, SLOW_DOWN, ONE_TRY_MISS, NOT_THAT, KEEP_GOING, NEXT_LINE, TRACE_HELP, WHICH_NEXT_DOOR,
                 LOOK_RECIPE, PICK_DOOR, ROLL_AGAIN, FIRST_ROLL_BETTER, HEART_POPS, TAP_TO_ROLL, SORT_YES, PIECE_FITS,
                 WELCOME_NEW, WELCOME_BACK, NAME_ASK, NAME_SET,
             ),

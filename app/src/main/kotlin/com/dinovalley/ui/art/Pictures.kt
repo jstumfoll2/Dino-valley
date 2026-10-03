@@ -144,6 +144,15 @@ object Art {
         ChoicePicture.LULLABY -> R.drawable.art_choice_lullaby
     }
 
+    /** A choice's picture: one of the story pictures, or a painted icon found by name (`art_<icon>`). */
+    @DrawableRes
+    fun choice(c: com.dinovalley.engine.rpg.run.Choice): Int =
+        c.picture?.let { choice(it) } ?: c.icon?.let { byName("art_$it") } ?: R.drawable.art_choice_friends
+
+    /** The icon of an item, found by name (`art_item_<id>`). */
+    @DrawableRes
+    fun item(id: String): Int = byName("art_item_$id") ?: R.drawable.art_treasure
+
     @DrawableRes
     fun loot(k: LootKind): Int = when (k) {
         LootKind.COINS -> R.drawable.art_coin
@@ -151,6 +160,7 @@ object Art {
         LootKind.MAGIC_KEY -> R.drawable.art_key
         LootKind.POTION -> R.drawable.art_potion_glow
         LootKind.TREASURE -> R.drawable.art_treasure
+        LootKind.ITEM -> R.drawable.art_treasure
     }
 }
 

@@ -63,7 +63,10 @@ enum class Mood { CALM, HAPPY, SURPRISED, SILLY }
 data class NpcView(val id: String, val name: String, val art: String, val who: com.dinovalley.engine.model.Who)
 
 /** A monster on screen, with its health, and the hero's, for the battle bars. */
-data class FoeView(val id: String, val name: String, val art: String, val hp: Int, val maxHp: Int, val boss: Boolean)
+data class FoeView(
+    val id: String, val name: String, val art: String, val hp: Int, val maxHp: Int, val boss: Boolean,
+    val who: com.dinovalley.engine.model.Who = com.dinovalley.engine.model.Who.GROWLER,
+)
 
 data class BattleView(val foe: FoeView, val heroHp: Int, val heroMaxHp: Int, val round: Int)
 

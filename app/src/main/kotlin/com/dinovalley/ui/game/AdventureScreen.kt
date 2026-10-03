@@ -23,9 +23,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -95,7 +97,7 @@ fun AdventureScreen(vm: GameViewModel) {
     val speakingAs by narrator.speakingAs.collectAsState()
     var caption by remember { mutableStateOf<List<Speech>>(emptyList()) }
     var heroMood by remember { mutableStateOf(Mood.CALM) }
-    val interactive = beat !is Beat.Tell && beat !is Beat.Found
+    val interactive = beat !is Beat.Tell && beat !is Beat.Found && beat.scene.battle == null
     // How far the visitors have stepped back to leave room for a challenge.
     val back by animateFloatAsState(if (interactive) 1f else 0f, tween(500), label = "back")
 
@@ -115,18 +117,11 @@ fun AdventureScreen(vm: GameViewModel) {
         val w = maxWidth
         val h = maxHeight
         AnimatedContent(beat.scene.place, transitionSpec = { fadeIn(tween(600)) togetherWith fadeOut(tween(600)) }, label = "place") { place ->
-            Backdrop(place)
+            // The map of the kingdom is drawn by the travel screen itself, over the sea.
+            if (place == Place.WORLD_MAP) Box(Modifier.fillMaxSize().background(Color(0xFF5FA5CC))) else Backdrop(place)
         }
-        if (beat.scene.place != Place.MAP) {
+        if (beat.scene.place != Place.WORLD_MAP) {
             Cast(beat, interactive, speakingAs, heroMood, back, vm, w, h)
-        } else {
-            // The map: all of it while the narrator explains it, a zoomed strip above the doors at a fork.
-            val fork = beat is Beat.Doors
-            DungeonMapView(
-                adventure.map, adventure.position, adventure.visits, atFork = fork, windowed = fork,
-                left = w * 0.05f, top = if (fork) h * 0.2f else h * 0.26f,
-                width = w * 0.9f, height = if (fork) h * 0.34f else h * 0.6f,
-            )
         }
 
         val reply: (Reply) -> Unit = { r ->
@@ -149,8 +144,10 @@ fun AdventureScreen(vm: GameViewModel) {
                 is Beat.Choose -> ChooseBeat(beat, say) { reply(Reply.Picked(it)) }
                 is Beat.Doors -> DoorsBeat(beat, say) { i -> reply(Reply.Picked(i)) }
                 is Beat.Roll -> RollBeat(beat, say, celebrate) { used, tries -> reply(Reply.Rolled(used, tries)) }
-                is Beat.Ask -> AskBeat(beat, vm.state.hero.heroClass.power == Power.SPARKLE_HINT, say, celebrate) { tries, hints, ms -> reply(Reply.Solved(tries, hints, ms)) }
-                is Beat.Travel, is Beat.Shop, is Beat.Finale -> Unit
+                is Beat.Ask -> AskBeat(beat, vm.state.hero.heroClass.power == Power.SPARKLE_HINT, say, celebrate) { solved -> reply(solved) }
+                is Beat.Travel -> TravelBeat(beat, adventure, say) { reply(Reply.Picked(it)) }
+                is Beat.Shop -> ShopBeat(beat, say, { reply(Reply.Bought(it)) }) { reply(Reply.Next) }
+                is Beat.Finale -> Unit
             }
         }
 
@@ -173,9 +170,7 @@ fun AdventureScreen(vm: GameViewModel) {
         VoiceLoading()
         Column(Modifier.align(Alignment.TopEnd).padding(10.dp), horizontalAlignment = Alignment.End) {
             BagBar(adventure.bag, h * 0.07f)
-            if (beat.scene.place == Place.LAIR && beat.scene.bossStars != null) {
-                BossStars(adventure.bossStarsLit, h * 0.1f, Modifier.padding(top = 6.dp))
-            }
+            beat.scene.battle?.let { b -> HealthBar(b.heroHp, b.heroMaxHp, h * 0.07f, Modifier.padding(top = 6.dp), label = "You") }
         }
     }
 }
@@ -200,7 +195,7 @@ private fun Cast(beat: Beat, interactive: Boolean, who: Who?, heroMood: Mood, ba
     }
     fun voice(of: Who): (() -> Float)? = if (who == of) narrator::level else null
     val ruby = Actor.RUBY in scene.cast
-    Character(Rigs.hero(vm.state.hero.heroClass, vm.unlocked), heroState, Modifier.at(w * 0.11f, h * 0.7f, h * 0.52f, h * 0.52f))
+    Character(Rigs.hero(vm.state.hero.heroClass, vm.unlocked, vm.adventure?.hero?.worn ?: emptyMap()), heroState, Modifier.at(w * 0.11f, h * 0.7f, h * 0.52f, h * 0.52f))
     if (ruby) {
         Character(
             Rigs.ruby, if (who == Who.RUBY) Mood.TALKING else if (happy) Mood.HAPPY else Mood.CALM,
@@ -252,6 +247,11 @@ private fun Cast(beat: Beat, interactive: Boolean, who: Who?, heroMood: Mood, ba
             Modifier.at(w * (0.7f + 0.18f * back), h * (0.6f - 0.18f * back), size, size).alpha(present), facingLeft = true, voice = voice(Who.SHADOW),
         )
     }
+    // People and monsters of the kingdom. They step back while a puzzle needs the room.
+    scene.npc?.let { npc ->
+        if (beat !is Beat.Ask) NpcStand(npc, who == npc.who, w, h, voice(npc.who))
+    }
+    scene.battle?.let { b -> BattleStage(b, who == b.foe.who, w, h, voice(b.foe.who)) }
 }
 
 // ------------------------------------------------------------------ narration
@@ -297,6 +297,7 @@ private fun FoundBeat(beat: Beat.Found, say: (List<Speech>) -> Unit, celebrate: 
             }
         }
         val res = when {
+            beat.loot.kind == com.dinovalley.engine.rpg.run.LootKind.ITEM && beat.loot.itemId != null -> Art.item(beat.loot.itemId!!)
             beat.loot.kind == com.dinovalley.engine.rpg.run.LootKind.POTION -> potionFor(beat.loot.words)
             // The gem is drawn in the color the narrator says.
             beat.loot.kind == com.dinovalley.engine.rpg.run.LootKind.GEM && beat.loot.hue != null -> Art.gem(beat.loot.hue!!)
@@ -347,7 +348,8 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
         val h = maxHeight
         val w = maxWidth
         val n = beat.options.size
-        val card = h * 0.3f
+        // Up to six answers fit across: the pictures shrink to make room.
+        val card = minOf(h * 0.3f, w * 0.44f / (n * 1.1f) * 1.8f)
         beat.options.forEachIndexed { i, o ->
             val lift by animateFloatAsState(if (pointing == i || chosen == i) 1.12f else 1f, spring(dampingRatio = 0.5f), label = "lift")
             val appear by animateFloatAsState(if (i < shown) 1f else 0f, tween(380, easing = OutBack), label = "appear")
@@ -369,7 +371,15 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
                         }
                     },
             ) {
-                Image(painterResource(Art.choice(o.picture)), null, Modifier.fillMaxSize())
+                Image(painterResource(Art.choice(o)), null, Modifier.fillMaxSize())
+                if (o.picture == null) {
+                    // Badges and items are not pictures of a whole story step: say what they are too, for grown-ups reading along.
+                    Text(
+                        o.said, color = Color.White, fontWeight = FontWeight.Black, maxLines = 2, lineHeight = with(LocalDensity.current) { (card * 0.13f).toSp() },
+                        fontSize = with(LocalDensity.current) { (card * 0.12f).toSp() },
+                        modifier = Modifier.align(Alignment.BottomCenter).offset(y = card * 0.22f).background(Color(0xCC2A1C10), RoundedCornerShape(50)).padding(horizontal = 8.dp),
+                    )
+                }
             }
         }
     }

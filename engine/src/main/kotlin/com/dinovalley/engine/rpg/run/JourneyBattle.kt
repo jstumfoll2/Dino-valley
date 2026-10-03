@@ -25,7 +25,7 @@ internal class Fight(val monster: Monster, val maxHp: Int, val attack: Int) {
 private fun Journey.fightScene(place: Place, f: Fight): Scene =
     scene(
         place, mood = Mood.CALM,
-        battle = BattleView(FoeView(f.monster.id, f.monster.name, f.monster.art, f.hp.coerceAtLeast(0), f.maxHp, f.monster.tier == Tier.BOSS), hp.coerceAtLeast(0), hero.maxHp, f.round),
+        battle = BattleView(FoeView(f.monster.id, f.monster.name, f.monster.art, f.hp.coerceAtLeast(0), f.maxHp, f.monster.tier == Tier.BOSS, f.monster.who), hp.coerceAtLeast(0), hero.maxHp, f.round),
     )
 
 /** Stronger heroes meet stronger monsters; a hero who keeps fainting meets gentler ones. */

@@ -26,7 +26,9 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import com.dinovalley.R
+import com.dinovalley.engine.rpg.content.ArtAliases
 import com.dinovalley.engine.rpg.hero.HeroClass
+import com.dinovalley.engine.rpg.items.Slot
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -85,7 +87,7 @@ object Rigs {
     )
 
     /** The hero for a class, wearing what they've unlocked. */
-    fun hero(heroClass: HeroClass, unlocked: Set<String>): Rig {
+    fun hero(heroClass: HeroClass, unlocked: Set<String>, worn: Map<Slot, String> = emptyMap()): Rig {
         val k = kid(heroClass)
         val pieces = buildList {
             add(Piece(k.shadow, Part.STILL))
@@ -95,10 +97,15 @@ object Rigs {
             add(Piece(k.body, Part.BODY))
             add(Piece(k.head, Part.HEAD))
             add(Piece(0, Part.FACE))
-            add(Piece(k.hat, Part.HEAD))
-            if ("feather_hat" in unlocked) add(Piece(k.feather, Part.HEAD))
+            if (Slot.HEAD !in worn) add(Piece(k.hat, Part.HEAD))
+            if ("feather_hat" in unlocked && Slot.HEAD !in worn) add(Piece(k.feather, Part.HEAD))
             add(Piece(k.gear, Part.ARM))
             add(Piece(k.armFront, Part.ARM))
+            // What the hero wears, painted over them: hats move with the head, held things with the arm.
+            for ((slot, id) in worn) {
+                val res = Art.byName("art_gear_$id") ?: continue
+                add(Piece(res, when (slot) { Slot.HEAD -> Part.HEAD; Slot.HAND -> Part.ARM; else -> Part.STILL }))
+            }
         }
         return Rig(pieces, k.eyeOpen, k.eyeClosed, k.mouthCalm, k.mouthHappy, k.mouthTalk, neck = TransformOrigin(0.55f, 0.55f), shoulder = TransformOrigin(0.6f, 0.6f))
     }
@@ -142,6 +149,29 @@ object Rigs {
         R.drawable.art_shadow_mouth_calm, R.drawable.art_shadow_mouth_talk,
         neck = TransformOrigin(0.5f, 0.95f),
     )
+
+    /**
+     * A person or monster from the open content, found by the name of its art (`art_<name>_body`
+     * and the rest). Anything with missing pictures stands in as a goblin, so a new character never
+     * crashes the screen.
+     */
+    fun byArt(name: String): Rig {
+        val art = ArtAliases.resolve(name)
+        if (art == "dragon_big") return bigDragon
+        fun layer(part: String) = Art.byName("art_${art}_$part")
+        val body = layer("body")
+        val eyeOpen = layer("eye_open")
+        val eyeClosed = layer("eye_closed")
+        val calm = layer("mouth_calm")
+        val talk = layer("mouth_talk")
+        if (body == null || eyeOpen == null || eyeClosed == null || calm == null || talk == null) return goblin
+        val pieces = buildList {
+            layer("shadow")?.let { add(Piece(it, Part.STILL)) }
+            add(Piece(body, Part.HEAD))
+            add(Piece(0, Part.FACE))
+        }
+        return Rig(pieces, eyeOpen, eyeClosed, calm, calm, talk, aspect = 240f / 260f, neck = TransformOrigin(0.5f, 0.95f))
+    }
 
     private class Kid(
         val shadow: Int, val cape: Int, val legs: Int, val armBack: Int, val body: Int, val head: Int,

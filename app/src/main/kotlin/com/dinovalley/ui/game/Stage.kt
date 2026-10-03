@@ -6,6 +6,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,7 +57,7 @@ import com.dinovalley.audio.Sfx
 import com.dinovalley.data.DragonName
 import com.dinovalley.engine.model.Speech
 import com.dinovalley.engine.model.Who
-import com.dinovalley.engine.rpg.run.Adventure
+import com.dinovalley.engine.rpg.run.Journey
 import com.dinovalley.engine.rpg.run.Place
 import com.dinovalley.ui.art.Art
 import com.dinovalley.ui.art.BossStar
@@ -186,24 +191,43 @@ fun RoundButton(picto: Picto, color: Color, size: Dp, modifier: Modifier = Modif
     }
 }
 
-/** The bag in the corner: hearts, then the coins, gems, key and potion found on this adventure. */
+/** The bag in the corner: health as numbers, then the coins, the key once it is found, and Storybook pages. */
 @Composable
-fun BagBar(bag: Adventure.Bag, height: Dp, modifier: Modifier = Modifier) {
+fun BagBar(bag: Journey.Bag, height: Dp, modifier: Modifier = Modifier) {
     Row(
         modifier
             .background(Color(0xCC2A1C10), RoundedCornerShape(50))
             .border(2.dp, Palette.PaperEdge, RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        repeat(3) { i -> Text(if (i < bag.hearts) "❤️" else "🤍", fontSize = 18.sp) }
+        HealthBar(bag.hp, bag.maxHp, height)
         Image(painterResource(R.drawable.art_coin), null, Modifier.size(height))
         Text("${bag.coins}", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
-        // Every gem found, in its own color.
-        bag.gems.forEach { hue -> Image(painterResource(Art.gem(hue)), null, Modifier.size(height)) }
-        if (bag.key) Image(painterResource(R.drawable.art_key), null, Modifier.size(height))
-        bag.potion?.let { Image(painterResource(Art.potion(it)), null, Modifier.size(height)) }
+        if (bag.hasKey) Image(painterResource(R.drawable.art_key), null, Modifier.size(height))
+        if (bag.pages > 0) Text("Pages ${bag.pages}", color = Color(0xFFFFE9B0), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+    }
+}
+
+/** Health as a bar with its numbers, so the child can see how much is left, and how much the most is. */
+@Composable
+fun HealthBar(hp: Int, maxHp: Int, height: Dp, modifier: Modifier = Modifier, label: String = "HP") {
+    val fraction by animateFloatAsState((hp.toFloat() / maxHp.coerceAtLeast(1)).coerceIn(0f, 1f), tween(400), label = "hp")
+    val color = when {
+        fraction > 0.5f -> Color(0xFF4CC15A)
+        fraction > 0.25f -> Color(0xFFF2B233)
+        else -> Color(0xFFE5484D)
+    }
+    Box(
+        modifier.size(height * 4.2f, height * 0.9f).clip(RoundedCornerShape(50)).background(Color(0xFF3B2A1A)).border(2.dp, Palette.PaperEdge, RoundedCornerShape(50)),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).background(color))
+        Text(
+            "$label $hp/$maxHp", color = Color.White, fontWeight = FontWeight.Black, fontSize = with(LocalDensity.current) { (height * 0.5f).toSp() },
+            modifier = Modifier.align(Alignment.Center), maxLines = 1,
+        )
     }
 }
 

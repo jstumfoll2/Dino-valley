@@ -9,12 +9,12 @@ import androidx.lifecycle.AndroidViewModel
 import com.dinovalley.data.Save
 import com.dinovalley.feedback.FeedbackLog
 import com.dinovalley.engine.rpg.hero.HeroClass
-import com.dinovalley.engine.rpg.run.Adventure
+import com.dinovalley.engine.rpg.run.Journey
 import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Reply
 
 /**
- * Bridges the engine and the screens: the title screen, then one [Adventure] beat at a time.
+ * Bridges the engine and the screens: the title screen, then one [Journey] beat at a time.
  * Progress is saved when an adventure ends, so quitting halfway never loses earlier progress.
  */
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -23,7 +23,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var state by mutableStateOf(save.load())
         private set
 
-    var adventure: Adventure? by mutableStateOf(null)
+    var adventure: Journey? by mutableStateOf(null)
         private set
 
     var beat: Beat? by mutableStateOf(null)
@@ -45,7 +45,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     fun start() {
         val seed = System.nanoTime()
-        val a = Adventure(seed, state.hero, state.skills, state.world)
+        val a = Journey(seed, state.hero, state.skills, state.world)
         // So a feedback note can say exactly which adventure this was.
         FeedbackLog.newAdventure(
             "seed $seed, ${state.hero.heroClass} level ${state.hero.level}, skills ${state.skills.levels.entries.joinToString { "${it.key}=${it.value}" }}",

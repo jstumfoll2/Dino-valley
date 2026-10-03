@@ -94,6 +94,7 @@ import com.dinovalley.engine.rpg.learn.Sortable
 import com.dinovalley.engine.rpg.learn.Words
 import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Prop
+import com.dinovalley.engine.rpg.run.Reply
 import com.dinovalley.engine.rpg.run.Say
 import com.dinovalley.ui.art.Art
 import com.dinovalley.ui.art.RuneIcon
@@ -138,7 +139,7 @@ private class Turn(
     private val scope: CoroutineScope,
     val say: (List<Speech>) -> Unit,
     private val celebrate: () -> Unit,
-    private val solved: (Int, Int, Long) -> Unit,
+    private val solved: (Reply.Solved) -> Unit,
 ) {
     var done by mutableStateOf(false)
         private set
@@ -158,6 +159,13 @@ private class Turn(
         asked = true
     }
 
+    /** Answers tried that were wrong, handed back with a one-try failure so a charm can cross them out. */
+    val wrong = mutableListOf<Int>()
+
+    /** One try only: once the last allowed slip is made, the right answer is shown and no more is accepted. */
+    var revealAnswer by mutableStateOf(false)
+        private set
+
     /** Taps and drags do nothing while the question or a miss's feedback is being said. */
     val locked: Boolean get() = busy || !asked
 
@@ -169,6 +177,7 @@ private class Turn(
      * Returns the hint tier to show. [again] is said last, given that tier.
      */
     fun miss(again: (tier: Int) -> List<Speech> = { beat.challenge.prompt }): Int {
+        if (beat.oneTry && ladder.misses + 1 >= beat.allowedMisses) return fail()
         ladder.misses += 1
         val tier = ladder.tier
         val now = System.currentTimeMillis()
@@ -201,6 +210,22 @@ private class Turn(
         return tier
     }
 
+    /** The last allowed slip: say so, show the right answer, and hand the failure back to the story. */
+    private fun fail(): Int {
+        if (done) return 0
+        ladder.misses += 1
+        done = true
+        revealAnswer = true
+        sfx.play("wrong", 0.9f)
+        scope.launch {
+            narrator.speak(beat.oops)
+            narrator.speak(Say.ONE_TRY_MISS)
+            delay(1800)
+            solved(Reply.Solved(ladder.tries, ladder.hints, ladder.millis, failed = true, wrong = wrong.toList()))
+        }
+        return 0
+    }
+
     fun win() {
         if (done) return
         done = true
@@ -210,7 +235,7 @@ private class Turn(
             say(beat.yay)
             narrator.speak(beat.yay)
             delay(400)
-            solved(ladder.tries, ladder.hints, ladder.millis)
+            solved(Reply.Solved(ladder.tries, ladder.hints, ladder.millis))
         }
     }
 
@@ -241,7 +266,7 @@ private class Zone(val w: Dp, val h: Dp) {
 
 /** One learning challenge, drawn as part of the room's story. */
 @Composable
-fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celebrate: () -> Unit, solved: (Int, Int, Long) -> Unit) {
+fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celebrate: () -> Unit, solved: (Reply.Solved) -> Unit) {
     val narrator = LocalNarrator.current
     val scope = rememberCoroutineScope()
     val sfx = LocalSfx.current
@@ -282,13 +307,16 @@ private class Pick(private val turn: Turn, private val c: PickOne) {
     val shown: Boolean get() = turn.asked
 
     var keep by mutableStateOf<List<Int>?>(null)
-    var glow by mutableIntStateOf(-1)
+    private var hinted by mutableIntStateOf(-1)
+
+    /** The answer that glows: a hint on the way, or the right one once the only try is spent. */
+    val glow: Int get() = if (turn.revealAnswer) c.answer else hinted
     var wrong by mutableIntStateOf(-1)
     var wrongTick by mutableIntStateOf(0)
     var chosen by mutableIntStateOf(-1)
 
     /** Answers already tried: crossed out, so the child sees what didn't work. */
-    val tried = mutableStateListOf<Int>()
+    val tried = mutableStateListOf<Int>().apply { addAll(turn.beat.tried) }
 
     fun visible(i: Int) = keep?.contains(i) ?: true
 
@@ -303,8 +331,9 @@ private class Pick(private val turn: Turn, private val c: PickOne) {
             wrong = i
             wrongTick += 1
             tried += i
+            turn.wrong += i
             v.keep?.let { keep = it }
-            v.glow?.let { glow = it }
+            v.glow?.let { hinted = it }
             turn.miss()
         }
     }
