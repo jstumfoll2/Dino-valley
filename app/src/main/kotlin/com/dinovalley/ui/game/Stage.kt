@@ -166,6 +166,8 @@ private fun speakerColor(who: Who): Color = when (who) {
     Who.RUBY -> Color(0xFFD1405F)
     Who.DRAGON -> Color(0xFFB23A1F)
     Who.SHADOW -> Color(0xFF4A4A6A)
+    // The people of the kingdom: a warm brown, each told apart by their name in the caption.
+    else -> Color(0xFF8A5A2B)
 }
 
 /** A big round picture button. [pulse] makes it breathe to say "tap me next". */
