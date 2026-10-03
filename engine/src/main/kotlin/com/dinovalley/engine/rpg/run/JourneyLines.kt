@@ -15,6 +15,9 @@ internal class JourneyLines(private val r: Random) {
     private fun pick(vararg options: String) = options[r.nextInt(options.size)]
     private fun n(x: Int) = Words.number(x)
 
+    /** Big totals are said roughly, so the recorded numbers stay a fixed set. */
+    private fun big(x: Int) = if (x > 400) "more than four hundred" else Words.number(x)
+
     // ------------------------------------------------------------- the map
 
     fun travelPrompt(name: String) = pick(
@@ -164,17 +167,21 @@ internal class JourneyLines(private val r: Random) {
 
     fun attackAsk() = pick("Answer the puzzle to attack!", "Solve it to strike!", "Think, then tap the answer!")
 
+    // Lines with numbers never name the foe: every monster times every number would be too many recordings.
+    @Suppress("UNUSED_PARAMETER")
     fun heroHits(foe: String, dmg: Int) = pick(
-        "You hit the $foe for ${n(dmg)}!",
-        "Whack! ${Words.capital(dmg)} damage to the $foe!",
-        "A good hit! The $foe takes ${n(dmg)}.",
+        "You hit it for ${n(dmg)}!",
+        "Whack! ${Words.capital(dmg)} damage!",
+        "A good hit! ${Words.capital(dmg)} damage.",
     )
 
-    fun heroHitsBig(foe: String, dmg: Int) = "A great hit! ${Words.capital(dmg)} damage to the $foe!"
+    @Suppress("UNUSED_PARAMETER")
+    fun heroHitsBig(foe: String, dmg: Int) = "A great hit! ${Words.capital(dmg)} damage!"
 
+    @Suppress("UNUSED_PARAMETER")
     fun foeHits(foe: String, dmg: Int) = pick(
-        "The $foe hits you for ${n(dmg)}!",
-        "Ouch! The $foe does ${n(dmg)} damage.",
+        "It hits you for ${n(dmg)}!",
+        "Ouch! ${Words.capital(dmg)} damage to you.",
     )
 
     fun attackOops(foe: String) = pick("Oh no! The $foe is too quick, and you miss.", "Oops! That was not it, and the $foe gets ready to strike.")
@@ -191,7 +198,8 @@ internal class JourneyLines(private val r: Random) {
 
     fun healed(hp: Int) = pick("You feel better! ${Words.capital(hp)} health back.", "Yum! You get ${n(hp)} health back.")
 
-    fun healthLine(hp: Int, max: Int) = "You have ${n(hp)} health out of ${n(max)}."
+    @Suppress("UNUSED_PARAMETER")
+    fun healthLine(hp: Int, max: Int) = "You have ${n(hp)} health left."
 
     fun foeLine(foe: String, hp: Int) = "The $foe has ${n(hp)} left."
 
@@ -249,16 +257,16 @@ internal class JourneyLines(private val r: Random) {
     fun levelUp(level: Int) = "Level up! You are now a level ${Words.number(level)} adventurer!"
 
     fun finale(stars: Int) = pick(
-        "What an adventure! You earned ${Words.number(stars)} stars!",
-        "Hooray! The adventure is done. You earned ${Words.number(stars)} stars!",
+        "What an adventure! You earned ${big(stars)} stars!",
+        "Hooray! The adventure is done. You earned ${big(stars)} stars!",
     )
 
-    fun coinsEarned(c: Int) = if (c <= 0) "" else "You brought home ${Words.number(c)} coins."
+    fun coinsEarned(c: Int) = if (c <= 0) "" else "You brought home ${big(c)} coins."
 
     fun killsLine(k: Int) = when {
         k <= 0 -> ""
         k == 1 -> "You beat one monster along the way."
-        else -> "You beat ${Words.number(k)} monsters along the way."
+        else -> "You beat ${big(k)} monsters along the way."
     }
 
     fun kindName(kind: LocationKind) = when (kind) {
@@ -267,5 +275,22 @@ internal class JourneyLines(private val r: Random) {
         LocationKind.DUNGEON -> "dungeon"
         LocationKind.WILD -> "wild place"
         LocationKind.LAIR -> "lair"
+    }
+
+    companion object {
+        /**
+         * Every line that holds a number, for every number up to [max]: damage, health, coins, stars and so on.
+         * Adventures hit these numbers by chance, so the voice catalog asks for them all.
+         */
+        fun numbered(max: Int = 400): List<String> = buildList {
+            val l = JourneyLines(Random(1))
+            for (x in 0..max) {
+                repeat(10) {
+                    add(l.heroHits("", x)); add(l.heroHitsBig("", x)); add(l.foeHits("", x)); add(l.healed(x)); add(l.healthLine(x, x))
+                    add(l.spoils(x)); add(l.faint(x)); add(l.coinsEarned(x)); add(l.killsLine(x)); add(l.finale(x))
+                    add(l.pagesLine(x)); add(l.roomsLeft(x)); add(l.levelUp(x)); add(l.rest(x)); add(l.coinsFound(x))
+                }
+            }
+        }.filter { it.isNotEmpty() }
     }
 }

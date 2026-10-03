@@ -47,7 +47,7 @@ object ChallengeFactory {
         val tricky = lookAlike[n]?.takeIf { level >= 3 && it in 1..max }
         val others = (1..max).filter { it != n && it != tricky }.shuffled(r)
         val options = (listOfNotNull(n, tricky) + others).take(opts).shuffled(r)
-        return NumberChallenge(level, seed, Speech.of("$purpose Find the number ${number(n).uppercase()}."), n, options)
+        return NumberChallenge(level, seed, Speech.of("$purpose<narrator>Find the number ${number(n).uppercase()}."), n, options)
     }
 
     /** [story] decides the words; it gets have, more and total and says them. */
@@ -150,9 +150,9 @@ object ChallengeFactory {
         }
         val options = (listOf(letter) + pool.filter { it != letter }.shuffled(r).take(optionCount - 1)).shuffled(r)
         val ask = when (mode) {
-            LetterMode.NAME -> "$purpose Find the letter $letter. $letter, as in $word."
-            LetterMode.SOUND -> "$purpose Listen to this sound. ${Words.LETTER_SOUNDS.getValue(letter)}. Which letter makes that sound?"
-            LetterMode.FIRST_SOUND -> "$purpose The magic word is ${word.uppercase()}. What letter does ${word.uppercase()} start with?"
+            LetterMode.NAME -> "$purpose<narrator>Find the letter $letter. $letter, as in $word."
+            LetterMode.SOUND -> "$purpose<narrator>Listen to this sound. ${Words.LETTER_SOUNDS.getValue(letter)}. Which letter makes that sound?"
+            LetterMode.FIRST_SOUND -> "$purpose<narrator>The magic word is ${word.uppercase()}. What letter does ${word.uppercase()} start with?"
         }
         return LetterChallenge(level, seed, Speech.of(ask), letter, word, mode, options)
     }
@@ -182,9 +182,9 @@ object ChallengeFactory {
         val strokes = Glyphs.strokes(c)
         val start = if (strokes.size == 1) "Start at the green star." else "Start at the green star, and follow the arrows."
         val ask = if (number) {
-            "$purpose Trace the number ${number(c.digitToInt()).uppercase()} with your finger. $start"
+            "$purpose<narrator>Trace the number ${number(c.digitToInt()).uppercase()} with your finger. $start"
         } else {
-            "$purpose Trace the letter $c with your finger. $c, as in ${Words.LETTER_WORDS.getValue(c)}. $start"
+            "$purpose<narrator>Trace the letter $c with your finger. $c, as in ${Words.LETTER_WORDS.getValue(c)}. $start"
         }
         return TraceChallenge(level, seed, Speech.of(ask), if (number) TraceShape.NUMBER else TraceShape.LETTER, strokes, tolerance, c)
     }

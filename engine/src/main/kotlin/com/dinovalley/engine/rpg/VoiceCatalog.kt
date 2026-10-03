@@ -11,7 +11,9 @@ import com.dinovalley.engine.rpg.learn.MemoryChallenge
 import com.dinovalley.engine.rpg.learn.RecipeChallenge
 import com.dinovalley.engine.rpg.learn.Skill
 import com.dinovalley.engine.rpg.learn.SkillBook
-import com.dinovalley.engine.rpg.run.Adventure
+import com.dinovalley.engine.rpg.content.Content
+import com.dinovalley.engine.rpg.run.Journey
+import com.dinovalley.engine.rpg.run.JourneyLines
 import com.dinovalley.engine.rpg.run.Beat
 import com.dinovalley.engine.rpg.run.Reply
 import com.dinovalley.engine.rpg.run.Say
@@ -28,12 +30,27 @@ import kotlin.random.Random
  * so the phone plays sound files instead of making speech.
  */
 object VoiceCatalog {
-    fun speech(runs: Int = 6000, seed: Int = 7): Pair<Set<Voice.Piece.Say>, Set<String>> {
-        val said = mutableListOf<List<Speech>>()
+    fun speech(runs: Int = 3000, seed: Int = 7): Pair<Set<Voice.Piece.Say>, Set<String>> {
+        val sentences = linkedSetOf<Voice.Piece.Say>()
+        val sounds = sortedSetOf<String>()
+        // Sorted into pieces as it goes: thousands of adventures would not fit in memory as whole lines.
+        fun hear(lines: List<Speech>) {
+            for (p in Voice.pieces(lines)) {
+                when (p) {
+                    is Voice.Piece.Say -> sentences += p
+                    is Voice.Piece.Sound -> sounds += p.id
+                }
+            }
+        }
         val choices = mutableSetOf<String>()
         val r = Random(seed)
         repeat(runs) { run ->
-            val hero = Hero(HeroClass.entries[run % HeroClass.entries.size], mapOf(Attribute.entries.random(r) to Progression.xpFor(r.nextInt(1, 13)) + 1))
+            val hero = Hero(
+                HeroClass.entries[run % HeroClass.entries.size], mapOf(Attribute.entries.random(r) to Progression.xpFor(r.nextInt(1, 13)) + 1),
+                coins = r.nextInt(0, 400),
+                // A bag with a few things in it, so rescues, battles and gifts all come up.
+                bag = Content.items.shuffled(r).take(r.nextInt(0, 6)).associate { it.id to 1 },
+            )
             val skills = SkillBook(levels = Skill.entries.associateWith { r.nextInt(1, 6) })
             val world = if (run % 4 == 0) {
                 WorldMemory()
@@ -45,71 +62,63 @@ object VoiceCatalog {
                     lastQuest = QuestKind.entries.random(r),
                 )
             }
-            val a = Adventure(r.nextLong(), hero, skills, world, Clock { 0L })
+            val a = Journey(r.nextLong(), hero, skills, world, Clock { 0L })
             var guard = 0
-            while (!a.finished && guard++ < 400) {
+            while (!a.finished && guard++ < 3000) {
                 val b = a.beat
                 val reply = when (b) {
                     is Beat.Tell -> {
-                        said += b.lines
+                        hear(b.lines)
                         Reply.Next
                     }
                     is Beat.Found -> {
-                        said += b.lines
+                        hear(b.lines)
                         Reply.Next
                     }
                     is Beat.Ask -> {
-                        said += b.challenge.prompt
-                        said += b.oops
-                        said += b.yay
+                        hear(b.challenge.prompt)
+                        hear(b.oops)
+                        hear(b.yay)
                         when (val c = b.challenge) {
-                            is MemoryChallenge -> said += c.remember
-                            is RecipeChallenge -> c.riddle?.let { said += it }
+                            is MemoryChallenge -> hear(c.remember)
+                            is RecipeChallenge -> c.riddle?.let { hear(it) }
                             else -> Unit
                         }
                         val tries = r.nextInt(1, 4)
-                        Reply.Solved(tries, tries - 1, 1000)
+                        // One-try puzzles are sometimes failed, so the rescue and turning-back words are heard too.
+                        if (b.oneTry && r.nextInt(3) == 0) Reply.Solved(1, 0, 1000, failed = true) else Reply.Solved(tries, tries - 1, 1000)
                     }
                     is Beat.Roll -> {
-                        said += b.why
+                        hear(b.why)
                         Reply.Rolled(r.nextBoolean(), r.nextInt(1, 3))
                     }
                     is Beat.Choose -> {
-                        said += b.prompt
+                        hear(b.prompt)
                         b.options.forEach { choices += it.said }
                         Reply.Picked(r.nextInt(b.options.size))
                     }
                     is Beat.Doors -> {
-                        said += b.prompt
-                        b.offers.forEach { said += it }
+                        hear(b.prompt)
+                        b.offers.forEach { hear(it) }
                         Reply.Picked(r.nextInt(b.fork.doors.size))
                     }
                     is Beat.Travel -> {
-                        said += b.prompt
-                        b.routes.forEach { said += it.said }
+                        hear(b.prompt)
+                        b.routes.forEach { hear(it.said) }
                         Reply.Picked(r.nextInt(b.routes.size))
                     }
                     is Beat.Shop -> {
-                        said += b.prompt
-                        Reply.Next
+                        hear(b.prompt)
+                        if (b.stock.isNotEmpty() && r.nextInt(3) > 0) Reply.Bought(b.stock.random(r).itemId) else Reply.Next
                     }
                     is Beat.Finale -> Reply.Next
                 }
                 a.reply(reply)
             }
-            (a.beat as? Beat.Finale)?.let { said += it.summary.lines }
+            (a.beat as? Beat.Finale)?.let { hear(it.summary.lines) }
         }
-        Say.all(choices.toList()).forEach { said += Speech.of(it) }
-        val sentences = linkedSetOf<Voice.Piece.Say>()
-        val sounds = sortedSetOf<String>()
-        for (s in said) {
-            for (p in Voice.pieces(s)) {
-                when (p) {
-                    is Voice.Piece.Say -> sentences += p
-                    is Voice.Piece.Sound -> sounds += p.id
-                }
-            }
-        }
+        JourneyLines.numbered().forEach { hear(Speech.of(it)) }
+        Say.all(choices.toList()).forEach { hear(Speech.of(it)) }
         return sentences.sortedWith(compareBy({ it.who }, { it.text })).toCollection(linkedSetOf()) to sounds
     }
 }
