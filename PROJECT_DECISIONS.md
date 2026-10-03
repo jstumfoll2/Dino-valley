@@ -997,3 +997,45 @@ pick the puzzle type.
 
 **What might cause us to change it:** He always picks the same game, and some
 skills never get practiced.
+
+### 49. First playtest fixes: feedback button, character voices, a branching map
+
+**Status:** Accepted · 2026-10-03
+
+**Decision:**
+- **A feedback button** (speech bubble) on the title and adventure screens. A
+  grown-up taps what kind of problem it was, adds words if they like, and sends
+  it by the share sheet or as a prefilled GitHub issue (the full report goes on
+  the clipboard). The report carries the scene on screen, the adventure seed and
+  every reply (so it can be replayed), and the last things said and done,
+  including any sentence that was cut off (`FeedbackLog`).
+- **Characters have voices.** Text can say who speaks (`<pet>`, `<wizard>`,
+  `<goblin>`, `<ruby>`, `<dragon>`, `<shadow>`, `<narrator>`; a line always ends
+  back with the narrator). Each has its own Kokoro speaker and pitch (engine
+  `Who`), is recorded by the build like the narrator, and only the character who
+  is speaking moves their mouth. Narration moves nobody's mouth. Rooms now have
+  short back-and-forth between the baby dragon and the people in the room.
+- **Answers wait for the question.** Challenge answers are not drawn until the
+  question has been spoken to the end, then pop in one by one; doors and
+  story pictures appear as each is described. A wrong answer's feedback and the
+  question asked again also finish before taps count. `Narrator.speak` now
+  waits for any speech that cut it off, so nothing starts over the top of it.
+- **The map branches, and wrong doors loop.** Every fork is drawn as a split
+  and a join; the doors taken are walked in gold. A door that wasn't the
+  clue's still has its room, then the path winds back to the same doors with
+  that door closed (a red looping arrow), until the clue's door is left.
+- **Magic is shown.** The engine's `Fx` maps spell, sparkle, rainbow, fizz,
+  poof, bubble and bunny words and story sounds to effects the app plays as the
+  sentence starts. The wizard's hat really turns into a bunny.
+- **Gems are drawn in the color said** (`Loot.hue`), and the bag shows each one.
+- **More answers each time** (three to six, by level) so guessing is harder.
+- **Letter sounds are one steady sound.** "nnnn" is spoken from phoneme markup
+  (`[[n:]]`), not read as "en en en en".
+
+**Why we made it:** Jason's first playtest notes: hard to pinpoint problems, speech
+cut off, a straight-looking map, a wrong gem, spells with no effect, a hat that
+didn't change, the pet's mouth moving for the narrator, one voice for everyone,
+answers tappable before the question ended, too few choices, odd letter sounds.
+
+**What might cause us to change it:** Speech is still cut off (the feedback
+report now shows where); the voices tire him; the loops make adventures too long.

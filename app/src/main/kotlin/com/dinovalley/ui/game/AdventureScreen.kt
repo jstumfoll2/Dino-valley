@@ -58,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dinovalley.R
 import com.dinovalley.engine.model.Speech
+import com.dinovalley.engine.model.Who
+import com.dinovalley.feedback.FeedbackLog
 import com.dinovalley.engine.rpg.hero.Power
 import com.dinovalley.engine.rpg.learn.ChallengeFactory
 import com.dinovalley.engine.rpg.learn.Words
@@ -90,10 +92,18 @@ fun AdventureScreen(vm: GameViewModel) {
     }
     val narrator = LocalNarrator.current
     val scope = rememberCoroutineScope()
-    val speaking by narrator.speaking.collectAsState()
+    val speakingAs by narrator.speakingAs.collectAsState()
     var caption by remember { mutableStateOf<List<Speech>>(emptyList()) }
     var heroMood by remember { mutableStateOf(Mood.CALM) }
     val interactive = beat !is Beat.Tell && beat !is Beat.Found
+    // How far the visitors have stepped back to leave room for a challenge.
+    val back by animateFloatAsState(if (interactive) 1f else 0f, tween(500), label = "back")
+
+    // Tell the feedback note where we are.
+    LaunchedEffect(vm.beatNumber) {
+        FeedbackLog.screen = FeedbackLog.describe(beat)
+        FeedbackLog.note("beat", FeedbackLog.describe(beat))
+    }
 
     // While this scene plays, get the words of the next ones ready, so they start without a pause.
     LaunchedEffect(vm.beatNumber) {
@@ -108,14 +118,14 @@ fun AdventureScreen(vm: GameViewModel) {
             Backdrop(place)
         }
         if (beat.scene.place != Place.MAP) {
-            Cast(beat, interactive, speaking, heroMood, vm, w, h)
+            Cast(beat, interactive, speakingAs, heroMood, back, vm, w, h)
         } else {
-            // The map: big while the narrator explains it, a strip above the doors at a fork.
+            // The map: all of it while the narrator explains it, a zoomed strip above the doors at a fork.
             val fork = beat is Beat.Doors
             DungeonMapView(
-                adventure.map, adventure.position, adventure.route,
+                adventure.map, adventure.position, adventure.visits, atFork = fork, windowed = fork,
                 left = w * 0.05f, top = if (fork) h * 0.2f else h * 0.26f,
-                width = w * 0.9f, height = if (fork) h * 0.3f else h * 0.6f,
+                width = w * 0.9f, height = if (fork) h * 0.34f else h * 0.6f,
             )
         }
 
@@ -144,6 +154,10 @@ fun AdventureScreen(vm: GameViewModel) {
             }
         }
 
+        // Magic shows when the narrator says it happens. The wizard's hat is where a bunny can appear.
+        val hat = if (Actor.WIZARD in beat.scene.cast) Offset(0.66f + 0.26f * back, 0.7f - 0.4f * back - (0.41f - 0.13f * back) * 0.4f) else null
+        MagicLayer(narrator, w, h, hat)
+
         if (caption.isNotEmpty()) {
             Caption(
                 caption,
@@ -155,6 +169,7 @@ fun AdventureScreen(vm: GameViewModel) {
         RoundButton(Picto.LISTEN, Palette.Sky, h * 0.14f, Modifier.align(Alignment.TopStart).padding(10.dp)) {
             scope.launch { narrator.speak(caption) }
         }
+        FeedbackButton(h * 0.1f, Modifier.align(Alignment.TopStart).padding(start = 10.dp + h * 0.02f, top = 18.dp + h * 0.14f))
         VoiceLoading()
         Column(Modifier.align(Alignment.TopEnd).padding(10.dp), horizontalAlignment = Alignment.End) {
             BagBar(adventure.bag, h * 0.07f)
@@ -170,49 +185,72 @@ private fun Column(modifier: Modifier, horizontalAlignment: Alignment.Horizontal
     androidx.compose.foundation.layout.Column(modifier, horizontalAlignment = horizontalAlignment) { content() }
 }
 
-/** Who stands where. During challenges the visitors step back so the pictures have room. */
+/**
+ * Who stands where. During challenges the visitors step back so the pictures have room. Only
+ * the character who is speaking moves their mouth: when the narrator tells the story, nobody does.
+ */
 @Composable
-private fun Cast(beat: Beat, interactive: Boolean, speaking: Boolean, heroMood: Mood, vm: GameViewModel, w: Dp, h: Dp) {
+private fun Cast(beat: Beat, interactive: Boolean, who: Who?, heroMood: Mood, back: Float, vm: GameViewModel, w: Dp, h: Dp) {
     val scene = beat.scene
+    val narrator = LocalNarrator.current
     val happy = scene.mood == SceneMood.HAPPY
     val heroState = when {
         heroMood == Mood.HAPPY || happy -> Mood.HAPPY
         else -> Mood.CALM
     }
+    fun voice(of: Who): (() -> Float)? = if (who == of) narrator::level else null
     val ruby = Actor.RUBY in scene.cast
     Character(Rigs.hero(vm.state.hero.heroClass, vm.unlocked), heroState, Modifier.at(w * 0.11f, h * 0.7f, h * 0.52f, h * 0.52f))
-    if (ruby) Character(Rigs.ruby, if (happy) Mood.HAPPY else Mood.CALM, Modifier.at(w * 0.24f, h * 0.72f, h * 0.48f, h * 0.48f))
+    if (ruby) {
+        Character(
+            Rigs.ruby, if (who == Who.RUBY) Mood.TALKING else if (happy) Mood.HAPPY else Mood.CALM,
+            Modifier.at(w * 0.24f, h * 0.72f, h * 0.48f, h * 0.48f), voice = voice(Who.RUBY),
+        )
+    }
     Character(
         Rigs.babyDragon,
         when {
+            who == Who.PET -> Mood.TALKING
             heroState == Mood.HAPPY -> Mood.HAPPY
-            speaking -> Mood.TALKING
             else -> Mood.CALM
         },
         Modifier.at(w * if (ruby) 0.34f else 0.27f, h * 0.8f, h * 0.36f, h * 0.36f),
-        voice = LocalNarrator.current::level,
+        voice = voice(Who.PET),
     )
     val npcMood = when (scene.mood) {
         SceneMood.HAPPY -> Mood.HAPPY
         SceneMood.CALM -> Mood.CALM
         else -> Mood.CALM
     }
-    val back by animateFloatAsState(if (interactive) 1f else 0f, tween(500), label = "back")
-    // During a challenge the visitors wait out of the way, so the pictures have the room.
+    // During a challenge the big visitors wait out of the way, so the pictures have the room.
     val present by animateFloatAsState(if (beat is Beat.Ask) 0f else 1f, tween(400), label = "present")
     if (Actor.GOBLIN in scene.cast && !(interactive && beat !is Beat.Choose)) {
-        Character(Rigs.goblin, if (npcMood == Mood.CALM) Mood.SCARED else npcMood, Modifier.at(w * 0.72f, h * 0.74f, h * 0.42f, h * 0.42f), facingLeft = true)
+        Character(
+            Rigs.goblin, if (who == Who.GOBLIN) Mood.TALKING else if (npcMood == Mood.CALM) Mood.SCARED else npcMood,
+            Modifier.at(w * 0.72f, h * 0.74f, h * 0.42f, h * 0.42f), facingLeft = true, voice = voice(Who.GOBLIN),
+        )
     }
     if (Actor.WIZARD in scene.cast) {
-        Character(Rigs.wizard, npcMood, Modifier.at(w * (0.66f + 0.26f * back), h * (0.7f + 0.0f * back), h * 0.38f, h * 0.41f).alpha(present), facingLeft = true)
+        // The wizard stays in the corner during the puzzle: the crystals are for her lantern.
+        Character(
+            Rigs.wizard, if (who == Who.WIZARD) Mood.TALKING else npcMood,
+            Modifier.at(w * (0.66f + 0.26f * back), h * (0.7f - 0.4f * back), h * (0.38f - 0.12f * back), h * (0.41f - 0.13f * back)),
+            facingLeft = true, voice = voice(Who.WIZARD),
+        )
     }
     if (Actor.DRAGON in scene.cast) {
         val size = h * (0.78f - 0.36f * back)
-        Character(Rigs.bigDragon, npcMood, Modifier.at(w * (0.7f + 0.18f * back), h * (0.6f - 0.18f * back), size, size).alpha(present), facingLeft = true)
+        Character(
+            Rigs.bigDragon, if (who == Who.DRAGON) Mood.TALKING else npcMood,
+            Modifier.at(w * (0.7f + 0.18f * back), h * (0.6f - 0.18f * back), size, size).alpha(present), facingLeft = true, voice = voice(Who.DRAGON),
+        )
     }
     if (Actor.SHADOW in scene.cast) {
         val size = h * (0.66f - 0.3f * back)
-        Character(Rigs.shadow, npcMood, Modifier.at(w * (0.7f + 0.18f * back), h * (0.6f - 0.18f * back), size, size).alpha(present), facingLeft = true)
+        Character(
+            Rigs.shadow, if (who == Who.SHADOW) Mood.TALKING else npcMood,
+            Modifier.at(w * (0.7f + 0.18f * back), h * (0.6f - 0.18f * back), size, size).alpha(present), facingLeft = true, voice = voice(Who.SHADOW),
+        )
     }
 }
 
@@ -258,7 +296,12 @@ private fun FoundBeat(beat: Beat.Found, say: (List<Speech>) -> Unit, celebrate: 
                 )
             }
         }
-        val res = if (beat.loot.kind == com.dinovalley.engine.rpg.run.LootKind.POTION) potionFor(beat.loot.words) else Art.loot(beat.loot.kind)
+        val res = when {
+            beat.loot.kind == com.dinovalley.engine.rpg.run.LootKind.POTION -> potionFor(beat.loot.words)
+            // The gem is drawn in the color the narrator says.
+            beat.loot.kind == com.dinovalley.engine.rpg.run.LootKind.GEM && beat.loot.hue != null -> Art.gem(beat.loot.hue!!)
+            else -> Art.loot(beat.loot.kind)
+        }
         Image(
             painterResource(res), null,
             Modifier.at(w * 0.64f, h * 0.55f, h * 0.34f, h * 0.34f).graphicsLayer { scaleX = pop.value; scaleY = pop.value },
@@ -284,16 +327,21 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
     val haptics = LocalHapticFeedback.current
     var pointing by remember { mutableIntStateOf(-1) }
     var chosen by remember { mutableIntStateOf(-1) }
+    // The pictures are not there until the question has been asked; each pops in as it is named.
+    var shown by remember { mutableIntStateOf(0) }
+    var ready by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         say(beat.prompt)
         narrator.speak(beat.prompt)
         beat.options.forEachIndexed { i, o ->
             pointing = i
+            shown = i + 1
             narrator.speak(Say.option(o.said, last = i == beat.options.lastIndex && i > 0))
             delay(150)
         }
         pointing = -1
+        ready = true
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = maxHeight
@@ -302,11 +350,16 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
         val card = h * 0.3f
         beat.options.forEachIndexed { i, o ->
             val lift by animateFloatAsState(if (pointing == i || chosen == i) 1.12f else 1f, spring(dampingRatio = 0.5f), label = "lift")
+            val appear by animateFloatAsState(if (i < shown) 1f else 0f, tween(380, easing = OutBack), label = "appear")
             Box(
                 Modifier
                     .at(w * (0.5f + 0.44f * (i + 0.5f) / n), h * 0.62f, card, card)
-                    .graphicsLayer { scaleX = lift; scaleY = lift; alpha = if (chosen >= 0 && chosen != i) 0.4f else 1f }
-                    .clickable(NoRipple, null, enabled = chosen < 0) {
+                    .graphicsLayer {
+                        scaleX = lift * appear
+                        scaleY = lift * appear
+                        alpha = (if (chosen >= 0 && chosen != i) 0.4f else 1f) * appear.coerceIn(0f, 1f)
+                    }
+                    .clickable(NoRipple, null, enabled = ready && chosen < 0) {
                         chosen = i
                         sfx.play("tap")
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -337,18 +390,24 @@ private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int)
     val scope = rememberCoroutineScope()
     var pointing by remember { mutableIntStateOf(-1) }
     var opened by remember { mutableIntStateOf(-1) }
+    // The doors come after the clue: each lifts into place as it is described, and none can be
+    // opened until everything has been said. Doors already tried (they looped back) stay, faded.
+    var shown by remember { mutableIntStateOf(0) }
+    var ready by remember { mutableStateOf(false) }
     val doors = beat.fork.doors
     LaunchedEffect(Unit) {
         say(beat.prompt)
         narrator.speak(beat.prompt)
         doors.forEachIndexed { i, room ->
-            if (opened >= 0) return@LaunchedEffect
+            if (i in beat.closed) return@forEachIndexed
             pointing = i
-            narrator.speak(beat.offers.getOrNull(i) ?: Speech.of(Say.doorName(room.hue)))
+            shown = i + 1
+            narrator.speak(beat.offers.getOrNull(i)?.takeIf { it.isNotEmpty() } ?: Speech.of(Say.doorName(room.hue)))
             delay(150)
         }
         pointing = -1
-        if (opened < 0) narrator.speak(Say.PICK_DOOR)
+        narrator.speak(Say.PICK_DOOR)
+        ready = true
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = maxHeight
@@ -358,16 +417,18 @@ private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int)
         val doorW = doorH * (200f / 280f)
         doors.forEachIndexed { i, room ->
             val lift by animateFloatAsState(if (pointing == i || opened == i) 1.1f else 1f, spring(dampingRatio = 0.5f), label = "lift")
+            val closed = i in beat.closed
+            val appear by animateFloatAsState(if (closed || i < shown) 1f else 0f, tween(380, easing = OutBack), label = "appear")
             val x = w * (0.5f + 0.5f * ((i + 0.5f) / n - 0.5f))
             Box(
                 Modifier
                     .at(x, h * 0.75f, doorW, doorH)
                     .graphicsLayer {
-                        scaleX = lift
-                        scaleY = lift
-                        alpha = if (opened >= 0 && opened != i) 0.4f else 1f
+                        scaleX = lift * appear
+                        scaleY = lift * appear
+                        alpha = (if (closed) 0.3f else if (opened >= 0 && opened != i) 0.4f else 1f) * appear.coerceIn(0f, 1f)
                     }
-                    .clickable(NoRipple, null, enabled = opened < 0) {
+                    .clickable(NoRipple, null, enabled = ready && opened < 0 && !closed) {
                         opened = i
                         pointing = -1
                         sfx.play("tap")
@@ -431,7 +492,8 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     var faces by remember { mutableStateOf(listOf(Random.nextInt(1, 7), Random.nextInt(1, 7))) }
-    var stage by remember { mutableStateOf("ready") } // ready, rolling, reroll?, sum, counting, done
+    var stage by remember { mutableStateOf("ready") } // ready, rolling, asking, reroll?, sum, counting, done
+    var asked by remember { mutableStateOf(false) } // the dice can be rolled once the reason has been said
     var usedReroll by remember { mutableStateOf(false) }
     var tries by remember { mutableIntStateOf(0) }
     var keep by remember { mutableStateOf<List<Int>?>(null) }
@@ -443,11 +505,12 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
     val reroll = beat.reroll
     val final = if (usedReroll && reroll != null) listOf(beat.dice, reroll).maxBy { it.sum() } else beat.dice
     val total = final.sum()
-    val options = remember(total) { ChallengeFactory.numberOptions(total, 4, Random(total)) }
+    val options = remember(total) { ChallengeFactory.numberOptions(total, 5, Random(total)) }
 
     LaunchedEffect(Unit) {
         say(beat.why)
         narrator.speak(beat.why)
+        asked = true
     }
 
     suspend fun tumbleTo(target: List<Int>) {
@@ -468,19 +531,22 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
         val q = Say.diceSum(final[0], final[1])
         faces = final
         say(Speech.of(q))
-        stage = "sum"
+        // The number cards appear only after the question has been asked.
+        stage = "asking"
         narrator.speak(q)
+        stage = "sum"
     }
 
     fun roll() {
-        if (stage != "ready") return
+        if (stage != "ready" || !asked) return
         scope.launch {
             tumbleTo(beat.dice)
             if (reroll != null) {
-                stage = "reroll?"
+                stage = "asking"
                 val l = Say.ROLL_AGAIN
                 say(Speech.of(l))
                 narrator.speak(l)
+                stage = "reroll?"
             } else {
                 askSum()
             }
@@ -529,7 +595,7 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
                         }
                     },
             ) {
-                DieFace(face, Modifier.fillMaxSize(), glow = stage == "ready", lit = litHere)
+                DieFace(face, Modifier.fillMaxSize(), glow = stage == "ready" && asked, lit = litHere)
             }
         }
         if (stage == "reroll?") {
@@ -589,8 +655,10 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
 @Composable
 fun NumberRow(
     options: List<Int>, h: Dp, w: Dp, keep: List<Int>?, glow: Int, wrong: Int?, solved: Boolean,
-    answer: Int? = null, enabled: Boolean = true, onPick: (Int) -> Unit,
+    answer: Int? = null, enabled: Boolean = true, shown: Boolean = true, onPick: (Int) -> Unit,
 ) {
+    // More cards than before: they shrink to fit beside the characters.
+    val card = minOf(h * 0.2f, w * 0.56f / (options.size * 1.17f))
     Row(
         Modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.End,
@@ -598,12 +666,13 @@ fun NumberRow(
     ) {
         Row(
             Modifier.padding(end = w * 0.04f, bottom = h * 0.04f),
-            horizontalArrangement = Arrangement.spacedBy(h * 0.035f),
+            horizontalArrangement = Arrangement.spacedBy(card * 0.17f),
         ) {
-            options.forEach { n ->
+            options.forEachIndexed { index, n ->
                 NumberCard(
-                    n, h * 0.2f, visible = keep?.contains(n) ?: true, wrong = wrong == n,
-                    correct = solved && n == answer, glow = glow == n, enabled = enabled && !solved, onClick = { onPick(n) },
+                    n, card, visible = keep?.contains(n) ?: true, wrong = wrong == n,
+                    correct = solved && n == answer, glow = glow == n, enabled = enabled && !solved && shown, onClick = { onPick(n) },
+                    appear = shown, index = index,
                 )
             }
         }
@@ -611,14 +680,33 @@ fun NumberRow(
 }
 
 @Composable
-fun NumberCard(n: Int, size: Dp, visible: Boolean, wrong: Boolean, correct: Boolean, glow: Boolean, enabled: Boolean, onClick: () -> Unit) {
+fun NumberCard(
+    n: Int, size: Dp, visible: Boolean, wrong: Boolean, correct: Boolean, glow: Boolean, enabled: Boolean, onClick: () -> Unit,
+    appear: Boolean = true, index: Int = 0,
+) {
     val shake = rememberShake(if (wrong) n else null)
     val fade by animateFloatAsState(if (visible) 1f else 0.2f, label = "fade")
+    // Pops in after the question, one card after another.
+    val grow = remember { Animatable(0f) }
+    LaunchedEffect(appear) {
+        if (appear) {
+            delay(index * 120L)
+            grow.animateTo(1f, tween(380, easing = OutBack))
+        } else {
+            grow.snapTo(0f)
+        }
+    }
     Box {
         if (glow) GlowRing(Modifier.size(size))
         androidx.compose.foundation.layout.Column(
             Modifier
-                .graphicsLayer { translationX = shake.value; alpha = fade; val s = if (correct) 1.12f else 1f; scaleX = s; scaleY = s }
+                .graphicsLayer {
+                    translationX = shake.value
+                    alpha = fade * grow.value.coerceIn(0f, 1f)
+                    val s = (if (correct) 1.12f else 1f) * grow.value
+                    scaleX = s
+                    scaleY = s
+                }
                 .size(size)
                 .shadow(6.dp, CircleShape)
                 .background(Palette.Paper, CircleShape)

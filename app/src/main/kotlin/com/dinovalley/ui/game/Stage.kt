@@ -1,5 +1,6 @@
 package com.dinovalley.ui.game
 
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -50,6 +51,7 @@ import com.dinovalley.audio.Narrator
 import com.dinovalley.audio.Sfx
 import com.dinovalley.data.DragonName
 import com.dinovalley.engine.model.Speech
+import com.dinovalley.engine.model.Who
 import com.dinovalley.engine.rpg.run.Adventure
 import com.dinovalley.engine.rpg.run.Place
 import com.dinovalley.ui.art.Art
@@ -74,6 +76,14 @@ object Palette {
     val Right = Color(0xFF4FC24A)
 }
 
+/** An ease that overshoots a little and settles, for answers popping in. */
+val OutBack = Easing { t ->
+    val c1 = 1.70158f
+    val c3 = c1 + 1f
+    val u = t - 1f
+    1f + c3 * u * u * u + c1 * u * u
+}
+
 /** Shared by every screen: a tap target with no ripple, since the art does its own feedback. */
 val NoRipple = MutableInteractionSource()
 
@@ -91,16 +101,31 @@ fun Modifier.at(centerX: Dp, centerY: Dp, width: Dp, height: Dp): Modifier =
 fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val name = LocalDragonName.current.name
     val text = buildAnnotatedString {
+        // Characters' words are labelled with who says them; the narrator's are plain.
+        var who = Who.NARRATOR
+        var fresh = true
+        fun space(next: String?) {
+            val punct = next?.firstOrNull()?.let { it in ",.!?;:" } == true
+            if (length > 0 && !fresh && !punct) append(' ')
+            fresh = false
+        }
         speech.forEach { part ->
-            val glue = length > 0 && !(part is Speech.Words && part.text.firstOrNull()?.let { it in ",.!?;:" } == true)
             when (part) {
                 is Speech.Words -> {
-                    if (glue) append(' ')
+                    space(part.text)
                     append(part.text)
                 }
                 Speech.Name -> {
-                    if (glue) append(' ')
+                    space(null)
                     withStyle(SpanStyle(color = Palette.Name, fontWeight = FontWeight.Black)) { append(name) }
+                }
+                is Speech.As -> if (part.who != who) {
+                    who = part.who
+                    if (who != Who.NARRATOR) {
+                        space(null)
+                        val label = if (who == Who.PET) name else who.tag.replaceFirstChar { it.uppercase() }
+                        withStyle(SpanStyle(color = speakerColor(who), fontWeight = FontWeight.Black)) { append("$label:") }
+                    }
                 }
                 is Speech.Sound -> Unit
             }
@@ -125,6 +150,17 @@ fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modif
             modifier = Modifier.align(Alignment.Center),
         )
     }
+}
+
+/** A color for each character's name tag in the caption. */
+private fun speakerColor(who: Who): Color = when (who) {
+    Who.NARRATOR -> Palette.Ink
+    Who.PET -> Palette.Name
+    Who.WIZARD -> Color(0xFF7B4FD1)
+    Who.GOBLIN -> Color(0xFF3E8E41)
+    Who.RUBY -> Color(0xFFD1405F)
+    Who.DRAGON -> Color(0xFFB23A1F)
+    Who.SHADOW -> Color(0xFF4A4A6A)
 }
 
 /** A big round picture button. [pulse] makes it breathe to say "tap me next". */
@@ -164,10 +200,8 @@ fun BagBar(bag: Adventure.Bag, height: Dp, modifier: Modifier = Modifier) {
         repeat(3) { i -> Text(if (i < bag.hearts) "❤️" else "🤍", fontSize = 18.sp) }
         Image(painterResource(R.drawable.art_coin), null, Modifier.size(height))
         Text("${bag.coins}", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
-        if (bag.gems > 0) {
-            Image(painterResource(R.drawable.art_gem_blue), null, Modifier.size(height))
-            Text("${bag.gems}", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
-        }
+        // Every gem found, in its own color.
+        bag.gems.forEach { hue -> Image(painterResource(Art.gem(hue)), null, Modifier.size(height)) }
         if (bag.key) Image(painterResource(R.drawable.art_key), null, Modifier.size(height))
         bag.potion?.let { Image(painterResource(Art.potion(it)), null, Modifier.size(height)) }
     }

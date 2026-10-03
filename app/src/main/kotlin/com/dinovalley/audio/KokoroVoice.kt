@@ -1,6 +1,7 @@
 package com.dinovalley.audio
 
 import android.content.Context
+import com.dinovalley.engine.model.Who
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
@@ -44,13 +45,13 @@ class KokoroVoice(private val context: Context) {
         }.getOrDefault(false)
     }
 
-    /** The words as sound, at the shared loudness. Null if the voice can't load. */
-    suspend fun say(text: String): Pcm? {
+    /** The words as sound in [who]'s voice, at the shared loudness. Null if the voice can't load. */
+    suspend fun say(text: String, who: Who = Who.NARRATOR): Pcm? {
         if (!load()) return null
         return withContext(thread) {
             val voice = tts ?: return@withContext null
-            val audio = runCatching { voice.generate(text, sid = SPEAKER, speed = SPEED) }.getOrNull() ?: return@withContext null
-            Pcm(audio.samples, audio.sampleRate).normalized()
+            val audio = runCatching { voice.generate(text, sid = who.sid, speed = who.speed) }.getOrNull() ?: return@withContext null
+            Pcm(audio.samples, audio.sampleRate).pitched(who.pitch).normalized()
         }
     }
 
@@ -87,10 +88,5 @@ class KokoroVoice(private val context: Context) {
         const val DIR = "kokoro"
         const val MODEL = "model.int8.onnx"
 
-        /** af_bella: a warm, clear storyteller among Kokoro's English voices. */
-        const val SPEAKER = 1
-
-        /** A touch slower than normal speech, for a four-year-old. */
-        const val SPEED = 0.9f
     }
 }

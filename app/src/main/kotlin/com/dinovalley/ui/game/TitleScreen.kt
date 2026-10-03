@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dinovalley.engine.model.Speech
+import com.dinovalley.engine.model.Who
 import com.dinovalley.engine.model.Voice
 import com.dinovalley.engine.rpg.run.Say
 import com.dinovalley.engine.rpg.hero.HeroClass
@@ -72,7 +73,9 @@ fun TitleScreen(vm: GameViewModel) {
     val dragon = LocalDragonName.current
     val sfx = LocalSfx.current
     val scope = rememberCoroutineScope()
-    val speaking by narrator.speaking.collectAsState()
+    // Only the dragon's own words move its mouth; the narrator welcoming you does not.
+    val speakingAs by narrator.speakingAs.collectAsState()
+    val speaking = speakingAs == Who.PET
     var dragonMood by remember { mutableStateOf(Mood.CALM) }
     var naming by remember { mutableStateOf(false) }
     val hero = vm.state.hero
@@ -138,6 +141,7 @@ fun TitleScreen(vm: GameViewModel) {
 
         // Level and stars
         LevelBadge(hero.level, Progression.progress(hero.totalXp), Modifier.align(Alignment.TopStart).padding(12.dp), h * 0.12f)
+        FeedbackButton(h * 0.1f, Modifier.align(Alignment.BottomStart).padding(12.dp))
 
         // Pick a hero
         Row(

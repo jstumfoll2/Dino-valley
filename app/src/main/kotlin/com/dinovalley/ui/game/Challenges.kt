@@ -147,6 +147,20 @@ private class Turn(
     var busy by mutableStateOf(false)
         private set
 
+    /**
+     * True once the question has been spoken to the end. Until then the answers are not shown at
+     * all, so nobody can answer a question that is still being asked.
+     */
+    var asked by mutableStateOf(false)
+        private set
+
+    fun markAsked() {
+        asked = true
+    }
+
+    /** Taps and drags do nothing while the question or a miss's feedback is being said. */
+    val locked: Boolean get() = busy || !asked
+
     private var lastMiss = 0L
 
     /**
@@ -177,11 +191,12 @@ private class Turn(
                     tier >= 2 -> narrator.speak(Speech.of(Say.GLOW))
                     else -> narrator.speak(Speech.of(Say.WHISPER))
                 }
+                // The question again is part of the feedback: no answers until it has been heard.
+                narrator.speak(again(tier))
             } finally {
                 busy = false
                 lastMiss = System.currentTimeMillis()
             }
-            narrator.speak(again(tier))
         }
         return tier
     }
@@ -237,6 +252,7 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
         if (c !is MemoryChallenge) {
             say(c.prompt)
             narrator.speak(c.prompt)
+            turn.markAsked()
         }
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -262,6 +278,9 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
 // ------------------------------------------------------------------ pick one picture
 
 private class Pick(private val turn: Turn, private val c: PickOne) {
+    /** The answers appear once the question has been asked. */
+    val shown: Boolean get() = turn.asked
+
     var keep by mutableStateOf<List<Int>?>(null)
     var glow by mutableIntStateOf(-1)
     var wrong by mutableIntStateOf(-1)
@@ -274,7 +293,7 @@ private class Pick(private val turn: Turn, private val c: PickOne) {
     fun visible(i: Int) = keep?.contains(i) ?: true
 
     fun pick(i: Int) {
-        if (turn.done || turn.busy || i < 0 || !visible(i) || i in tried) return
+        if (turn.done || turn.locked || i < 0 || !visible(i) || i in tried) return
         val v = Coach.judge(c, i, turn.ladder.coachTry)
         turn.ladder.noteHints(v.hints)
         if (v.correct) {
@@ -297,13 +316,15 @@ private fun Tile(pick: Pick, i: Int, modifier: Modifier, content: @Composable Bo
     val shake = rememberShake(if (pick.wrong == i) pick.wrongTick else null)
     val fade by animateFloatAsState(if (pick.visible(i)) 1f else 0.2f, label = "fade")
     val pop by animateFloatAsState(if (pick.chosen == i) 1.18f else 1f, spring(dampingRatio = 0.4f), label = "pop")
+    // After the question, the answers pop in one after another.
+    val appear by animateFloatAsState(if (pick.shown) 1f else 0f, tween(380, delayMillis = i * 120, easing = OutBack), label = "appear")
     Box(
         modifier
             .graphicsLayer {
                 translationX = shake.value
-                alpha = if (i in pick.tried) minOf(fade, 0.6f) else fade
-                scaleX = pop
-                scaleY = pop
+                alpha = (if (i in pick.tried) minOf(fade, 0.6f) else fade) * appear.coerceIn(0f, 1f)
+                scaleX = pop * appear
+                scaleY = pop * appear
             }
             .clickable(NoRipple, null) { pick.pick(i) },
         contentAlignment = Alignment.Center,
@@ -346,7 +367,7 @@ private fun CountRoom(c: CountChallenge, turn: Turn, z: Zone) {
     val counted = remember { mutableStateListOf<Int>() }
     // Tapping a thing counts it out loud, the way grown-ups count with a finger.
     ThingPile(c.thing, c.count, 0, z.left, z.right, z.h * 0.22f, z.h * 0.7f, counted) { i ->
-        if (i !in counted) {
+        if (i !in counted && turn.asked) {
             counted += i
             narrator.blurt(Say.count(counted.size))
         }
@@ -386,6 +407,7 @@ private fun Numbers(options: List<Int>, answer: Int, pick: Pick, turn: Turn, z: 
         wrong = if (pick.wrong >= 0) options[pick.wrong] else null,
         solved = turn.done,
         answer = answer,
+        shown = turn.asked,
     ) { n -> pick.pick(options.indexOf(n)) }
 }
 
@@ -611,7 +633,7 @@ private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
-                    if (turn.done || turn.busy) return@awaitEachGesture
+                    if (turn.done || turn.locked) return@awaitEachGesture
                     trail.clear()
                     var gained = 0
                     val tol = c.tolerance * size.height
@@ -751,6 +773,7 @@ private fun MemoryRoom(c: MemoryChallenge, turn: Turn, z: Zone) {
         hidden = true
         turn.say(c.prompt)
         narrator.speak(c.prompt)
+        turn.markAsked()
     }
     val doorW = z.tile(c.doors.size, z.h * 0.34f)
     val doorH = doorW * (280f / 200f)
@@ -768,7 +791,7 @@ private fun MemoryRoom(c: MemoryChallenge, turn: Turn, z: Zone) {
                     scaleY = pop
                 }
                 .clickable(NoRipple, null) {
-                    if (!hidden || peeking || turn.done || turn.busy || i in found) return@clickable
+                    if (!hidden || peeking || turn.done || turn.locked || i in found) return@clickable
                     val want = c.sequence[step]
                     if (i == want) {
                         found += i
@@ -861,7 +884,7 @@ private fun PotionRoom(c: RecipeChallenge, turn: Turn, z: Zone) {
     }
 
     fun drop(i: Ingredient) {
-        if (turn.done || turn.busy || have >= need || keep?.contains(i) == false) return
+        if (turn.done || turn.locked || have >= need || keep?.contains(i) == false) return
         if (fits(i)) {
             val n = (added[i] ?: 0) + 1
             added[i] = n
@@ -1096,7 +1119,7 @@ private fun SortItem(
                 .pointerInput(i) {
                     detectDragGestures(
                         onDragStart = {
-                            if (!turn.busy && !turn.done) {
+                            if (!turn.locked && !turn.done) {
                                 dragging = true
                                 sfx.play("tap", 0.5f)
                             }
@@ -1171,7 +1194,7 @@ private fun PondRoom(c: SkipCountChallenge, turn: Turn, z: Zone) {
     val pulse by t.animateFloat(0.85f, 1.15f, infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "pulse")
     xs.forEachIndexed { k, x ->
         val y = z.h * (0.46f + 0.05f * kotlin.math.sin(k * 1.7f))
-        Box(Modifier.at(x, y, pad, pad).clickable(NoRipple, null) { narrator.blurt(Say.count(c.step * (k + 1))) }) {
+        Box(Modifier.at(x, y, pad, pad).clickable(NoRipple, null) { if (turn.asked) narrator.blurt(Say.count(c.step * (k + 1))) }) {
             Image(painterResource(R.drawable.art_lily_pad), null, Modifier.fillMaxSize())
             // The things on this pad, in a little cluster.
             val thing = pad * if (c.step <= 3) 0.3f else 0.2f
@@ -1280,7 +1303,7 @@ private fun LoosePiece(
                 .pointerInput(p) {
                     detectDragGestures(
                         onDragStart = {
-                            if (!turn.busy && !turn.done) {
+                            if (!turn.locked && !turn.done) {
                                 dragging = true
                                 sfx.play("tap", 0.5f)
                             }

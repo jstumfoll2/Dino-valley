@@ -73,6 +73,16 @@ class Pcm(val samples: FloatArray, val rate: Int) {
         return if (to - from < rate / 10) this else Pcm(samples.copyOfRange(from, to), rate)
     }
 
+    /**
+     * Higher (or lower) and a little faster (or slower), for the small and the big characters:
+     * the same samples played as if they were recorded at a different rate. Matches the build's
+     * recorder (scripts/render-voice.py), so a sentence made on the phone sounds like the packed ones.
+     */
+    fun pitched(factor: Float): Pcm {
+        if (abs(factor - 1f) < 0.001f || samples.isEmpty()) return this
+        return Pcm(samples, (rate * factor).toInt()).at(rate)
+    }
+
     /** The same sound at another sample rate (straight-line resampling, fine for speech). */
     fun at(newRate: Int): Pcm {
         if (newRate == rate || samples.isEmpty()) return this

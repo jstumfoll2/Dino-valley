@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import com.dinovalley.data.Save
+import com.dinovalley.feedback.FeedbackLog
 import com.dinovalley.engine.rpg.hero.HeroClass
 import com.dinovalley.engine.rpg.run.Adventure
 import com.dinovalley.engine.rpg.run.Beat
@@ -43,13 +44,19 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun start() {
-        val a = Adventure(System.nanoTime(), state.hero, state.skills, state.world)
+        val seed = System.nanoTime()
+        val a = Adventure(seed, state.hero, state.skills, state.world)
+        // So a feedback note can say exactly which adventure this was.
+        FeedbackLog.newAdventure(
+            "seed $seed, ${state.hero.heroClass} level ${state.hero.level}, skills ${state.skills.levels.entries.joinToString { "${it.key}=${it.value}" }}",
+        )
         adventure = a
         show(a.beat)
     }
 
     fun reply(reply: Reply) {
         val a = adventure ?: return
+        FeedbackLog.reply(reply.toString())
         a.reply(reply)
         if (a.finished) {
             state = Save.State(a.hero, a.skills, a.world)

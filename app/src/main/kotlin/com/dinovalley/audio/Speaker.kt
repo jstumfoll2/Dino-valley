@@ -100,6 +100,8 @@ class Speaker {
                 val end = startFrame + written
                 val limit = System.currentTimeMillis() + clip.samples.size * 1000L / RATE + 1000
                 while (track.playbackHeadPosition < end && System.currentTimeMillis() < limit) delay(15)
+                // The phone's speaker is a little behind the play position; let the last sound out.
+                if (voice) delay(TAIL_MILLIS)
             } catch (e: Throwable) {
                 stopNow()
                 throw e
@@ -129,5 +131,6 @@ class Speaker {
         /** Kokoro speaks at 24 kHz; everything else is brought to it. */
         const val RATE = 24_000
         private const val CHUNK = RATE / 20
+        private const val TAIL_MILLIS = 120L
     }
 }

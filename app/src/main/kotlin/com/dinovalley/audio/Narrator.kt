@@ -5,6 +5,9 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.dinovalley.engine.model.Speech
 import com.dinovalley.engine.model.Voice
+import com.dinovalley.engine.model.Who
+import com.dinovalley.engine.rpg.run.Fx
+import com.dinovalley.feedback.FeedbackLog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -15,8 +18,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -50,6 +56,16 @@ class Narrator(context: Context, private val name: () -> String) {
     /** True while waiting for a sentence that is still being made. */
     val preparing: StateFlow<Boolean> = _preparing.asStateFlow()
 
+    private val _who = MutableStateFlow<Who?>(null)
+
+    /** Who is speaking right now: only that character moves their mouth. Null when nobody is. */
+    val speakingAs: StateFlow<Who?> = _who.asStateFlow()
+
+    private val _magic = MutableSharedFlow<Fx>(extraBufferCapacity = 8)
+
+    /** Magic to show: emitted as the sentence or sound that describes it starts. */
+    val magic: SharedFlow<Fx> = _magic.asSharedFlow()
+
     /** How loud the voice is at this moment, 0..1. */
     fun level(): Float = speaker.level()
 
@@ -64,18 +80,34 @@ class Narrator(context: Context, private val name: () -> String) {
         if (name() != Voice.DEFAULT_NAME) scope.launch(Dispatchers.Default) { bank.warmUp() }
     }
 
-    /** Says everything in order and returns when done. A newer [speak], [blurt] or [stop] cuts it off. */
-    suspend fun speak(speech: List<Speech>) {
+    /**
+     * Says everything in order and returns when it has been heard. A newer [speak], [blurt] or
+     * [stop] cuts it off; then this waits until the voice is quiet again, so whoever is waiting on
+     * these words (the next scene, the answer buttons) never starts over the top of someone still
+     * talking. True if it was said to the end.
+     */
+    suspend fun speak(speech: List<Speech>): Boolean {
         val mine = generation.incrementAndGet()
         current?.cancel()
+        var job: Job? = null
         coroutineScope {
-            val job = launch { play(Voice.pieces(speech, name()), mine) }
+            job = launch { play(Voice.pieces(speech, name()), mine) }
             current = job
-            job.join()
+            job?.join()
         }
+        val whole = generation.get() == mine
+        if (!whole) {
+            FeedbackLog.note("voice", "cut off: ${Voice.caption(speech, name())}")
+            while (true) {
+                val other = current ?: break
+                if (other === job || !other.isActive) break
+                other.join()
+            }
+        }
+        return whole
     }
 
-    suspend fun speak(text: String) = speak(Speech.of(text))
+    suspend fun speak(text: String): Boolean = speak(Speech.of(text))
 
     /** Says something short right away, like the count when a coin is tapped. Interrupts. */
     fun blurt(text: String) {
@@ -110,10 +142,24 @@ class Narrator(context: Context, private val name: () -> String) {
         scope.cancel()
     }
 
+    /** Tells the screen what is about to be heard, so magic shows as it is described. */
+    private fun announce(piece: Voice.Piece) {
+        when (piece) {
+            is Voice.Piece.Say -> {
+                FeedbackLog.note("voice", "${piece.who.tag}: ${piece.text}")
+                Fx.forSentence(piece.text)?.let { _magic.tryEmit(it) }
+            }
+            is Voice.Piece.Sound -> {
+                FeedbackLog.note("sound", piece.id)
+                Fx.forSound(piece.id)?.let { _magic.tryEmit(it) }
+            }
+        }
+    }
+
     private fun clip(piece: Voice.Piece): Deferred<Pcm?> = pending.getOrPut(piece) {
         scope.async(Dispatchers.Default) {
             when (piece) {
-                is Voice.Piece.Say -> bank.say(piece.text)
+                is Voice.Piece.Say -> bank.say(piece.text, piece.who)
                 is Voice.Piece.Sound -> bank.sound(piece.id)
             }
         }
@@ -137,14 +183,22 @@ class Narrator(context: Context, private val name: () -> String) {
                 when {
                     pcm != null -> {
                         val voice = piece is Voice.Piece.Say
-                        if (voice) _speaking.value = true
+                        announce(piece)
+                        if (voice) {
+                            _speaking.value = true
+                            _who.value = (piece as Voice.Piece.Say).who
+                        }
                         try {
                             speaker.play(pcm, voice)
                         } finally {
                             _speaking.value = false
+                            _who.value = null
                         }
                     }
-                    piece is Voice.Piece.Say -> sayWithPhoneVoice(piece.text)
+                    piece is Voice.Piece.Say -> {
+                        announce(piece)
+                        sayWithPhoneVoice(Voice.plain(piece.text), piece.who)
+                    }
                 }
                 if (piece is Voice.Piece.Sound) delay(120)
             }
@@ -184,7 +238,7 @@ class Narrator(context: Context, private val name: () -> String) {
         waiting.remove(id)?.complete(Unit)
     }
 
-    private suspend fun sayWithPhoneVoice(text: String) {
+    private suspend fun sayWithPhoneVoice(text: String, who: Who) {
         if (!ttsReady.await()) {
             delay(text.length * 55L) // no voice at all: leave time to look at the screen
             return
@@ -193,11 +247,13 @@ class Narrator(context: Context, private val name: () -> String) {
         val done = CompletableDeferred<Unit>()
         waiting[id] = done
         _speaking.value = true
+        _who.value = who
         try {
             tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id)
             withTimeoutOrNull(3_000L + text.length * 150L) { done.await() }
         } finally {
             _speaking.value = false
+            _who.value = null
             waiting.remove(id)
         }
     }
