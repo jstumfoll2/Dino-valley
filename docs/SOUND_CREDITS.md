@@ -62,3 +62,7 @@ Every "Original file" path below is relative to the root of the repository above
 | `fizz.ogg` | fizzing potion | synthesized | none (sparse high crackles, hiss and tiny rising bubble blips) | project | CC0 1.0 |
 
 The synthesized sounds were generated with Python (numpy and scipy) and contain no sampled material.
+
+## growl.ogg
+
+Made from scratch by `scripts/make-growl.py` (a low rattling buzz shaped by mouth-like filters). No outside sound used.

@@ -86,9 +86,18 @@ object Voice {
 
     /** The file name of a recorded sentence: a fingerprint of exactly what is said. */
     fun key(spokenSentence: String, who: Who = Who.NARRATOR): String {
-        val digest = MessageDigest.getInstance("SHA-1").digest("${who.voiceId}|$spokenSentence".toByteArray())
+        val digest = MessageDigest.getInstance("SHA-1").digest("${voiceIdOf(spokenSentence, who)}|$spokenSentence".toByteArray())
         return digest.take(8).joinToString("") { "%02x".format(it) }
     }
+
+    /** A held letter sound ("[[s:]]."): made from scratch by the build (scripts/letter_sounds.py), not spoken. */
+    const val LETTER_SOUND_ID = "letter-sounds-v1"
+
+    private val HELD_SOUND = Regex("^\\[\\[[a-z]:]][.!?]?$")
+
+    /** Which voice makes this sentence: the letter-sound maker for a held sound, otherwise [who]'s. */
+    fun voiceIdOf(spokenSentence: String, who: Who): String =
+        if (HELD_SOUND.matches(spokenSentence)) LETTER_SOUND_ID else who.voiceId
 
     /** Changes when the narrator's voice settings change, so every clip is made again. */
     const val VOICE_ID = "kokoro-en-v0_19/sid1/speed0.9"

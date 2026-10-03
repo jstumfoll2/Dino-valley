@@ -1039,3 +1039,21 @@ answers tappable before the question ended, too few choices, odd letter sounds.
 
 **What might cause us to change it:** Speech is still cut off (the feedback
 report now shows where); the voices tire him; the loops make adventures too long.
+
+### 50. Held letter sounds and growls are made, not spoken
+
+**Status:** Accepted · 2026-10-03
+
+**Decision:** A speech model reads "ssss" as the letter's name ("ess") and a growl as
+"g rr rr", even with phoneme markup. Held letter sounds (m n l r v z s f) are now
+made from scratch by `scripts/letter_sounds.py` (a buzz shaped like a mouth, or hissing
+air) and recorded under their own voice id; the dragon's growl is a sound effect
+(`[growl]`, `scripts/make-growl.py`). The baby dragon's voice is a calm British
+Kokoro speaker (sid 8) with no pitch shift. Clues say "the right path is through the
+GREEN door", since every room ends in a chest. Everyone who speaks in a scene is drawn.
+
+**Why we made it:** Playtest issues #9, #10, #11, #12 and Jason's note that the pet's
+voice was too high and fast.
+
+**What might cause us to change it:** The made sounds seem robotic to him; record a
+real voice for the letter sounds instead.

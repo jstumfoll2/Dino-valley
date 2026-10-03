@@ -10,7 +10,7 @@ package com.dinovalley.engine.model
  */
 enum class Who(val tag: String, val sid: Int, val speed: Float, val pitch: Float, val voiceId: String) {
     NARRATOR("narrator", 1, 0.9f, 1f, Voice.VOICE_ID),
-    PET("pet", 4, 1.0f, 1.18f, "kokoro-en-v0_19/sid4/speed1.0/pitch1.18"),
+    PET("pet", 8, 0.88f, 1.0f, "kokoro-en-v0_19/sid8/speed0.88/pitch1.0"),
     WIZARD("wizard", 3, 0.9f, 0.92f, "kokoro-en-v0_19/sid3/speed0.9/pitch0.92"),
     GOBLIN("goblin", 5, 1.0f, 1.15f, "kokoro-en-v0_19/sid5/speed1.0/pitch1.15"),
     RUBY("ruby", 7, 0.95f, 1f, "kokoro-en-v0_19/sid7/speed0.95/pitch1.0"),

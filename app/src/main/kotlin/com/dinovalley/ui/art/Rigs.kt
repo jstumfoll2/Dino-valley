@@ -2,6 +2,7 @@ package com.dinovalley.ui.art
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseInOutSine
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -74,8 +75,10 @@ object Rigs {
     ) = Rig(
         listOf(
             Piece(shadow, Part.STILL), Piece(wingBack, Part.WING), Piece(tail, Part.TAIL), Piece(legBack, Part.STILL),
-            Piece(body, Part.BODY), Piece(legFront, Part.STILL), Piece(wingFront, Part.WING), Piece(arm, Part.ARM),
+            Piece(body, Part.BODY), Piece(legFront, Part.STILL), Piece(arm, Part.ARM),
             Piece(head, Part.HEAD), Piece(0, Part.FACE),
+            // The near wing is drawn over the head, so the head never hides it.
+            Piece(wingFront, Part.WING),
         ),
         eyeOpen, eyeClosed, mouthCalm, mouthHappy, mouthTalk,
         neck = TransformOrigin(0.6f, 0.55f), shoulder = TransformOrigin(0.64f, 0.6f),
@@ -201,11 +204,12 @@ fun Character(
         return
     }
     val idle = rememberInfiniteTransition(label = "idle")
-    val breath by idle.animateFloat(0f, 1f, infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "breath")
-    val wag by idle.animateFloat(-5f, 7f, infiniteRepeatable(tween(if (mood == Mood.HAPPY) 260 else 1300), RepeatMode.Reverse), label = "wag")
-    val wing by idle.animateFloat(-8f, 10f, infiniteRepeatable(tween(if (mood == Mood.HAPPY) 180 else 900), RepeatMode.Reverse), label = "wing")
-    val wave by idle.animateFloat(-14f, 10f, infiniteRepeatable(tween(240), RepeatMode.Reverse), label = "wave")
-    val shiver by idle.animateFloat(-1f, 1f, infiniteRepeatable(tween(70), RepeatMode.Reverse), label = "shiver")
+    // Sine easing everywhere, so every swing slows into its turn instead of snapping back.
+    val breath by idle.animateFloat(0f, 1f, infiniteRepeatable(tween(1800, easing = EaseInOutSine), RepeatMode.Reverse), label = "breath")
+    val wag by idle.animateFloat(-5f, 7f, infiniteRepeatable(tween(if (mood == Mood.HAPPY) 320 else 1500, easing = EaseInOutSine), RepeatMode.Reverse), label = "wag")
+    val wing by idle.animateFloat(-8f, 10f, infiniteRepeatable(tween(if (mood == Mood.HAPPY) 260 else 1100, easing = EaseInOutSine), RepeatMode.Reverse), label = "wing")
+    val wave by idle.animateFloat(-14f, 10f, infiniteRepeatable(tween(320, easing = EaseInOutSine), RepeatMode.Reverse), label = "wave")
+    val shiver by idle.animateFloat(-1f, 1f, infiniteRepeatable(tween(90, easing = EaseInOutSine), RepeatMode.Reverse), label = "shiver")
 
     var blink by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -266,13 +270,18 @@ fun Character(
                         },
                     )
                     Part.FACE -> {
-                        Layer(if (blink) rig.eyeClosed else rig.eyeOpen, head)
-                        val mouth = when {
-                            mood == Mood.TALKING && mouthOpen -> rig.mouthTalk
-                            mood == Mood.HAPPY || mood == Mood.TALKING -> rig.mouthHappy
-                            else -> rig.mouthCalm
-                        }
-                        Layer(mouth, head)
+                        // Every eye and mouth is drawn, and only its see-through-ness changes, so a blink
+                        // or a word never rebuilds the whole character (that made the motion stutter).
+                        Layer(rig.eyeOpen, head.graphicsLayer { alpha = if (blink) 0f else 1f })
+                        Layer(rig.eyeClosed, head.graphicsLayer { alpha = if (blink) 1f else 0f })
+                        fun shown(m: Int) = when {
+                            mood == Mood.TALKING && mouthOpen -> 2
+                            mood == Mood.HAPPY || mood == Mood.TALKING -> 1
+                            else -> 0
+                        } == m
+                        Layer(rig.mouthCalm, head.graphicsLayer { alpha = if (shown(0)) 1f else 0f })
+                        Layer(rig.mouthHappy, head.graphicsLayer { alpha = if (shown(1)) 1f else 0f })
+                        Layer(rig.mouthTalk, head.graphicsLayer { alpha = if (shown(2)) 1f else 0f })
                     }
                 }
             }
