@@ -1,6 +1,7 @@
 package com.dinovalley.engine.rpg.run
 
 import com.dinovalley.engine.model.Speech
+import com.dinovalley.engine.model.Who
 import com.dinovalley.engine.rpg.hero.Attribute
 import com.dinovalley.engine.rpg.hero.Hero
 import com.dinovalley.engine.rpg.hero.Power
@@ -8,6 +9,8 @@ import com.dinovalley.engine.rpg.hero.Progression
 import com.dinovalley.engine.rpg.learn.Challenge
 import com.dinovalley.engine.rpg.learn.ChallengeFactory
 import com.dinovalley.engine.rpg.learn.ChallengeRecord
+import com.dinovalley.engine.rpg.learn.Hue
+import com.dinovalley.engine.rpg.learn.MapChallenge
 import com.dinovalley.engine.rpg.learn.MapDoor
 import com.dinovalley.engine.rpg.learn.PotionKind
 import com.dinovalley.engine.rpg.learn.Skill
@@ -73,9 +76,9 @@ class Adventure(
     private val taken = mutableMapOf<Int, Room>()
 
     /** What the hero is carrying, for the bag in the corner of the screen. */
-    data class Bag(val coins: Int, val key: Boolean, val potion: PotionKind?, val gems: Int, val friends: Int, val hearts: Int)
+    data class Bag(val coins: Int, val key: Boolean, val potion: PotionKind?, val gems: List<Hue>, val friends: Int, val hearts: Int)
 
-    val bag: Bag get() = Bag(coins, magicKey, if (potionMade) quest.potion else null, gems, if (goblinFriend) 1 else 0, hearts)
+    val bag: Bag get() = Bag(coins, magicKey, if (potionMade) quest.potion else null, gems.toList(), if (goblinFriend) 1 else 0, hearts)
 
     /** Where the hero is on the map: the index of the current stop, or -1 at the camp. */
     val position: Int get() = stopIndex
@@ -85,7 +88,15 @@ class Adventure(
 
     val bossStarsLit: Int get() = bossStars
 
-    private var gems = 0
+    private val gems = mutableListOf<Hue>()
+
+    /** A door taken at a fork. [looped]: it was not the clue's door, so its path wound back to the same doors. */
+    data class Visit(val stop: Int, val door: Int, val looped: Boolean)
+
+    private val trail = mutableListOf<Visit>()
+
+    /** Every door taken so far, in order, for drawing the path on the map (loops included). */
+    val visits: List<Visit> get() = trail.toList()
 
     private class Step(val beat: Beat, val then: (Reply) -> List<Step> = { emptyList() })
 
@@ -212,33 +223,55 @@ class Adventure(
         }
     }
 
-    private fun doors(fork: Stop.Fork): Step {
+    /**
+     * Pick a door. With a clue, one door has the treasure. Any other door still has a room to
+     * play, but its path winds back round to the same doors, so the child gets another go with
+     * that door closed, until only the clue's door is left.
+     */
+    private fun doors(fork: Stop.Fork, tried: Set<Int> = emptySet()): Step {
         val s = Scene(Place.MAP, cast)
         val clue = fork.treasureDoor?.let { target ->
             ChallengeFactory.map(level(Skill.MAPS), nextSeed(), fork.doors.map { MapDoor(it.hue, it.side) }, target, lines.treasureSniff())
         }
         val prompt = clue?.prompt ?: Speech.of(lines.pickDoor())
         val peek = hero.heroClass.power == Power.KEEN_EYES
-        val offers = fork.doors.mapIndexed { i, d -> Speech.of(lines.doorOffer(d.hue.word.uppercase(), d.kind.activity, i, fork.doors.lastIndex)) }
-        return Step(Beat.Doors(s, prompt, fork, clue, peek, stopIndex, offers)) { reply ->
-            val picked = reply as? Reply.Picked ?: Reply.Picked(0)
-            val index = picked.index.coerceIn(fork.doors.indices)
-            val room = fork.doors[index]
-            taken[stopIndex] = room
-            // Any door can be taken. Following the clue finds the treasure; another door still
-            // leads on, and the narrator says where the treasure was.
-            val said = if (clue != null) {
-                val right = index == clue.answer
-                record(clue, if (right) 1 else 2, 0, 0)
-                treasureDoorTaken = right
-                if (right) listOf(tell(s, lines.rightWay())) else listOf(tell(s, lines.wrongWay(fork.doors[clue.answer].hue.word.uppercase())))
-            } else {
-                emptyList()
-            }
-            said + room(room) + chest(room)
+        val open = fork.doors.indices.filter { it !in tried }
+        val offers = fork.doors.mapIndexed { i, d ->
+            if (i in tried) emptyList() else Speech.of(lines.doorOffer(d.hue.word.uppercase(), d.kind.activity, open.indexOf(i), open.lastIndex))
+        }
+        return Step(Beat.Doors(s, prompt, fork, clue, peek, stopIndex, offers, tried)) { reply ->
+            val picked = reply as? Reply.Picked ?: Reply.Picked(open.first())
+            val index = picked.index.takeIf { it in open } ?: open.first()
+            enter(fork, index, clue, tried, s)
         }
     }
 
+    /** Goes through the door [index]: its room, its chest, and, for a wrong door, back to the doors. */
+    private fun enter(fork: Stop.Fork, index: Int, clue: MapChallenge?, tried: Set<Int>, s: Scene): List<Step> {
+        val room = fork.doors[index]
+        taken[stopIndex] = room
+        val right = clue == null || index == clue.answer
+        trail += Visit(stopIndex, index, looped = !right)
+        if (clue != null && tried.isEmpty()) record(clue, if (right) 1 else 2, 0, 0)
+        treasureDoorTaken = clue != null && right
+        val said = when {
+            clue == null -> emptyList()
+            right -> listOf(tell(s, if (tried.isEmpty()) lines.rightWay() else lines.lastWay()))
+            else -> listOf(tell(s, lines.wrongWay()))
+        }
+        val back = if (right) {
+            emptyList()
+        } else {
+            val left = fork.doors.indices.filter { it !in tried && it != index }
+            if (left.size == 1) {
+                // Only the clue's door is left: no need to ask. It is entered once this has been said.
+                listOf(Step(Beat.Tell(s, Speech.of(lines.circleBack()))) { enter(fork, left.single(), clue, tried + index, s) })
+            } else {
+                listOf(tell(s, lines.circleBack()), doors(fork, tried + index))
+            }
+        }
+        return said + room(room) + chest(room) + back
+    }
 
     /**
      * A small chest with a magic lock after each room behind a door: find a number or a letter
@@ -288,14 +321,14 @@ class Adventure(
         }
         RoomKind.CRYSTAL_CAVE -> {
             val s = scene(Place.CRYSTAL_CAVE, Actor.WIZARD)
-            val c = ChallengeFactory.color(level(Skill.COLORS), nextSeed(), "The wizard")
+            val c = ChallengeFactory.color(level(Skill.COLORS), nextSeed(), "", speaker = Who.WIZARD)
             listOf(
                 tell(s, lines.crystalCave()),
                 ask(s, c, lines.crystalOops(), lines.crystalYay()) {
-                    gems++
-                    val again = ChallengeFactory.color(level(Skill.COLORS), nextSeed(), lines.colorAgain() + " She")
+                    gems += c.target.hue
+                    val again = ChallengeFactory.color(level(Skill.COLORS), nextSeed(), lines.colorAgain(), speaker = Who.WIZARD)
                     listOf(
-                        found(s.copy(mood = Mood.HAPPY), Loot(LootKind.GEM, 1, "a ${c.target.hue.word} gem"), "You got a shiny ${c.target.hue.word} gem!"),
+                        found(s.copy(mood = Mood.HAPPY), Loot(LootKind.GEM, 1, "a ${c.target.hue.word} gem", c.target.hue), "You got a shiny ${c.target.hue.word} gem!"),
                         ask(s, again, lines.crystalOops(), lines.crystalYay()) { treasure(s) },
                     )
                 },
@@ -429,7 +462,7 @@ class Adventure(
                     ChoicePicture.SING_SONG -> {
                         befriend(goblin)
                         listOf(roll(s, "Sing your song! Roll the dice to see how it sounds.") { tier, _ ->
-                            listOf(tell(happy, lines.songResult(tier, goblin), "\"I'll come and help you later!\" he says."))
+                            listOf(tell(happy, lines.songResult(tier, goblin), "<goblin>I'll come and help you later!"))
                         })
                     }
                     ChoicePicture.TIPTOE -> {
@@ -443,7 +476,7 @@ class Adventure(
                     }
                     else -> {
                         befriend(goblin)
-                        listOf(tell(happy, "$goblin nibbles your cookie and smiles. \"Yum! You're so kind. I'll come and help you later!\""))
+                        listOf(tell(happy, "$goblin nibbles your cookie and smiles. <goblin>Yum! You're so kind. I'll come and help you later!"))
                     }
                 }
             },
@@ -518,7 +551,7 @@ class Adventure(
                 "gift" -> listOf(
                     ask(
                         s(), ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.COIN, lines.giftAsk(quest) + " How many coins are in the gift?"),
-                        "${quest.dragon} counts them too and gets mixed up! Let's count again.", "${quest.dragon} hugs the gift and says, \"Thank you!\"",
+                        "${quest.dragon} counts them too and gets mixed up! Let's count again.", "${quest.dragon} hugs the gift. <dragon>Thank you!",
                     ) { lightOne() },
                 )
                 "joke" -> listOf(roll(s(), lines.jokeRoll()) { tier, _ -> listOf(tell(s(Mood.SILLY), lines.jokeResult(tier, quest.dragon))) + lightOne() })

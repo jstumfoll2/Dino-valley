@@ -1,6 +1,7 @@
 package com.dinovalley.engine.rpg.learn
 
 import com.dinovalley.engine.model.Speech
+import com.dinovalley.engine.model.Who
 import com.dinovalley.engine.rpg.learn.Words.number
 import kotlin.math.PI
 import kotlin.math.cos
@@ -17,11 +18,11 @@ object ChallengeFactory {
     fun count(level: Int, seed: Long, thing: Thing, question: String): CountChallenge {
         val r = Random(seed)
         val (min, max, opts) = when (level) {
-            1 -> Triple(1, 3, 2)
-            2 -> Triple(1, 5, 3)
-            3 -> Triple(2, 7, 3)
-            4 -> Triple(3, 10, 4)
-            else -> Triple(5, 12, 4)
+            1 -> Triple(1, 3, 3)
+            2 -> Triple(1, 5, 4)
+            3 -> Triple(2, 7, 4)
+            4 -> Triple(3, 10, 5)
+            else -> Triple(5, 12, 5)
         }
         val n = r.nextInt(min, max + 1)
         return CountChallenge(level, seed, Speech.of(question), thing, n, numberOptions(n, opts, r))
@@ -34,11 +35,11 @@ object ChallengeFactory {
     fun numeral(level: Int, seed: Long, purpose: String, number: Int? = null): NumberChallenge {
         val r = Random(seed)
         val (top, opts) = when (level) {
-            1 -> 5 to 2
-            2 -> 10 to 3
-            3 -> 10 to 4
-            4 -> 20 to 3
-            else -> 20 to 4
+            1 -> 5 to 3
+            2 -> 10 to 4
+            3 -> 10 to 5
+            4 -> 20 to 4
+            else -> 20 to 5
         }
         val n = number ?: r.nextInt(1, top + 1)
         val max = maxOf(top, n, opts)
@@ -53,11 +54,11 @@ object ChallengeFactory {
     fun add(level: Int, seed: Long, thing: Thing, story: (have: Int, more: Int, missing: Boolean) -> String): AddChallenge {
         val r = Random(seed)
         val (maxTotal, opts) = when (level) {
-            1 -> 3 to 2
-            2 -> 5 to 3
-            3 -> 7 to 3
-            4 -> 10 to 4
-            else -> 10 to 4
+            1 -> 3 to 3
+            2 -> 5 to 4
+            3 -> 7 to 4
+            4 -> 10 to 5
+            else -> 10 to 5
         }
         val total = r.nextInt(2, maxTotal + 1)
         val have = r.nextInt(1, total)
@@ -67,23 +68,31 @@ object ChallengeFactory {
         return AddChallenge(level, seed, Speech.of(story(have, more, missing)), thing, have, more, missing, numberOptions(solution, opts, r))
     }
 
-    fun color(level: Int, seed: Long, who: String, what: String = "crystal"): ColorChallenge {
+    /**
+     * [who] says who needs it ("The wizard"); with a [speaker] it is the opening line instead, and the
+     * speaker asks in their own voice.
+     */
+    fun color(level: Int, seed: Long, who: String, what: String = "crystal", speaker: Who? = null): ColorChallenge {
         val r = Random(seed)
         val hues = Hue.entries.shuffled(r)
         val sized = level >= 4
         val target = Gem(hues[0], if (sized) GemSize.entries.random(r) else GemSize.BIG)
         val options = when (level) {
-            1 -> listOf(target, Gem(hues[1]))
-            2 -> listOf(target, Gem(hues[1]), Gem(hues[2]))
-            3 -> listOf(target, Gem(hues[1]), Gem(hues[2]), Gem(hues[3]))
-            4 -> listOf(target, target.copy(size = other(target.size)), Gem(hues[1], target.size), Gem(hues[2], other(target.size)))
+            1 -> listOf(target, Gem(hues[1]), Gem(hues[2]))
+            2 -> listOf(target, Gem(hues[1]), Gem(hues[2]), Gem(hues[3]))
+            3 -> listOf(target, Gem(hues[1]), Gem(hues[2]), Gem(hues[3]), Gem(hues[4]))
+            4 -> listOf(
+                target, target.copy(size = other(target.size)), Gem(hues[1], target.size),
+                Gem(hues[1], other(target.size)), Gem(hues[2], other(target.size)),
+            )
             else -> listOf(
                 target, target.copy(size = other(target.size)), Gem(hues[1], target.size),
-                Gem(hues[1], other(target.size)), Gem(hues[2], target.size),
+                Gem(hues[1], other(target.size)), Gem(hues[2], target.size), Gem(hues[2], other(target.size)),
             )
         }.shuffled(r)
         val name = (if (sized) "${target.size.word} " else "") + target.hue.word.uppercase()
-        return ColorChallenge(level, seed, Speech.of("$who needs the $name $what. Can you find it?"), target, options)
+        val ask = if (speaker != null) "$who <${speaker.tag}>I need the $name $what! Can you find it?" else "$who needs the $name $what. Can you find it?"
+        return ColorChallenge(level, seed, Speech.of(ask), target, options)
     }
 
     private fun other(size: GemSize) = if (size == GemSize.BIG) GemSize.SMALL else GemSize.BIG
@@ -100,7 +109,7 @@ object ChallengeFactory {
         val kinds = unit.distinct().size
         val hues = Hue.entries.shuffled(r)
         val shapes = RuneShape.entries.shuffled(r)
-        val runes: List<Rune> = List(maxOf(kinds, 4)) { i ->
+        val runes: List<Rune> = List(maxOf(kinds, 5)) { i ->
             when {
                 level <= 2 -> Rune(shapes[0], hues[i]) // colors only
                 level == 3 -> Rune(shapes[i], hues[0]) // shapes only
@@ -111,9 +120,9 @@ object ChallengeFactory {
         val shown = List(length) { runes[unit[it % unit.size]] }
         val next = runes[unit[length % unit.size]]
         val optionCount = when (level) {
-            1 -> 2
-            2, 3 -> 3
-            else -> 4
+            1 -> 3
+            2, 3 -> 4
+            else -> 5
         }
         val options = (listOf(next) + runes.filter { it != next }.take(optionCount - 1)).shuffled(r)
         val prompt = Speech.of("The door opens only when its magic symbols are in the right order. Which symbol comes next?")
@@ -135,14 +144,14 @@ object ChallengeFactory {
         val letter = pool.random(r)
         val word = Words.LETTER_WORDS.getValue(letter)
         val optionCount = when (level) {
-            1 -> 2
-            5 -> 4
-            else -> 3
+            1 -> 3
+            5 -> 5
+            else -> 4
         }
         val options = (listOf(letter) + pool.filter { it != letter }.shuffled(r).take(optionCount - 1)).shuffled(r)
         val ask = when (mode) {
             LetterMode.NAME -> "$purpose Find the letter $letter. $letter, as in $word."
-            LetterMode.SOUND -> "$purpose Which letter makes the sound ${Words.LETTER_SOUNDS.getValue(letter)}?"
+            LetterMode.SOUND -> "$purpose Listen to this sound. ${Words.LETTER_SOUNDS.getValue(letter)}. Which letter makes that sound?"
             LetterMode.FIRST_SOUND -> "$purpose The magic word is ${word.uppercase()}. What letter does ${word.uppercase()} start with?"
         }
         return LetterChallenge(level, seed, Speech.of(ask), letter, word, mode, options)
@@ -224,11 +233,11 @@ object ChallengeFactory {
     fun skipCount(level: Int, seed: Long): SkipCountChallenge {
         val r = Random(seed)
         val (step, shown, opts) = when (level) {
-            1 -> Triple(2, 3, 2)
-            2 -> Triple(2, r.nextInt(3, 6), 3)
-            3 -> Triple(listOf(2, 5).random(r), r.nextInt(3, 5), 3)
-            4 -> Triple(listOf(5, 10).random(r), r.nextInt(3, 5), 3)
-            else -> Triple(listOf(2, 3, 5, 10).random(r), r.nextInt(3, 6), 4)
+            1 -> Triple(2, 3, 3)
+            2 -> Triple(2, r.nextInt(3, 6), 4)
+            3 -> Triple(listOf(2, 5).random(r), r.nextInt(3, 5), 4)
+            4 -> Triple(listOf(5, 10).random(r), r.nextInt(3, 5), 4)
+            else -> Triple(listOf(2, 3, 5, 10).random(r), r.nextInt(3, 6), 5)
         }
         val thing = listOf(Thing.GEM, Thing.COIN, Thing.MUSHROOM, Thing.STONE).random(r)
         val total = step * shown

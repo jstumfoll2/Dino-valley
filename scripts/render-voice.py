@@ -3,16 +3,16 @@
 
     scripts/render-voice.py LINES MODEL_DIR CACHE_DIR OUT_DIR
 
-LINES is the list from `./gradlew :engine:voiceLines` (one spoken sentence per line). Each
-sentence is spoken by the same Kokoro voice the app uses (sherpa-onnx, speaker 1, speed 0.9),
-brought to the app's loudness, and saved as a small Ogg Opus file named by the fingerprint the
+LINES is the list from `./gradlew :engine:voiceLines`: one recording per line, as tab-separated
+voice id, Kokoro speaker, speed, pitch change and the sentence. The narrator and each character
+have their own voice (engine Who). Each sentence is spoken by the same Kokoro voice the app uses
+(sherpa-onnx), pitch-shifted for the small and the big characters, brought to the app's loudness, and saved as a small Ogg Opus file named by the fingerprint the
 app looks up (engine Voice.key). CACHE_DIR keeps recordings between builds, so only new
 sentences are recorded; OUT_DIR (the app's assets/voice) gets exactly the ones in LINES.
 """
 import hashlib
 import multiprocessing as mp
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -22,16 +22,20 @@ import wave
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VOICE_KT = os.path.join(ROOT, "engine/src/main/kotlin/com/dinovalley/engine/model/Voice.kt")
-VOICE_ID = re.search(r'const val VOICE_ID = "([^"]+)"', open(VOICE_KT).read()).group(1)
-SPEAKER = 1
-SPEED = 0.9
 TARGET_RMS = 0.11  # the app's Pcm.TARGET_RMS
 
 
-def key(sentence: str) -> str:
-    """Matches Voice.key in the engine: SHA-1 of "VOICE_ID|sentence", first 8 bytes in hex."""
-    return hashlib.sha1(f"{VOICE_ID}|{sentence}".encode("utf-8")).hexdigest()[:16]
+def key(voice_id: str, sentence: str) -> str:
+    """Matches Voice.key in the engine: SHA-1 of "voiceId|sentence", first 8 bytes in hex."""
+    return hashlib.sha1(f"{voice_id}|{sentence}".encode("utf-8")).hexdigest()[:16]
+
+
+def pitched(samples: np.ndarray, pitch: float) -> np.ndarray:
+    """Higher (or lower) and a little faster (or slower), by straight-line resampling, like the app's."""
+    if abs(pitch - 1.0) < 0.001 or len(samples) == 0:
+        return samples
+    n = int(len(samples) / pitch)
+    return np.interp(np.arange(n) * pitch, np.arange(len(samples)), samples).astype(np.float32)
 
 
 def normalized(samples: np.ndarray, rate: int) -> np.ndarray:
@@ -74,9 +78,9 @@ def _init(model_dir: str):
 
 
 def _render(job):
-    sentence, target = job
-    audio = _tts.generate(sentence, sid=SPEAKER, speed=SPEED)
-    samples = normalized(np.asarray(audio.samples, dtype=np.float32), audio.sample_rate)
+    (sid, speed, pitch, sentence), target = job
+    audio = _tts.generate(sentence, sid=sid, speed=speed)
+    samples = normalized(pitched(np.asarray(audio.samples, dtype=np.float32), pitch), audio.sample_rate)
     pcm = (np.clip(samples, -1, 1) * 32767).astype("<i2")
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         wav = tmp.name
@@ -97,14 +101,19 @@ def _render(job):
 
 def main():
     lines_file, model_dir, cache_dir, out_dir = sys.argv[1:5]
-    sentences = [l for l in open(lines_file, encoding="utf-8").read().split("\n") if l.strip()]
+    sentences = []  # (name of the file, (sid, speed, pitch, sentence))
+    for line in open(lines_file, encoding="utf-8").read().split("\n"):
+        if not line.strip():
+            continue
+        voice_id, sid, speed, pitch, text = line.split("\t", 4)
+        sentences.append((key(voice_id, text) + ".ogg", (int(sid), float(speed), float(pitch), text)))
     os.makedirs(cache_dir, exist_ok=True)
     todo = []
-    for s in sentences:
-        target = os.path.join(cache_dir, key(s) + ".ogg")
+    for name, spec in sentences:
+        target = os.path.join(cache_dir, name)
         if not os.path.exists(target):
-            todo.append((s, target))
-    print(f"{len(sentences)} sentences, {len(todo)} to record (voice {VOICE_ID})", flush=True)
+            todo.append((spec, target))
+    print(f"{len(sentences)} sentences, {len(todo)} to record", flush=True)
     if todo:
         workers = max(1, os.cpu_count() or 1)
         with mp.Pool(workers, initializer=_init, initargs=(model_dir,)) as pool:
@@ -116,8 +125,7 @@ def main():
     shutil.rmtree(out_dir, ignore_errors=True)
     os.makedirs(out_dir)
     size = 0
-    for s in sentences:
-        name = key(s) + ".ogg"
+    for name, _ in sentences:
         shutil.copyfile(os.path.join(cache_dir, name), os.path.join(out_dir, name))
         size += os.path.getsize(os.path.join(out_dir, name))
     print(f"packed {len(sentences)} recordings, {size / 1e6:.1f} MB", flush=True)

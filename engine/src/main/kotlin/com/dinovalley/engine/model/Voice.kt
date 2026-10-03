@@ -18,11 +18,20 @@ object Voice {
      * speech engines can read capitals as letters, so they are said in lower case. Single
      * capital letters (Find the letter B) stay as they are.
      */
-    fun spoken(text: String): String = text.replace(Regex("\\b[A-Z]{2,}\\b")) { it.value.lowercase() }
+    fun spoken(text: String): String =
+        text.replace(Regex("\\b[A-Z]{2,}\\b")) { it.value.lowercase() }
+            // A held letter sound ("nnnn") is read by speech engines as the letter's name said over
+            // and over ("en en en en"); phoneme markup makes it one steady sound.
+            .replace(SOUND, "[[$1:]]")
+
+    private val SOUND = Regex("\\b([mnsflrzv])\\1{2,}\\b")
+
+    /** A sentence for an engine that can't read phoneme markup: the sound written out again. */
+    fun plain(spoken: String): String = spoken.replace(Regex("\\[\\[([a-z]):\\]\\]")) { it.groupValues[1].repeat(3) }
 
     /** One thing to play: a sentence to say, or a sound effect. */
     sealed interface Piece {
-        data class Say(val text: String) : Piece
+        data class Say(val text: String, val who: Who = Who.NARRATOR) : Piece
         data class Sound(val id: String) : Piece
     }
 
@@ -33,14 +42,19 @@ object Voice {
     fun pieces(speech: List<Speech>, name: String = DEFAULT_NAME): List<Piece> {
         val out = mutableListOf<Piece>()
         val text = StringBuilder()
+        var who = Who.NARRATOR
         fun flush() {
-            sentences(text.toString()).forEach { out += Piece.Say(spoken(it)) }
+            sentences(text.toString()).forEach { out += Piece.Say(spoken(it), who) }
             text.clear()
         }
         for (part in speech) {
             when (part) {
                 is Speech.Words -> text.glue(part.text)
                 Speech.Name -> text.glue(name)
+                is Speech.As -> {
+                    flush()
+                    who = part.who
+                }
                 is Speech.Sound -> {
                     flush()
                     out += Piece.Sound(part.id)
@@ -58,7 +72,7 @@ object Voice {
             when (part) {
                 is Speech.Words -> text.glue(part.text)
                 Speech.Name -> text.glue(name)
-                is Speech.Sound -> Unit
+                is Speech.Sound, is Speech.As -> Unit
             }
         }
         return text.toString()
@@ -71,8 +85,8 @@ object Voice {
     }
 
     /** The file name of a recorded sentence: a fingerprint of exactly what is said. */
-    fun key(spokenSentence: String): String {
-        val digest = MessageDigest.getInstance("SHA-1").digest("$VOICE_ID|$spokenSentence".toByteArray())
+    fun key(spokenSentence: String, who: Who = Who.NARRATOR): String {
+        val digest = MessageDigest.getInstance("SHA-1").digest("${who.voiceId}|$spokenSentence".toByteArray())
         return digest.take(8).joinToString("") { "%02x".format(it) }
     }
 

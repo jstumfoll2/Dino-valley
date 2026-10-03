@@ -2,6 +2,7 @@ package com.dinovalley.engine.rpg
 
 import com.dinovalley.engine.model.Speech
 import com.dinovalley.engine.model.Voice
+import com.dinovalley.engine.model.Who
 import com.dinovalley.engine.rpg.hero.Attribute
 import com.dinovalley.engine.rpg.hero.Hero
 import com.dinovalley.engine.rpg.hero.HeroClass
@@ -27,7 +28,7 @@ import kotlin.random.Random
  * so the phone plays sound files instead of making speech.
  */
 object VoiceCatalog {
-    fun speech(runs: Int = 6000, seed: Int = 7): Pair<Set<String>, Set<String>> {
+    fun speech(runs: Int = 6000, seed: Int = 7): Pair<Set<Voice.Piece.Say>, Set<String>> {
         val said = mutableListOf<List<Speech>>()
         val choices = mutableSetOf<String>()
         val r = Random(seed)
@@ -90,17 +91,17 @@ object VoiceCatalog {
             (a.beat as? Beat.Finale)?.let { said += it.summary.lines }
         }
         Say.all(choices.toList()).forEach { said += Speech.of(it) }
-        val sentences = sortedSetOf<String>()
+        val sentences = linkedSetOf<Voice.Piece.Say>()
         val sounds = sortedSetOf<String>()
         for (s in said) {
             for (p in Voice.pieces(s)) {
                 when (p) {
-                    is Voice.Piece.Say -> sentences += p.text
+                    is Voice.Piece.Say -> sentences += p
                     is Voice.Piece.Sound -> sounds += p.id
                 }
             }
         }
-        return sentences to sounds
+        return sentences.sortedWith(compareBy({ it.who }, { it.text })).toCollection(linkedSetOf()) to sounds
     }
 }
 
@@ -108,7 +109,8 @@ fun main(args: Array<String>) {
     val (sentences, sounds) = VoiceCatalog.speech()
     val out = File(args.firstOrNull() ?: "lines.txt")
     out.parentFile?.mkdirs()
-    out.writeText(sentences.joinToString("\n", postfix = "\n"))
-    println("${sentences.size} sentences, ${sentences.sumOf { it.length }} characters -> $out")
+    // One recording per line: voice id, speaker, speed, pitch, then the sentence, separated by tabs.
+    out.writeText(sentences.joinToString("\n", postfix = "\n") { "${it.who.voiceId}\t${it.who.sid}\t${it.who.speed}\t${it.who.pitch}\t${it.text}" })
+    println("${sentences.size} sentences, ${sentences.sumOf { it.text.length }} characters -> $out")
     println("sound effects: ${sounds.joinToString(" ")}")
 }

@@ -4,6 +4,7 @@ import com.dinovalley.engine.model.Speech
 import com.dinovalley.engine.rpg.hero.Attribute
 import com.dinovalley.engine.rpg.hero.Unlock
 import com.dinovalley.engine.rpg.learn.Challenge
+import com.dinovalley.engine.rpg.learn.Hue
 import com.dinovalley.engine.rpg.learn.MapChallenge
 import com.dinovalley.engine.rpg.world.RoomKind
 import com.dinovalley.engine.rpg.world.Stop
@@ -55,7 +56,8 @@ enum class Prop { NONE, CHEST }
 
 enum class LootKind { COINS, GEM, MAGIC_KEY, POTION, TREASURE }
 
-data class Loot(val kind: LootKind, val count: Int, val words: String)
+/** [hue] is the color of a gem, so the picture matches the words. */
+data class Loot(val kind: LootKind, val count: Int, val words: String, val hue: Hue? = null)
 
 /**
  * One moment of the adventure. The app shows the beat, the child does something, and the app
@@ -107,8 +109,10 @@ sealed interface Beat {
         val clue: MapChallenge?,
         val peek: Boolean,
         val stopIndex: Int,
-        /** Said while each door lifts: its color and the kind of puzzle behind it. */
+        /** Said while each door lifts: its color and the kind of puzzle behind it (empty for closed doors). */
         val offers: List<List<Speech>> = emptyList(),
+        /** Doors already tried, whose path wound back round to these doors. They can't be picked again. */
+        val closed: Set<Int> = emptySet(),
     ) : Beat
 
     /** Something found. Reply [Reply.Next]. */

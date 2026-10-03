@@ -87,7 +87,7 @@ class AdventureTest {
                 val finale = beats.last() as Beat.Finale
                 assertTrue(finale.summary.starsEarned.values.sum() > 50)
                 assertTrue(a.records.size >= 12, "not enough learning: ${a.records.size}")
-                assertTrue(beats.count { it is Beat.Doors } == 3)
+                assertTrue(beats.count { it is Beat.Doors } >= 3)
                 assertTrue(beats.any { it is Beat.Ask && it.prop == Prop.CHEST })
                 assertTrue(beats.any { it.scene.place == Place.MAP && it is Beat.Tell }, "the camp shows the map")
                 assertEquals(1, a.world.adventures)
