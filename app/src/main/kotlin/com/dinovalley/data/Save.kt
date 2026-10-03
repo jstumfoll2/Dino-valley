@@ -4,6 +4,7 @@ import android.content.Context
 import com.dinovalley.engine.rpg.hero.Attribute
 import com.dinovalley.engine.rpg.hero.Hero
 import com.dinovalley.engine.rpg.hero.HeroClass
+import com.dinovalley.engine.rpg.items.Slot
 import com.dinovalley.engine.rpg.learn.ChallengeRecord
 import com.dinovalley.engine.rpg.learn.Skill
 import com.dinovalley.engine.rpg.learn.SkillBook
@@ -50,10 +51,18 @@ class Save(context: Context) {
     private fun hero(h: Hero) = JSONObject()
         .put("class", h.heroClass.name)
         .put("xp", JSONObject().also { o -> h.xp.forEach { (k, v) -> o.put(k.name, v) } })
+        .put("coins", h.coins)
+        .put("bag", JSONObject().also { o -> h.bag.forEach { (k, v) -> o.put(k, v) } })
+        .put("worn", JSONObject().also { o -> h.worn.forEach { (k, v) -> o.put(k.name, v) } })
 
     private fun hero(o: JSONObject) = Hero(
         heroClass = enumOrNull<HeroClass>(o.optString("class")) ?: HeroClass.KNIGHT,
         xp = ints<Attribute>(o.optJSONObject("xp")),
+        coins = o.optInt("coins"),
+        bag = o.optJSONObject("bag")?.let { x -> x.keys().asSequence().associateWith { x.getInt(it) } } ?: emptyMap(),
+        worn = o.optJSONObject("worn")?.let { x ->
+            x.keys().asSequence().mapNotNull { k -> enumOrNull<Slot>(k)?.let { it to x.getString(k) } }.toMap()
+        } ?: emptyMap(),
     )
 
     // ------------------------------------------------------------- skills

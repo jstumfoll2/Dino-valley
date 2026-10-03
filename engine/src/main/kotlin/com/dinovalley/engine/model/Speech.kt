@@ -16,6 +16,20 @@ enum class Who(val tag: String, val sid: Int, val speed: Float, val pitch: Float
     RUBY("ruby", 7, 0.95f, 1f, "kokoro-en-v0_19/sid7/speed0.95/pitch1.0"),
     DRAGON("dragon", 10, 0.9f, 0.85f, "kokoro-en-v0_19/sid10/speed0.9/pitch0.85"),
     SHADOW("shadow", 6, 0.9f, 0.8f, "kokoro-en-v0_19/sid6/speed0.9/pitch0.8"),
+
+    // The wider world: townspeople, shopkeepers, rogues and monsters. More can be added; a new
+    // voice is a new entry here and its lines are recorded by the build like everyone else's.
+    ELDER("elder", 9, 0.88f, 1.0f, "kokoro-en-v0_19/sid9/speed0.88/pitch1.0"),
+    BARON("baron", 9, 0.85f, 0.9f, "kokoro-en-v0_19/sid9/speed0.85/pitch0.9"),
+    MERCHANT("merchant", 0, 1.0f, 1.0f, "kokoro-en-v0_19/sid0/speed1.0/pitch1.0"),
+    TOWNSWOMAN("townswoman", 2, 0.95f, 1.0f, "kokoro-en-v0_19/sid2/speed0.95/pitch1.0"),
+    TOWNSMAN("townsman", 5, 0.95f, 0.95f, "kokoro-en-v0_19/sid5/speed0.95/pitch0.95"),
+    GUARD("guard", 6, 0.95f, 1.0f, "kokoro-en-v0_19/sid6/speed0.95/pitch1.0"),
+    CHILD("child", 4, 0.95f, 1.0f, "kokoro-en-v0_19/sid4/speed0.95/pitch1.0"),
+    SNEAK("sneak", 0, 1.0f, 1.1f, "kokoro-en-v0_19/sid0/speed1.0/pitch1.1"),
+    GROWLER("growler", 10, 0.9f, 0.75f, "kokoro-en-v0_19/sid10/speed0.9/pitch0.75"),
+    CRITTER("critter", 6, 1.0f, 1.12f, "kokoro-en-v0_19/sid6/speed1.0/pitch1.12"),
+    SPOOK("spook", 9, 0.85f, 0.8f, "kokoro-en-v0_19/sid9/speed0.85/pitch0.8"),
     ;
 
     companion object {

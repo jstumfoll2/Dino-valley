@@ -1,5 +1,12 @@
 package com.dinovalley.engine.rpg.hero
 
+import com.dinovalley.engine.rpg.content.Content
+import com.dinovalley.engine.rpg.items.Item
+import com.dinovalley.engine.rpg.items.Slot
+import com.dinovalley.engine.rpg.learn.Skill
+import kotlin.math.floor
+import kotlin.math.sqrt
+
 /** The five child-friendly attributes from the brief. Learning grows them. */
 enum class Attribute(val word: String) {
     COURAGE("courage"),
@@ -38,10 +45,18 @@ enum class Power {
 /** Something new to wear, use or play as, earned by levelling up. */
 data class Unlock(val level: Int, val id: String, val announcement: String)
 
-/** The adventurer as saved on the phone. XP is kept per attribute; the level comes from the total. */
+/**
+ * The adventurer as saved on the phone. XP is kept per attribute; the level comes from the total.
+ * Coins, the bag and what is worn are kept between adventures too, so shopping and loot last.
+ */
 data class Hero(
     val heroClass: HeroClass = HeroClass.KNIGHT,
     val xp: Map<Attribute, Int> = emptyMap(),
+    val coins: Int = 0,
+    /** Item id to how many. */
+    val bag: Map<String, Int> = emptyMap(),
+    /** What is worn in each place (an item id), drawn on the hero. */
+    val worn: Map<Slot, String> = emptyMap(),
 ) {
     val totalXp: Int get() = xp.values.sum()
     val level: Int get() = Progression.levelFor(totalXp)
@@ -56,6 +71,70 @@ data class Hero(
 
     /** The attribute with the most stars, for the story to notice what the child is good at. */
     val strongest: Attribute? get() = xp.maxByOrNull { it.value }?.takeIf { it.value > 0 }?.key
+
+    // ------------------------------------------------------------- things carried
+
+    fun count(itemId: String): Int = bag[itemId] ?: 0
+
+    fun has(itemId: String): Boolean = count(itemId) > 0
+
+    fun give(itemId: String, n: Int = 1): Hero = copy(bag = bag + (itemId to count(itemId) + n))
+
+    fun take(itemId: String, n: Int = 1): Hero {
+        val left = count(itemId) - n
+        return copy(bag = if (left > 0) bag + (itemId to left) else bag - itemId)
+    }
+
+    fun earn(n: Int): Hero = copy(coins = (coins + n).coerceAtLeast(0))
+
+    /** Puts a piece of gear on (it must be in the bag; the one that was worn goes back in). */
+    fun wear(item: Item): Hero {
+        val slot = item.slot ?: return this
+        if (!has(item.id)) return this
+        val old = worn[slot]
+        var h = take(item.id).copy(worn = worn + (slot to item.id))
+        if (old != null) h = h.give(old)
+        return h
+    }
+
+    /** Takes a piece of gear off into the bag. */
+    fun unwear(slot: Slot): Hero {
+        val id = worn[slot] ?: return this
+        return copy(worn = worn - slot).give(id)
+    }
+
+    val gear: List<Item> get() = worn.values.mapNotNull { Content.item(it) }
+
+    // ------------------------------------------------------------- what the stars do
+
+    /** How strong an attribute is, from its own stars: 1 at the start, then 2, 3, 4 and on. */
+    fun statLevel(a: Attribute): Int = 1 + floor(sqrt((xp[a] ?: 0) / 40.0)).toInt()
+
+    /** Courage is health: more courage, more to lose. */
+    val maxHp: Int get() = 20 + 5 * statLevel(Attribute.COURAGE) + gear.sumOf { it.hp }
+
+    /** Each attribute powers its own kind of puzzle attack (numbers: cleverness; colors and patterns: magic; letters: wisdom). */
+    fun attackWith(skill: Skill): Int = 3 + statLevel(skill.attribute) + gear.sumOf { it.attack }
+
+    /** Takes this much off every hit. */
+    val defense: Int get() = gear.sumOf { it.defense } + (statLevel(Attribute.COURAGE) - 1) / 2
+
+    /** Percent off shop prices: kindness makes shopkeepers like you. */
+    val discountPercent: Int get() = (5 * (statLevel(Attribute.KINDNESS) - 1)).coerceAtMost(40)
+
+    /** Percent more coins from loot: wisdom spots the good stuff. */
+    val lootBonusPercent: Int get() = (10 * (statLevel(Attribute.WISDOM) - 1)).coerceAtMost(50)
+
+    /** Extra health from every healing item. */
+    val healBonus: Int get() = statLevel(Attribute.KINDNESS) - 1
+
+    /** Wisdom shows the danger on a road before you take it. */
+    val seesDangers: Boolean get() = statLevel(Attribute.WISDOM) >= 2
+
+    /** Puzzles get harder as the hero grows: one level up for every three hero levels. */
+    val puzzleBoost: Int get() = (level - 1) / 3
+
+    fun priceOf(item: Item): Int = (item.price * (100 - discountPercent) / 100).coerceAtLeast(1)
 }
 
 object Progression {
