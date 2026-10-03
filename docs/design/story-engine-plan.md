@@ -1,6 +1,25 @@
 # Plan for issue #13: story, characters, world map, battles, loot
 
-Status: **proposed, waiting for review.** No code for #13 is written yet.
+Status: **approved with changes (see "Decisions from review"); building.**
+
+## Decisions from review (these override anything below that disagrees)
+
+1. **No emoji placeholders.** Every new character, monster, item and piece of gear gets painted
+   art in the existing house style, made as it is developed (SVG sources in `art/src/`, built to
+   WebP by `art/build.py`).
+2. **Battles have several rounds**, as many as the monster's strength calls for.
+3. **The Baron story comes first and is fleshed out fully, but the game must have replayability.**
+   Different story lines to play through are a stated requirement, tracked in
+   `docs/design/story-variations.md`. The framework is built so a new story is data.
+4. **Fainting costs a quarter of the coins.** Confirmed.
+5. **The world is open and interconnected.** Characters, items and places are open-ended
+   libraries we keep adding to. Every person has their own life, story and problem; their
+   outcomes feed the world state (flags, relationships, items, which roads are open) and can
+   change the player's path. Built as small data-driven "storylets" any person or place can carry.
+6. **Two tries through items, not freely.** One guess by default. Items (Lucky Clover, Owl Feather,
+   Hint Scroll) allow a second guess, or remove wrong answers. He should learn he can't guess
+   until it's right. Difficulty knobs stay open (easy to give two tries by default later).
+7. **One PR, in playable phases**, as planned.
 
 ## What #13 asks for, in one paragraph
 
@@ -15,7 +34,7 @@ without touching the engine.
 
 1. **One branch, one PR, built in slices.** Each slice below compiles, passes tests and is
    playable. PR base is `playtest-fixes-2` (PR #14) until that merges, then retargeted to `main`.
-2. **Art stays in the current style where assets exist; elsewhere I use emoji portraits.**
+2. (Superseded by decision 1 above: painted art for everything new.) **Art stays in the current style where assets exist.**
    New monsters, NPCs, items and equipment get no new painted art in this PR. They are shown
    as big emoji on the same round "spot" frames the game already uses, with name plates. The
    existing characters (hero classes, baby dragon, goblin, wizard, Ruby, dragon, shadow) keep
