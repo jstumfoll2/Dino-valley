@@ -373,9 +373,9 @@ object ChallengeFactory {
     fun map(level: Int, seed: Long, doors: List<MapDoor>, target: Int, why: String): MapChallenge {
         val door = doors[target]
         val clue = if (level <= 2 || doors.map { it.side }.distinct().size < doors.size) {
-            "$why behind the ${door.hue.word.uppercase()} door."
+            "$why through the ${door.hue.word.uppercase()} door."
         } else {
-            "$why behind the door on the ${door.side.word.uppercase()}."
+            if (door.side == Side.MIDDLE) "$why through the MIDDLE door." else "$why through the door on the ${door.side.word.uppercase()}."
         }
         return MapChallenge(level, seed, Speech.of(clue), doors, target)
     }

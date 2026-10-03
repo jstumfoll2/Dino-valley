@@ -13,6 +13,7 @@ sentences are recorded; OUT_DIR (the app's assets/voice) gets exactly the ones i
 import hashlib
 import multiprocessing as mp
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -21,7 +22,11 @@ import wave
 
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import letter_sounds
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LETTER_SOUND_ID = "letter-sounds-v1"  # engine Voice.LETTER_SOUND_ID
 TARGET_RMS = 0.11  # the app's Pcm.TARGET_RMS
 
 
@@ -78,16 +83,26 @@ def _init(model_dir: str):
 
 
 def _render(job):
-    (sid, speed, pitch, sentence), target = job
+    (voice_id, sid, speed, pitch, sentence), target = job
+    if voice_id == LETTER_SOUND_ID:
+        # A held letter sound is made from scratch: a speech model would say the letter's name.
+        rate = letter_sounds.RATE
+        samples = normalized(letter_sounds.synth(re.match(r"\[\[([a-z]):\]\]", sentence).group(1)), rate)
+        return _write(samples, rate, target)
     audio = _tts.generate(sentence, sid=sid, speed=speed)
-    samples = normalized(pitched(np.asarray(audio.samples, dtype=np.float32), pitch), audio.sample_rate)
+    rate = audio.sample_rate
+    samples = normalized(pitched(np.asarray(audio.samples, dtype=np.float32), pitch), rate)
+    return _write(samples, rate, target)
+
+
+def _write(samples: np.ndarray, rate: int, target: str) -> float:
     pcm = (np.clip(samples, -1, 1) * 32767).astype("<i2")
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         wav = tmp.name
     with wave.open(wav, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
-        w.setframerate(audio.sample_rate)
+        w.setframerate(rate)
         w.writeframes(pcm.tobytes())
     part = target + ".part.ogg"
     subprocess.run(
@@ -96,7 +111,7 @@ def _render(job):
     )
     os.replace(part, target)
     os.remove(wav)
-    return len(samples) / audio.sample_rate
+    return len(samples) / rate
 
 
 def main():
@@ -106,7 +121,7 @@ def main():
         if not line.strip():
             continue
         voice_id, sid, speed, pitch, text = line.split("\t", 4)
-        sentences.append((key(voice_id, text) + ".ogg", (int(sid), float(speed), float(pitch), text)))
+        sentences.append((key(voice_id, text) + ".ogg", (voice_id, int(sid), float(speed), float(pitch), text)))
     os.makedirs(cache_dir, exist_ok=True)
     todo = []
     for name, spec in sentences:

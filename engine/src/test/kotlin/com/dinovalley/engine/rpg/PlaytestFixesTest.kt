@@ -167,4 +167,43 @@ class PlaytestFixesTest {
             assertTrue(pattern.options.size >= 3 && pattern.options.toSet().size == pattern.options.size)
         }
     }
+
+    @Test
+    fun `a held letter sound is made by the letter-sound maker, not a speaking voice`() {
+        assertEquals(Voice.LETTER_SOUND_ID, Voice.voiceIdOf("[[s:]].", Who.NARRATOR))
+        assertEquals(Who.PET.voiceId, Voice.voiceIdOf("Hello!", Who.PET))
+        assertTrue(Voice.key("[[s:]].", Who.NARRATOR) != Voice.key("[[f:]].", Who.NARRATOR))
+    }
+
+    @Test
+    fun `the goblin is on screen when he runs in to help, and Ruby is where the story puts her`() {
+        var helped = 0
+        for (seed in 1L..60L) {
+            val a = adventure(seed)
+            for (b in play(a) { _, open -> open.first() }) {
+                val said = (b as? Beat.Tell)?.lines?.let { Voice.caption(it) } ?: continue
+                if ("runs in" in said) {
+                    helped++
+                    assertTrue(com.dinovalley.engine.rpg.run.Actor.GOBLIN in b.scene.cast, "goblin not drawn: $said")
+                }
+                if ("Princess Ruby is riding" in said || "curled around Princess Ruby" in said || "locked Ruby" in said) {
+                    assertTrue(com.dinovalley.engine.rpg.run.Actor.RUBY in b.scene.cast, "Ruby not drawn: $said")
+                }
+            }
+        }
+        assertTrue(helped > 0)
+    }
+
+    @Test
+    fun `clues talk about the right path, not treasure behind a door`() {
+        for (seed in 1L..40L) {
+            val a = adventure(seed)
+            for (b in play(a) { _, open -> open.first() }) {
+                if (b is Beat.Doors) {
+                    val said = Voice.caption(b.clue!!.prompt)
+                    assertTrue("right path" in said && "behind" !in said && "treasure" !in said, said)
+                }
+            }
+        }
+    }
 }

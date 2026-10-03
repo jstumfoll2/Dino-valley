@@ -57,25 +57,25 @@ internal class Lines(private val r: Random) {
 
     fun pickDoor() = pick("Which door will you open?", "Which door should we try?", "Hmm, which way? You choose!")
 
-    fun treasureSniff() = pick("{name} sniffs the air. The treasure is", "A little bird sings. [tweet] The treasure is", "The map glows. The treasure is")
+    fun treasureSniff() = pick("{name} sniffs the air. The right path is", "A little bird sings. [tweet] The right path is", "The map glows. The right path is")
 
-    /** Before a room behind a door the clue didn't point to: the path will wind back to the doors. */
+    /** Before a room through a door the clue didn't point to: the path will wind back to the doors. */
     fun wrongWay() = pick(
-        "Hmm, that wasn't the door from the clue. <pet>Let's see what's in here anyway!",
-        "<pet>Oops, I don't think that was the right door! <narrator>Let's see what's in here.",
+        "Hmm, that wasn't the path from the clue. <pet>Let's see what's in here anyway!",
+        "<pet>Oops, I don't think that was the right path! <narrator>Let's see what's in here.",
     )
 
     /** After that room: the path loops around to the same doors. */
     fun circleBack() = pick(
-        "Oh no! The path goes round and round in a circle. We're back at the doors! <pet>Let's listen to the clue again.",
-        "Whoops, this path leads right back to the doors! <pet>We went in a circle! Let's try another way.",
+        "Oh no! This path goes round and round in a circle. We're back at the doors! <pet>Let's listen to the clue about the right path again.",
+        "Whoops, this was the wrong path. It leads right back to the doors! <pet>We went in a circle! Let's try another way.",
     )
 
 
-    fun rightWay() = pick("You followed the clue!", "Good listening! That's the door from the clue.")
+    fun rightWay() = pick("You found the right path!", "Good listening! That's the path from the clue.")
 
     /** The right door, reached after going the wrong way first. */
-    fun lastWay() = pick("This time it's the door from the clue!", "That's the way! <pet>We found the right path!")
+    fun lastWay() = pick("This time it's the path from the clue!", "That's the way! <pet>We found the right path!")
 
     // ------------------------------------------------------------- rooms
 
@@ -310,7 +310,7 @@ internal class Lines(private val r: Random) {
     fun bossReveal(q: Quest): String = when (q.twist) {
         Twist.RUBY_VISITING -> "There's the dragon ${q.dragon}... and Princess Ruby is riding on its back, laughing! <ruby>Hello, friends! <dragon>Please don't be scared. I'm a bit worried about all the knights."
         Twist.TRICKSTER -> "There's the dragon ${q.dragon}, crying big smoky tears. <dragon>Sniff. They say I took Ruby, but I didn't! <narrator>A sneaky shadow sprite locked Ruby in a cage and blamed the dragon!"
-        Twist.LOST_AND_WARM -> "There's the dragon ${q.dragon}, curled around Princess Ruby to keep her warm. She got lost in the storm! <dragon>Grrr. Stay back! She's so cold."
+        Twist.LOST_AND_WARM -> "There's the dragon ${q.dragon}, curled around Princess Ruby to keep her warm. She got lost in the storm! [growl] <dragon>Stay back! She's so cold."
         Twist.COLLECTOR -> "There's the dragon ${q.dragon}, sitting on a pile of spoons and buttons, all alone. <dragon>Oh! Hello? Is somebody there? <pet>It looks so lonely."
         Twist.SPRITE_THIEF -> "There's the dragon ${q.dragon}, and it's upset! <dragon>Somebody keeps hiding things in my cave! <narrator>A sneaky sprite has been stealing things and hiding them there."
         Twist.INK_SHADOW -> "There's the Ink Shadow, scribbling all over the magic Storybook! <shadow>Scribble, scribble, scribble! <ruby>We have to stop it!"

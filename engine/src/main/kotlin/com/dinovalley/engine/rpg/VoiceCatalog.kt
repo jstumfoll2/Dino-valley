@@ -110,7 +110,7 @@ fun main(args: Array<String>) {
     val out = File(args.firstOrNull() ?: "lines.txt")
     out.parentFile?.mkdirs()
     // One recording per line: voice id, speaker, speed, pitch, then the sentence, separated by tabs.
-    out.writeText(sentences.joinToString("\n", postfix = "\n") { "${it.who.voiceId}\t${it.who.sid}\t${it.who.speed}\t${it.who.pitch}\t${it.text}" })
+    out.writeText(sentences.joinToString("\n", postfix = "\n") { "${Voice.voiceIdOf(it.text, it.who)}\t${it.who.sid}\t${it.who.speed}\t${it.who.pitch}\t${it.text}" })
     println("${sentences.size} sentences, ${sentences.sumOf { it.text.length }} characters -> $out")
     println("sound effects: ${sounds.joinToString(" ")}")
 }

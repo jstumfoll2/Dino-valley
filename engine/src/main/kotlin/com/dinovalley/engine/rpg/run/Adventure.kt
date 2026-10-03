@@ -26,6 +26,7 @@ import com.dinovalley.engine.rpg.world.QuestWriter
 import com.dinovalley.engine.rpg.world.Room
 import com.dinovalley.engine.rpg.world.RoomKind
 import com.dinovalley.engine.rpg.world.Stop
+import com.dinovalley.engine.rpg.world.Twist
 import com.dinovalley.engine.rpg.world.WorldMemory
 import com.dinovalley.engine.util.Clock
 import kotlin.random.Random
@@ -396,7 +397,7 @@ class Adventure(
         treasureDoorTaken = false
         val n = random.nextInt(2, 5)
         coins += n
-        return listOf(found(s.copy(mood = Mood.HAPPY), Loot(LootKind.COINS, n, lines.coinWords(n)), "The clue was right! A hidden treasure: ${lines.coinWords(n)}!"))
+        return listOf(found(s.copy(mood = Mood.HAPPY), Loot(LootKind.COINS, n, lines.coinWords(n)), "You found the right path! A bonus: ${lines.coinWords(n)}!"))
     }
 
     private fun gate(): List<Step> {
@@ -503,9 +504,15 @@ class Adventure(
 
     // ------------------------------------------------------------- the boss
 
+    /** The lair, with Ruby there when the story has her with the dragon (everyone in the scene is drawn). */
+    private fun lairScene(boss: Actor, mood: Mood, cleared: Boolean = false): Scene {
+        val ruby = if (quest.twist in RUBY_AT_LAIR) arrayOf(Actor.RUBY) else emptyArray()
+        return scene(Place.LAIR, boss, *ruby, mood = mood, cleared = cleared)
+    }
+
     private fun lair(): List<Step> {
         val bossActor = if (quest.boss == Boss.SHADOW) Actor.SHADOW else Actor.DRAGON
-        val s = { mood: Mood -> scene(Place.LAIR, bossActor, mood = mood) }
+        val s = { mood: Mood -> lairScene(bossActor, mood) }
         val options = if (quest.boss == Boss.SHADOW) {
             listOf(Choice(ChoicePicture.LIGHT_SPELL, "Cast a light spell"), Choice(ChoicePicture.LULLABY, "Sing a lullaby"))
         } else {
@@ -529,13 +536,18 @@ class Adventure(
      */
     private fun bossStars(friendly: Boolean): List<Step> {
         val bossActor = if (quest.boss == Boss.SHADOW) Actor.SHADOW else Actor.DRAGON
-        fun s(mood: Mood = Mood.CALM) = scene(Place.LAIR, bossActor, mood = mood)
+        fun s(mood: Mood = Mood.CALM) = lairScene(bossActor, mood)
         val steps = mutableListOf<Step>()
         fun lit(text: String) {
             bossStars++
             steps += tell(s(Mood.HAPPY), text)
         }
-        if (goblinFriend) lit(lines.goblinHelps(quest.goblin))
+        if (goblinFriend) {
+            // The goblin really runs in: he is on screen while he helps.
+            bossStars++
+            val here = s(Mood.HAPPY)
+            steps += tell(here.copy(cast = here.cast + Actor.GOBLIN), lines.goblinHelps(quest.goblin))
+        }
         if (magicKey && bossStars < 3) lit(lines.keyHelps())
         if (friendly && potionMade && quest.potion == PotionKind.FRIENDSHIP && bossStars < 3) lit(lines.friendshipHelps())
 
@@ -577,7 +589,7 @@ class Adventure(
     private fun ending(friendly: Boolean): List<Step> {
         gain(Attribute.COURAGE, 20)
         val bossActor = if (quest.boss == Boss.SHADOW) Actor.SHADOW else Actor.DRAGON
-        val s = scene(Place.LAIR, bossActor, mood = Mood.HAPPY, cleared = true)
+        val s = lairScene(bossActor, Mood.HAPPY, cleared = true)
         val endingId = "${quest.twist.name.lowercase()}_${if (friendly) "friends" else "spell"}"
         world = world.copy(
             endings = world.endings + endingId,
@@ -595,6 +607,7 @@ class Adventure(
 
     private companion object {
         const val MAX_HEARTS = 3
+        val RUBY_AT_LAIR = setOf(Twist.RUBY_VISITING, Twist.TRICKSTER, Twist.LOST_AND_WARM)
     }
 
     private fun finale(): List<Step> {
