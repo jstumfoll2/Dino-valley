@@ -19,6 +19,7 @@ enum class Who(val tag: String, val sid: Int, val speed: Float, val pitch: Float
 
     // The wider world: townspeople, shopkeepers, rogues and monsters. More can be added; a new
     // voice is a new entry here and its lines are recorded by the build like everyone else's.
+    GRANNY("granny", 2, 0.88f, 0.92f, "kokoro-en-v0_19/sid2/speed0.88/pitch0.92"),
     ELDER("elder", 9, 0.88f, 1.0f, "kokoro-en-v0_19/sid9/speed0.88/pitch1.0"),
     BARON("baron", 9, 0.85f, 0.9f, "kokoro-en-v0_19/sid9/speed0.85/pitch0.9"),
     MERCHANT("merchant", 0, 1.0f, 1.0f, "kokoro-en-v0_19/sid0/speed1.0/pitch1.0"),

@@ -150,7 +150,7 @@ fun AdventureScreen(vm: GameViewModel) {
                 is Beat.Doors -> DoorsBeat(beat, say) { i -> reply(Reply.Picked(i)) }
                 is Beat.Roll -> RollBeat(beat, say, celebrate) { used, tries -> reply(Reply.Rolled(used, tries)) }
                 is Beat.Ask -> AskBeat(beat, vm.state.hero.heroClass.power == Power.SPARKLE_HINT, say, celebrate) { tries, hints, ms -> reply(Reply.Solved(tries, hints, ms)) }
-                is Beat.Finale -> Unit
+                is Beat.Travel, is Beat.Shop, is Beat.Finale -> Unit
             }
         }
 

@@ -39,24 +39,18 @@ object Art {
         Hue.ORANGE -> Color(0xFFF07F1A)
     }
 
+    /** The painted backdrop for a place, found by its name (`art_scene_<id>`), so new places need only a picture. */
     @DrawableRes
-    fun place(p: Place): Int = when (p) {
-        Place.CAMP -> R.drawable.art_scene_camp
-        Place.GATE -> R.drawable.art_scene_gate
-        Place.RUNE_HALL -> R.drawable.art_scene_rune_hall
-        Place.BRIDGE -> R.drawable.art_scene_bridge
-        Place.CRYSTAL_CAVE -> R.drawable.art_scene_crystal_cave
-        Place.LIBRARY -> R.drawable.art_scene_library
-        Place.TUNNEL -> R.drawable.art_scene_tunnel
-        Place.MIRROR_HALL -> R.drawable.art_scene_mirror_hall
-        Place.VAULT -> R.drawable.art_scene_vault
-        Place.STOREROOM -> R.drawable.art_scene_storeroom
-        Place.POND -> R.drawable.art_scene_pond
-        Place.MOSAIC_HALL -> R.drawable.art_scene_mosaic_hall
-        Place.GOBLIN_DEN -> R.drawable.art_scene_goblin_den
-        Place.WORKSHOP -> R.drawable.art_scene_workshop
-        Place.LAIR -> R.drawable.art_scene_lair
-        Place.MAP -> R.drawable.art_scene_map
+    fun place(p: Place): Int = byName("art_scene_${p.id}") ?: R.drawable.art_scene_camp
+
+    private val found = HashMap<String, Int?>()
+
+    /** A picture by resource name, or null if this build has none: the way open content finds its art. */
+    @DrawableRes
+    fun byName(name: String): Int? = synchronized(found) {
+        found.getOrPut(name) {
+            runCatching { R.drawable::class.java.getField(name).getInt(null) }.getOrNull()
+        }
     }
 
     /** The picture a mosaic puzzle is made of. */

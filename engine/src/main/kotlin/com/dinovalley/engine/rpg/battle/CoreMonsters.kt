@@ -3,6 +3,7 @@ package com.dinovalley.engine.rpg.battle
 import com.dinovalley.engine.model.Who
 import com.dinovalley.engine.rpg.learn.Skill
 import com.dinovalley.engine.rpg.learn.Skill.*
+import com.dinovalley.engine.rpg.world.Terrain
 
 /** The first monsters: little ones on the roads, tough ones in the wild, guardians in dungeons. */
 object CoreMonsters {
@@ -13,6 +14,7 @@ object CoreMonsters {
             "The slime goes splat and giggles. <critter>Okay, okay, you can pass!",
             "The slime wobbles over you and you sit down with a plop.",
             coins = 2..4, drops = listOf(Drop("berry", 40)),
+            habitat = setOf(Terrain.SWAMP, Terrain.FOREST),
         ),
         Monster(
             "bat", "Pesky Bat", Tier.MINION, 12, 3, listOf(COLORS, PATTERNS), Who.CRITTER,
@@ -20,6 +22,7 @@ object CoreMonsters {
             "The bat flutters away, dizzy. <critter>Whoa, I need a nap!",
             "The bat swoops round and round until you are dizzy.",
             coins = 2..4, drops = listOf(Drop("berry", 30)),
+            habitat = setOf(Terrain.FOREST, Terrain.MOUNTAIN),
         ),
         Monster(
             "spider", "Sticky Spider", Tier.MINION, 14, 4, listOf(LETTERS, PATTERNS), Who.CRITTER,
@@ -27,6 +30,7 @@ object CoreMonsters {
             "The spider climbs back up its thread. <critter>You are good at puzzles!",
             "The spider wraps you up in a sticky web.",
             coins = 3..5, drops = listOf(Drop("rope", 15)),
+            habitat = setOf(Terrain.FOREST, Terrain.SWAMP),
         ),
         Monster(
             "wolf_pup", "Grumpy Wolf Pup", Tier.MINION, 16, 4, listOf(NUMBERS, ADDITION), Who.CRITTER,
@@ -34,6 +38,7 @@ object CoreMonsters {
             "The wolf pup rolls over and wags its tail. <critter>Okay, you win. Will you scratch my tummy?",
             "The wolf pup pounces and licks you until you fall over.",
             coins = 3..5, drops = listOf(Drop("friendship_cookie", 20)), befriendable = true,
+            habitat = setOf(Terrain.FOREST),
         ),
         Monster(
             "skeleton", "Rattlebone", Tier.MINION, 15, 4, listOf(PATTERNS, SKIP_COUNTING), Who.SPOOK,
@@ -41,6 +46,7 @@ object CoreMonsters {
             "The skeleton falls into a heap of bones. <spook>Oh dear. I will put myself back together.",
             "The skeleton knocks you over and you land on a pile of bones.",
             coins = 3..6, drops = listOf(Drop("rusty_key", 20)),
+            habitat = setOf(Terrain.SWAMP, Terrain.FOREST),
         ),
         Monster(
             "ghost", "Boo Ghost", Tier.MINION, 13, 3, listOf(COLORS, LETTERS), Who.SPOOK,
@@ -48,6 +54,7 @@ object CoreMonsters {
             "The ghost giggles and fades away. <spook>That was the best game ever!",
             "The ghost goes boo, and you jump so high you fall over.",
             coins = 2..4, drops = listOf(Drop("lantern", 15)),
+            habitat = setOf(Terrain.SWAMP),
         ),
         Monster(
             "boar", "Mud Boar", Tier.MINION, 18, 5, listOf(ADDITION, SKIP_COUNTING), Who.CRITTER,
@@ -55,6 +62,7 @@ object CoreMonsters {
             "The boar trots off to find a new puddle. <critter>Fine, fine, it was too small anyway.",
             "The boar charges, and you land in the mud puddle.",
             coins = 3..6, drops = listOf(Drop("honey_cake", 15)),
+            habitat = setOf(Terrain.FOREST),
         ),
         Monster(
             "rock_crab", "Rock Crab", Tier.MINION, 17, 4, listOf(COUNTING, NUMBERS), Who.CRITTER,
@@ -62,6 +70,17 @@ object CoreMonsters {
             "The crab hides under its rock. <critter>Come back when I am less embarrassed.",
             "The crab pinches your toe and you hop around.",
             coins = 3..5,
+            habitat = setOf(Terrain.MOUNTAIN, Terrain.RIVER),
+        ),
+    )
+
+    val rogues = listOf(
+        Monster(
+            "sneaky_fox", "Sneaky Fox", Tier.MINION, 16, 4, listOf(LETTERS, COLORS), Who.SNEAK,
+            "A fox pops out from behind a crate. <sneak>You want it back? Then catch me, if you can!",
+            "The fox drops what it was holding. <sneak>Fine, fine. You are quicker than you look.",
+            "The fox darts around you so fast that you get dizzy and sit down.",
+            coins = 3..6,
         ),
     )
 
@@ -72,6 +91,7 @@ object CoreMonsters {
             "The troll scratches its head. <growler>Nobody ever solved my puzzles before. Go on, then.",
             "The troll stomps, the ground shakes, and you tumble back.",
             coins = 6..10, drops = listOf(Drop("big_potion", 25)), befriendable = true,
+            habitat = setOf(Terrain.MOUNTAIN),
         ),
         Monster(
             "web_weaver", "Web Weaver", Tier.ELITE, 28, 6, listOf(LETTERS, PATTERNS), Who.CRITTER,
@@ -79,6 +99,7 @@ object CoreMonsters {
             "The Web Weaver untangles the web. <critter>What a clever visitor! Take this.",
             "The Web Weaver spins you into a giant cocoon.",
             coins = 6..10, drops = listOf(Drop("silver_key", 25), Drop("rope", 25)),
+            habitat = setOf(Terrain.FOREST, Terrain.SWAMP),
         ),
         Monster(
             "moon_wolf", "Moon Wolf", Tier.ELITE, 30, 7, listOf(NUMBERS, SKIP_COUNTING, COLORS), Who.GROWLER,
@@ -86,6 +107,14 @@ object CoreMonsters {
             "The Moon Wolf bows its head. <growler>You are both. Pass in peace.",
             "The Moon Wolf howls so loudly that you sit down in surprise.",
             coins = 7..11, drops = listOf(Drop("owl_feather", 20)),
+            habitat = setOf(Terrain.FOREST, Terrain.MOUNTAIN),
+        ),
+        Monster(
+            "bandit_bess", "Bandit Bess", Tier.ELITE, 28, 6, listOf(PATTERNS, NUMBERS, ADDITION), Who.SNEAK,
+            "A bandit swings down from a rock. <sneak>This is my pass. Pay up, or play for it!",
+            "Bess lowers her fists and sits down hard. <sneak>All right, all right. I give up. Nobody ever beat me before.",
+            "Bess tips her hat, gives you a gentle shove, and everything goes dim.",
+            coins = 8..12, drops = listOf(Drop("bubble_shield", 30)), befriendable = true,
         ),
         Monster(
             "mossy_golem", "Mossy Golem", Tier.ELITE, 36, 5, listOf(PATTERNS, COUNTING, ADDITION), Who.GROWLER,
@@ -93,6 +122,7 @@ object CoreMonsters {
             "The golem crumbles into a pile of mossy rocks. <growler>Rule solved. Thank you.",
             "The golem leans over, and everything goes dark and mossy.",
             coins = 7..12, drops = listOf(Drop("iron_helm", 10), Drop("big_potion", 20)),
+            habitat = setOf(Terrain.MOUNTAIN, Terrain.SWAMP),
         ),
     )
 
@@ -136,21 +166,21 @@ object CoreMonsters {
 
     val bosses = listOf(
         Monster(
-            "baron_grumblewick", "Baron Grumblewick", Tier.BOSS, 85, 9, listOf(LETTERS, NUMBERS, ADDITION, PATTERNS, COLORS), Who.BARON,
+            "baron_grumblewick", "Baron Grumblewick", Tier.BOSS, 75, 9, listOf(LETTERS, NUMBERS, ADDITION, PATTERNS, COLORS), Who.BARON,
             "Baron Grumblewick lowers his top hat and sneers. <baron>The pages are mine, and so is every story. Nobody tells it better than I do.",
             "The Baron's top hat tumbles off, and the pages flutter free. <baron>My stories! My lovely, lovely stories!",
             "The Baron laughs a thin laugh, and everything goes quiet and inky.",
             coins = 25..35, drops = listOf(Drop("storybook_page", 100)), weakness = "ink_cleaner",
         ),
         Monster(
-            "ink_shadow", "The Ink Shadow", Tier.BOSS, 70, 8, listOf(LETTERS, PATTERNS, COLORS, NUMBERS), Who.SHADOW,
+            "ink_shadow", "The Ink Shadow", Tier.BOSS, 62, 8, listOf(LETTERS, PATTERNS, COLORS, NUMBERS), Who.SHADOW,
             "The Ink Shadow rises out of the Storybook. <shadow>Scribble, scribble, scribble. Everything is mine to scribble on.",
             "The Ink Shadow shrinks into a tiny blot. <shadow>I only wanted to draw. Nobody ever gave me a page of my own.",
             "The Ink Shadow scribbles on you, and you wake up somewhere safe.",
             coins = 20..30, drops = listOf(Drop("storybook_page", 100)),
         ),
         Monster(
-            "big_dragon", "The Dragon", Tier.BOSS, 75, 9, listOf(NUMBERS, ADDITION, COUNTING, COLORS, LETTERS), Who.DRAGON,
+            "big_dragon", "The Dragon", Tier.BOSS, 68, 9, listOf(NUMBERS, ADDITION, COUNTING, COLORS, LETTERS), Who.DRAGON,
             "The great dragon opens one golden eye. <dragon>Who dares come into my lair?",
             "The dragon lowers its great head. <dragon>You are very brave. Maybe I was wrong about you.",
             "The dragon yawns, and its warm breath puffs you right out of the cave.",
@@ -158,5 +188,5 @@ object CoreMonsters {
         ),
     )
 
-    val all: List<Monster> = minions + elites + guardians + bosses
+    val all: List<Monster> = minions + rogues + elites + guardians + bosses
 }

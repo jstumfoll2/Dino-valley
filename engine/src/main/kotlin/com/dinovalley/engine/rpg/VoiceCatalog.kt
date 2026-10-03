@@ -84,6 +84,15 @@ object VoiceCatalog {
                         b.offers.forEach { said += it }
                         Reply.Picked(r.nextInt(b.fork.doors.size))
                     }
+                    is Beat.Travel -> {
+                        said += b.prompt
+                        b.routes.forEach { said += it.said }
+                        Reply.Picked(r.nextInt(b.routes.size))
+                    }
+                    is Beat.Shop -> {
+                        said += b.prompt
+                        Reply.Next
+                    }
                     is Beat.Finale -> Reply.Next
                 }
                 a.reply(reply)

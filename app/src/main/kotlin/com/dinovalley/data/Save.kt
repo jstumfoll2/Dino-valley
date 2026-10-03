@@ -90,6 +90,11 @@ class Save(context: Context) {
         .put("treasures", JSONArray(w.treasures))
         .put("questsDone", JSONObject().also { o -> w.questsDone.forEach { (k, v) -> o.put(k.name, v) } })
         .put("lastQuest", w.lastQuest?.name ?: "")
+        .put("flags", JSONArray(w.flags.toList()))
+        .put("relations", JSONObject().also { o -> w.relations.forEach { (k, v) -> o.put(k, v) } })
+        .put("pages", w.pages)
+        .put("arcsDone", JSONObject().also { o -> w.arcsDone.forEach { (k, v) -> o.put(k, v) } })
+        .put("lastArc", w.lastArc ?: "")
 
     private fun world(o: JSONObject) = WorldMemory(
         adventures = o.optInt("adventures"),
@@ -99,6 +104,11 @@ class Save(context: Context) {
         treasures = strings(o.optJSONArray("treasures")),
         questsDone = ints<QuestKind>(o.optJSONObject("questsDone")),
         lastQuest = enumOrNull<QuestKind>(o.optString("lastQuest")),
+        flags = strings(o.optJSONArray("flags")).toSet(),
+        relations = o.optJSONObject("relations")?.let { x -> x.keys().asSequence().associateWith { x.getInt(it) } } ?: emptyMap(),
+        pages = o.optInt("pages"),
+        arcsDone = o.optJSONObject("arcsDone")?.let { x -> x.keys().asSequence().associateWith { x.getInt(it) } } ?: emptyMap(),
+        lastArc = o.optString("lastArc").ifEmpty { null },
     )
 
     private fun strings(a: JSONArray?): List<String> = a?.let { (0 until it.length()).map { i -> it.getString(i) } } ?: emptyList()

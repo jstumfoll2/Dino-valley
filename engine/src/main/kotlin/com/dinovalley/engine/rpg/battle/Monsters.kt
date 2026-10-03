@@ -39,6 +39,8 @@ data class Monster(
     val drops: List<Drop> = emptyList(),
     val befriendable: Boolean = false,
     val weakness: String? = null,
+    /** The roads it lurks on (empty: anywhere). */
+    val habitat: Set<com.dinovalley.engine.rpg.world.Terrain> = emptySet(),
 ) {
     /** The picture name; the app looks up `art_monster_<id>`. */
     val art: String get() = "monster_$id"

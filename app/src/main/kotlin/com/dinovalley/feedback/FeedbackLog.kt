@@ -86,6 +86,8 @@ object FeedbackLog {
         is Beat.Roll -> "Dice ${beat.dice}, reroll ${beat.reroll}, at ${beat.scene.place}: ${Voice.caption(beat.why)}"
         is Beat.Choose -> "Choice at ${beat.scene.place}: ${beat.options.map { it.said }}"
         is Beat.Doors -> "Doors at stop ${beat.stopIndex}: ${beat.fork.doors.map { "${it.hue.word} ${it.kind}" }}, closed ${beat.closed}, clue answer ${beat.clue?.answer}"
+        is Beat.Travel -> "Map at ${beat.here}: ${beat.routes.map { "${it.name} (${it.terrain.word})" }}"
+        is Beat.Shop -> "Shop ${beat.shopName}, ${beat.coins} coins: ${beat.stock.map { it.name }}"
         is Beat.Finale -> "Finale"
     }
 }

@@ -97,7 +97,7 @@ object ChallengeFactory {
 
     private fun other(size: GemSize) = if (size == GemSize.BIG) GemSize.SMALL else GemSize.BIG
 
-    fun pattern(level: Int, seed: Long): PatternChallenge {
+    fun pattern(level: Int, seed: Long, ask: String? = null): PatternChallenge {
         val r = Random(seed)
         val unit: List<Int> = when (level) {
             1 -> listOf(0, 1)
@@ -125,7 +125,7 @@ object ChallengeFactory {
             else -> 5
         }
         val options = (listOf(next) + runes.filter { it != next }.take(optionCount - 1)).shuffled(r)
-        val prompt = Speech.of("The door opens only when its magic symbols are in the right order. Which symbol comes next?")
+        val prompt = Speech.of(ask ?: "The door opens only when its magic symbols are in the right order. Which symbol comes next?")
         return PatternChallenge(level, seed, prompt, shown, next, options)
     }
 
@@ -230,7 +230,7 @@ object ChallengeFactory {
     }
 
     /** Counting by twos (then fives, then threes): lily pads of things, counted in jumps. */
-    fun skipCount(level: Int, seed: Long): SkipCountChallenge {
+    fun skipCount(level: Int, seed: Long, intro: String? = null): SkipCountChallenge {
         val r = Random(seed)
         val (step, shown, opts) = when (level) {
             1 -> Triple(2, 3, 3)
@@ -251,7 +251,7 @@ object ChallengeFactory {
             else -> "tens"
         }
         val counted = (1 until shown).joinToString(", ") { number(step * it).uppercase() }
-        val ask = "Each lily pad has ${number(step)} ${thing.many}. Let's count them by $by! $counted... How many on the last lily pad?"
+        val ask = (intro?.let { "$it " } ?: "") + "Each lily pad has ${number(step)} ${thing.many}. Let's count them by $by! $counted... How many on the last lily pad?"
         return SkipCountChallenge(level, seed, Speech.of(ask), step, shown, thing, options)
     }
 

@@ -66,6 +66,8 @@ object CoreItems {
     val story = listOf(
         Item("storybook_page", "Storybook Page", QUEST, "A page from the Great Storybook, glowing softly."),
         Item("silver_quill", "Silver Quill", QUEST, "A silver quill that can write the Storybook whole again."),
+        Item("recipe_page", "Recipe Page", QUEST, "Baker Bun's lost recipe page, a little bit sticky."),
+        Item("magic_beans", "Magic Beans", QUEST, "They are only beans. But somebody might love them."),
         Item("ink_cleaner", "Ink Cleaner", QUEST, "A bottle that washes away the Baron's sticky ink."),
     )
 

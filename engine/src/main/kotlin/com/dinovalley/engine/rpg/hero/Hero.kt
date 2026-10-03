@@ -114,7 +114,7 @@ data class Hero(
     val maxHp: Int get() = 20 + 5 * statLevel(Attribute.COURAGE) + gear.sumOf { it.hp }
 
     /** Each attribute powers its own kind of puzzle attack (numbers: cleverness; colors and patterns: magic; letters: wisdom). */
-    fun attackWith(skill: Skill): Int = 3 + statLevel(skill.attribute) + gear.sumOf { it.attack }
+    fun attackWith(skill: Skill): Int = 5 + statLevel(skill.attribute) + gear.sumOf { it.attack }
 
     /** Takes this much off every hit. */
     val defense: Int get() = gear.sumOf { it.defense } + (statLevel(Attribute.COURAGE) - 1) / 2
