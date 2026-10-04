@@ -27,5 +27,8 @@ real player.
   would make us change it.
 - [`docs/design/`](docs/design/): the family's brief for The Little Dungeon and
   how it became the game.
+- [`docs/review/`](docs/review/2026-10-04-review-and-roadmap.md): a critical review
+  of the game as built (architecture, story, learning, art, voice) and a step-by-step
+  roadmap.
 
 The test is still simple: does he ask to play again?

@@ -1,0 +1,136 @@
+import com.littledungeon.engine.model.Speech
+import com.littledungeon.engine.model.Voice
+import com.littledungeon.engine.rpg.content.Content
+import com.littledungeon.engine.rpg.hero.Hero
+import com.littledungeon.engine.rpg.learn.*
+import com.littledungeon.engine.rpg.run.*
+import com.littledungeon.engine.rpg.world.WorldMemory
+import com.littledungeon.engine.util.Clock
+import kotlin.random.Random
+
+/** Review harness: plays many journeys with a simulated child and prints what a session looks like. */
+data class Stats(
+    var journeys: Int = 0, var finished: Int = 0, var beats: Int = 0, var asks: Int = 0, var asksFailed: Int = 0,
+    var travels: Int = 0, var battles: Int = 0, var faints: Int = 0, var words: Int = 0, var chooses: Int = 0,
+    var peace: Int = 0, var fight: Int = 0, var forcedFight: Int = 0, var npcAsMonster: Int = 0, var oneTryWithRetryWords: Int = 0,
+    val skills: MutableMap<String, Int> = sortedMapOf(), val monsters: MutableMap<String, Int> = sortedMapOf(),
+    val beatsPerJourney: MutableList<Int> = mutableListOf(), val minutes: MutableList<Double> = mutableListOf(),
+)
+
+fun words(s: List<Speech>) = Voice.caption(s).split(Regex("\\s+")).count { it.isNotBlank() }
+
+fun play(p: Double, seed: Long, hero: Hero, skills: SkillBook, world: WorldMemory, st: Stats, r: Random): Journey {
+    val j = Journey(seed, hero, skills, world, Clock { 0L })
+    var guard = 0
+    var w = 0
+    var seconds = 0.0
+    var lastBattleFoe: String? = null
+    while (!j.finished && guard++ < 4000) {
+        val b = j.beat
+        b.speech().firstOrNull()?.let { w += words(it) }
+        b.scene.battle?.let { if (it.foe.id != lastBattleFoe) { lastBattleFoe = it.foe.id; st.battles++; st.monsters.merge(it.foe.id, 1, Int::plus); if (it.foe.id == "bandit_bess" || it.foe.id == "sneaky_fox") st.npcAsMonster++ } }
+        if (b.scene.battle == null) lastBattleFoe = null
+        val reply: Reply = when (b) {
+            is Beat.Tell, is Beat.Found -> { seconds += 1.5; Reply.Next }
+            is Beat.Ask -> {
+                st.asks++; seconds += 12
+                st.skills.merge(b.challenge.skill.name, 1, Int::plus)
+                val retryWords = Voice.caption(b.oops).contains(Regex("(?i)try (again|another)|count again"))
+                val ok = r.nextDouble() < p
+                if (b.oneTry && !ok && retryWords) st.oneTryWithRetryWords++
+                if (b.oneTry && !ok) { st.asksFailed++; Reply.Solved(1, 0, 5000, failed = true, wrong = listOf(((b.challenge as? PickOne)?.answer ?: 0).let { if (it == 0) 1 else 0 })) }
+                else Reply.Solved(if (ok) 1 else 2, 0, 5000)
+            }
+            is Beat.Choose -> {
+                st.chooses++; seconds += 4
+                val saids = b.options.map { it.said }
+                if (saids == listOf("Fight her") || saids == listOf("Fight him")) st.forcedFight++
+                if (saids.contains("Challenge the Baron")) { if (r.nextBoolean()) st.peace++ else st.fight++ }
+                Reply.Picked(r.nextInt(b.options.size))
+            }
+            is Beat.Travel -> {
+                st.travels++; seconds += 6
+                val open = b.routes.indices.filter { !b.routes[it].blocked }
+                val marked = b.routes.indexOfFirst { it.marked }
+                Reply.Picked(if (marked >= 0 && r.nextDouble() < 0.6) marked else open.random(r))
+            }
+            is Beat.Shop -> { seconds += 5; if (r.nextInt(4) == 0 && b.stock.any { it.canAfford }) Reply.Bought(b.stock.filter { it.canAfford }.random(r).itemId) else Reply.Next }
+            is Beat.Roll -> Reply.Rolled(false, 1)
+            is Beat.Doors -> Reply.Picked(0)
+            is Beat.Finale -> Reply.Next
+        }
+        if (b is Beat.Tell && Voice.caption(b.lines).let { it.contains("fall asleep right there") || it.contains("too tired to go on") }) st.faints++
+        st.beats++
+        j.reply(reply)
+    }
+    seconds += w / 2.3 // narration at about 140 words a minute
+    st.words += w
+    st.journeys++
+    if (j.finished) st.finished++
+    st.beatsPerJourney += guard
+    st.minutes += seconds / 60.0
+    return j
+}
+
+fun pct(xs: List<Double>, q: Double) = xs.sorted()[((xs.size - 1) * q).toInt()]
+
+fun main() {
+    for (p in listOf(0.6, 0.75, 0.9)) {
+        val st = Stats()
+        val r = Random(42)
+        // Ten children, each playing ten journeys in a row, carrying hero, skills and world forward.
+        val levelsAfter = mutableListOf<Map<Skill, Int>>()
+        repeat(10) { child ->
+            var hero = Hero()
+            var skills = SkillBook()
+            var world = WorldMemory()
+            repeat(10) { k ->
+                val j = play(p, r.nextLong(), hero, skills, world, st, r)
+                hero = j.hero; skills = j.skills; world = j.world
+            }
+            levelsAfter += Skill.entries.associateWith { skills.level(it) }
+        }
+        println("=== simulated accuracy p=$p : ${st.journeys} journeys, ${st.finished} finished")
+        println("beats/journey median ${pct(st.beatsPerJourney.map { it.toDouble() }, 0.5)} p90 ${pct(st.beatsPerJourney.map { it.toDouble() }, 0.9)}")
+        println("est minutes/journey median ${"%.1f".format(pct(st.minutes, 0.5))} p10 ${"%.1f".format(pct(st.minutes, 0.1))} p90 ${"%.1f".format(pct(st.minutes, 0.9))}")
+        println("puzzles/journey ${"%.1f".format(st.asks.toDouble() / st.journeys)}, failed ${"%.0f".format(100.0 * st.asksFailed / st.asks)}%, travel picks/journey ${"%.1f".format(st.travels.toDouble() / st.journeys)}, choices/journey ${"%.1f".format(st.chooses.toDouble() / st.journeys)}")
+        println("battles/journey ${"%.1f".format(st.battles.toDouble() / st.journeys)}, faints/journey ${"%.2f".format(st.faints.toDouble() / st.journeys)}, forced-fight menus ${st.forcedFight}, NPCs met as random monsters ${st.npcAsMonster}")
+        println("one-try misses whose oops line says 'try again': ${st.oneTryWithRetryWords} of ${st.asksFailed}")
+        println("skill mix: ${st.skills}")
+        println("monsters met: ${st.monsters}")
+        val avg = Skill.entries.associateWith { s -> "%.1f".format(levelsAfter.map { it.getValue(s) }.average()) }
+        println("skill levels after 10 journeys (avg of 10 children): $avg")
+    }
+
+    // Answer position: how often is the right answer one of the middle cards (never first or last)?
+    for (lv in 1..5) {
+        var middle = 0; var n = 0; var pickMiddle = 0
+        for (s in 0 until 2000) {
+            val c = ChallengeFactory.count(lv, s.toLong(), Thing.STONE, "")
+            n++
+            if (c.answer != 0 && c.answer != c.optionCount - 1) middle++
+            if (c.answer == c.optionCount / 2) pickMiddle++
+        }
+        println("count L$lv: answer is a middle card ${100 * middle / n}%, 'always tap the centre card' wins ${100 * pickMiddle / n}% vs chance ${100 / ChallengeFactory.count(lv, 1, Thing.STONE, "").optionCount}%")
+    }
+    for (lv in 1..5) {
+        var pickMiddle = 0; var n = 0
+        for (s in 0 until 2000) {
+            val c = ChallengeFactory.add(lv, s.toLong(), Thing.COIN) { _, _, _ -> "" }
+            n++
+            if (c.answer == c.optionCount / 2) pickMiddle++
+        }
+        println("add L$lv: 'always tap the centre card' wins ${100 * pickMiddle / n}% vs chance ${100 / ChallengeFactory.add(lv, 1, Thing.COIN) { _, _, _ -> "" }.optionCount}%")
+    }
+    // Random guessing in a one-try world: how fast do levels ratchet up?
+    var book = SkillBook()
+    val r = Random(3)
+    repeat(40) { i ->
+        val c = ChallengeFactory.count(book.level(Skill.COUNTING), i.toLong(), Thing.STONE, "")
+        val guess = r.nextInt(c.optionCount)
+        val ok = guess == c.answer
+        book = book.record(ChallengeRecord(Skill.COUNTING, "count", c.level, if (ok) 1 else 2, 0, 1, i.toLong(), 0))
+    }
+    println("a child who only guesses, after 40 one-try counting puzzles: counting level ${book.level(Skill.COUNTING)}")
+    println("monsters with no habitat (roam every road): ${Content.monsters.filter { it.habitat.isEmpty() && it.tier.name in listOf("MINION", "ELITE") }.map { it.id }}")
+}
