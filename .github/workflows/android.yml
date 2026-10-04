@@ -63,7 +63,7 @@ jobs:
       - name: Keep the APK with this run
         uses: actions/upload-artifact@v4
         with:
-          name: dino-valley-debug
+          name: the-little-dungeon-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
       # On main, replace the "latest" pre-release so the newest APK is always one tap away on the phone.
@@ -72,10 +72,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk dino-valley.apk
+          cp app/build/outputs/apk/debug/app-debug.apk the-little-dungeon.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest dino-valley.apk \
+          gh release create latest the-little-dungeon.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Latest build" \
-            --notes "Built from ${GITHUB_SHA::7}. On the phone, download dino-valley.apk and open it to install."
+            --notes "Built from ${GITHUB_SHA::7}. On the phone, download the-little-dungeon.apk and open it to install."

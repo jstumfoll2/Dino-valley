@@ -648,7 +648,7 @@ Families policy review); family-only sideloading forever.
 
 ### 32. The game is called "Dino Valley" everywhere
 
-**Status:** Accepted · 2026-10-02 (Jason renamed the repo to `Dino-valley`)
+**Status:** Superseded by #38 and #52 · 2026-10-02 (Jason renamed the repo to `Dino-valley`)
 
 **Decision:** The app shows "Dino Valley" on the phone. The repo is
 `Dino-valley`, the code package is `com.dinovalley`, and the install id is
@@ -672,7 +672,7 @@ display name can take it at any time, while the install id stays fixed.
 
 **Decision:** Every pull request builds and tests the app on GitHub
 Actions. Every push to `main` replaces a "latest" pre-release with
-`dino-valley.apk`, so the newest build is one tap away on the phone. Builds
+`the-little-dungeon.apk`, so the newest build is one tap away on the phone. Builds
 are signed with a debug key kept in the repo, so each new build installs
 over the old one without erasing progress.
 
@@ -1085,3 +1085,18 @@ own lives, choices with consequences, and a child who learns he cannot guess unt
 
 **What might cause us to change it:** One try is too hard for him (tune `Journey.askOnce`, the
 charm shop prices, or the clover rate); journeys run too long; the map screen is hard to read.
+
+### 52. The repository and code are named for the game
+
+**Status:** Accepted · 2026-10-04
+
+**Decision:** Jason renamed the repository to `the-little-dungeon`, matching the game's name since
+decision #38. The code follows: the Kotlin package is `com.littledungeon`, the Gradle project is
+`the-little-dungeon`, the theme is `LittleDungeonTheme`, and the build publishes
+`the-little-dungeon.apk`. The Android install id is now `io.github.jstumfoll2.thelittledungeon`. It installs as a new app, and the old
+saved hero is left behind on the phone (Jason: not worth keeping). GitHub redirects the old
+repository address.
+
+**Why we made it:** One name everywhere is easier to follow.
+
+**What might cause us to change it:** Nothing planned. Changing the install id again after anyone depends on it would lose their saved game.

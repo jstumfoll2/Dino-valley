@@ -1,6 +1,6 @@
 # Voice Script: Batch 1 (counting prototype)
 
-Thank you for being the voice of Dino Valley! These are the lines the counting
+Thank you for being the voice of The Little Dungeon! These are the lines the counting
 game says. Until your recordings arrive, the game uses the phone's robot voice.
 
 ## How to record (about 15 minutes)
