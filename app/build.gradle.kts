@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.dinovalley"
+    namespace = "com.littledungeon"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.jstumfoll2.dinovalley"
+        applicationId = "io.github.jstumfoll2.thelittledungeon"
         minSdk = 26
         targetSdk = 36
         versionCode = 5

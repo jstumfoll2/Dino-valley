@@ -1,7 +1,5 @@
 # The Little Dungeon
 
-(The repository is still called Dino Valley.)
-
 A playful, offline Android learning game for a four-year-old, built as a
 family project. Kotlin + Jetpack Compose. No accounts, no ads, no network, no
 AI at runtime: AI helps us during development, and the finished game runs on
@@ -11,8 +9,8 @@ rules, procedural generation, good game design, and local data.
 rune doors, crystal caves, spell books, magic paths and potions, befriend the goblin, and
 meet the dragon, with your own baby dragon along. Stars level your hero up between runs.
 
-**Try it:** on the phone, open the [latest build](https://github.com/jstumfoll2/Dino-valley/releases/tag/latest),
-download `dino-valley.apk`, and open it to install. The first time, Android
+**Try it:** on the phone, open the [latest build](https://github.com/jstumfoll2/the-little-dungeon/releases/tag/latest),
+download `the-little-dungeon.apk`, and open it to install. The first time, Android
 asks to allow installs from your browser or Files app.
 
 **Who does what:** Claude implements everything (code, art, tests, builds).

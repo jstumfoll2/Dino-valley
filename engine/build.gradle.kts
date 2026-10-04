@@ -29,6 +29,6 @@ tasks.register<JavaExec>("voiceLines") {
     group = "build"
     description = "Lists every sentence the narrator can say, one per line."
     classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("com.dinovalley.engine.rpg.VoiceCatalogKt")
+    mainClass.set("com.littledungeon.engine.rpg.VoiceCatalogKt")
     args(layout.buildDirectory.file("voice/lines.txt").get().asFile.absolutePath)
 }

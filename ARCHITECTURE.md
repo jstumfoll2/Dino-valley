@@ -144,7 +144,7 @@ Tap        ───────────────────────
 ## 1. Recommended Android project structure
 
 ```text
-Dino-valley/
+the-little-dungeon/
 ├── README.md
 ├── ARCHITECTURE.md                 ← this file
 ├── PROJECT_DECISIONS.md            ← decision log
@@ -199,10 +199,10 @@ Dino-valley/
 
 ## 2. Package / module structure
 
-Package root is `com.dinovalley`; renaming it is cheap until the
+Package root is `com.littledungeon`; renaming it is cheap until the
 app is installed somewhere other than your own devices.
 
-### `:engine` — `com.dinovalley.engine`
+### `:engine` — `com.littledungeon.engine`
 
 | Package | What lives there | Example files |
 |---|---|---|
@@ -220,11 +220,11 @@ Adding a new activity type means adding one new folder under `activity/`,
 one new `ActivitySpec` subclass, and registering it. Nothing in `session/`,
 `difficulty/` or `intelligence/` changes.
 
-### `:app` — `com.dinovalley`
+### `:app` — `com.littledungeon`
 
 | Package | What lives there |
 |---|---|
-| (root) | `DinoValleyApp.kt` (Application), `MainActivity.kt`, `AppContainer.kt` (manual dependency wiring) |
+| (root) | `LittleDungeonApp.kt` (Application), `MainActivity.kt`, `AppContainer.kt` (manual dependency wiring) |
 | `ui.theme` | Colors, typography, shapes; the art bible translated into code |
 | `ui.components` | Reusable kid-sized pieces: `BigChoiceButton`, `CountableObject`, `Character`, `CelebrationBurst`, `RoundProgress` |
 | `ui.home` | `HomeScreen` |
@@ -516,7 +516,7 @@ This covers every field listed in spec §8 (`correctAttempts` is
 
 ```text
 MainActivity
-└── DinoValleyTheme
+└── LittleDungeonTheme
     └── AppNavigation                     (prototype: a simple `when(screen)`; Phase 2: Navigation Compose)
         ├── HomeScreen                    big Play button, character waving, sleepy/awake by time of day
         │     └── ParentGate (hidden: hold top-right corner 3 s) → ParentScreen
@@ -1195,8 +1195,8 @@ where your answer would change something soon.
 16. **His name inside the app.** Starting letters with his name means the
     app knows his name. *Default:* typed in parent mode, stored only on the
     phone, never in the content pack or the repo.
-17. ~~Repo name vs. game?~~ **Answered:** the repo is now `Dino-valley`, and the app,
-    code package and install id all use the Dino Valley name (decision #32).
+17. ~~Repo name vs. game?~~ **Answered:** the repo is now `the-little-dungeon`, matching the game's name
+    (decisions #32 and #52).
 
 ---
 
