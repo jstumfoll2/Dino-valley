@@ -13,10 +13,12 @@ import kotlin.random.Random
  */
 internal class JourneyLines(private val r: Random) {
     private fun pick(vararg options: String) = options[r.nextInt(options.size)]
-    private fun n(x: Int) = Words.number(x)
+    /** Numbers are said exactly up to a hundred and roughly after, so the recorded numbers stay a fixed set. */
+    private fun n(x: Int) = if (x > 100) "more than a hundred" else Words.number(x)
 
-    /** Big totals are said roughly, so the recorded numbers stay a fixed set. */
-    private fun big(x: Int) = if (x > 400) "more than four hundred" else Words.number(x)
+    private fun big(x: Int) = n(x)
+
+    private fun capital(x: Int) = n(x).replaceFirstChar { it.uppercase() }
 
     // ------------------------------------------------------------- the map
 
@@ -126,7 +128,7 @@ internal class JourneyLines(private val r: Random) {
 
     // ------------------------------------------------------------- finds
 
-    fun coinsFound(n: Int) = "You found ${Words.number(n)} ${if (n == 1) "coin" else "coins"}!"
+    fun coinsFound(n: Int) = "You found ${n(n)} ${if (n == 1) "coin" else "coins"}!"
 
     fun itemFound(name: String) = pick("You found a $name!", "Look! A $name!", "Into your bag goes a $name!")
 
@@ -149,7 +151,7 @@ internal class JourneyLines(private val r: Random) {
 
     fun dungeonSkip() = "You decide to leave it for another day."
 
-    fun roomsLeft(left: Int) = if (left == 1) "One more room before the guardian." else "${Words.capital(left)} more rooms before the guardian."
+    fun roomsLeft(left: Int) = if (left == 1) "One more room before the guardian." else "${capital(left)} more rooms before the guardian."
 
     fun roomCleared() = pick("Room cleared! <pet>On to the next one!", "You did it! The way ahead opens.")
 
@@ -171,17 +173,17 @@ internal class JourneyLines(private val r: Random) {
     @Suppress("UNUSED_PARAMETER")
     fun heroHits(foe: String, dmg: Int) = pick(
         "You hit it for ${n(dmg)}!",
-        "Whack! ${Words.capital(dmg)} damage!",
-        "A good hit! ${Words.capital(dmg)} damage.",
+        "Whack! ${capital(dmg)} damage!",
+        "A good hit! ${capital(dmg)} damage.",
     )
 
     @Suppress("UNUSED_PARAMETER")
-    fun heroHitsBig(foe: String, dmg: Int) = "A great hit! ${Words.capital(dmg)} damage!"
+    fun heroHitsBig(foe: String, dmg: Int) = "A great hit! ${capital(dmg)} damage!"
 
     @Suppress("UNUSED_PARAMETER")
     fun foeHits(foe: String, dmg: Int) = pick(
         "It hits you for ${n(dmg)}!",
-        "Ouch! ${Words.capital(dmg)} damage to you.",
+        "Ouch! ${capital(dmg)} damage to you.",
     )
 
     fun attackOops(foe: String) = pick("Oh no! The $foe is too quick, and you miss.", "Oops! That was not it, and the $foe gets ready to strike.")
@@ -196,7 +198,7 @@ internal class JourneyLines(private val r: Random) {
 
     fun foeStunned(foe: String) = pick("The $foe is fast asleep and cannot attack.", "The $foe is too sleepy to fight.")
 
-    fun healed(hp: Int) = pick("You feel better! ${Words.capital(hp)} health back.", "Yum! You get ${n(hp)} health back.")
+    fun healed(hp: Int) = pick("You feel better! ${capital(hp)} health back.", "Yum! You get ${n(hp)} health back.")
 
     @Suppress("UNUSED_PARAMETER")
     fun healthLine(hp: Int, max: Int) = "You have ${n(hp)} health left."
@@ -248,13 +250,13 @@ internal class JourneyLines(private val r: Random) {
 
     fun pageFound() = "A page of the Great Storybook, glowing softly! <pet>One more page is home!"
 
-    fun pagesLine(p: Int) = if (p == 1) "One page of the Storybook is home." else "${Words.capital(p)} pages of the Storybook are home."
+    fun pagesLine(p: Int) = if (p == 1) "One page of the Storybook is home." else "${capital(p)} pages of the Storybook are home."
 
     fun bookWhole() = "All five pages are home, and the Great Storybook is whole again! Every story in Whisperwood is safe."
 
     fun newBook() = "But a book like that never stays closed for long. A new Storybook begins, with fresh blank pages. <pet>What stories will we write next?"
 
-    fun levelUp(level: Int) = "Level up! You are now a level ${Words.number(level)} adventurer!"
+    fun levelUp(level: Int) = "Level up! You are now a level ${n(level)} adventurer!"
 
     fun finale(stars: Int) = pick(
         "What an adventure! You earned ${big(stars)} stars!",
@@ -282,7 +284,7 @@ internal class JourneyLines(private val r: Random) {
          * Every line that holds a number, for every number up to [max]: damage, health, coins, stars and so on.
          * Adventures hit these numbers by chance, so the voice catalog asks for them all.
          */
-        fun numbered(max: Int = 400): List<String> = buildList {
+        fun numbered(max: Int = 101): List<String> = buildList {
             val l = JourneyLines(Random(1))
             for (x in 0..max) {
                 repeat(10) {
