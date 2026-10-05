@@ -209,6 +209,17 @@ def s_fizz():
     y = crackle * 1.2 + hiss + blips
     return y * env_adsr(n, 0.01, 0.35, 1.5)
 
+def s_bell(f0):
+    """A small hand bell: a clear ringing note with a few bright, inharmonic overtones that die away faster, and a tiny tick of strike.
+    Made without the shared random source so adding it changes no other sound."""
+    d = 1.6; t = t_(d); n = len(t)
+    y = np.zeros(n)
+    # (frequency ratio, loudness, how long it rings in seconds)
+    for ratio, amp, ring in [(1.0, 1.0, 1.1), (2.0, 0.55, 0.8), (2.76, 0.32, 0.5), (5.4, 0.16, 0.28), (8.93, 0.07, 0.15)]:
+        y += amp * np.sin(2 * np.pi * f0 * ratio * t) * np.exp(-t / ring)
+    tick = hp(np.random.default_rng(11).standard_normal(n), 3000) * np.exp(-t / 0.004) * 0.25
+    return (y + tick) * env_adsr(n, 0.002, 0.25, 1.5)
+
 # ---------------------------------------------------------------- found-sound recipes
 K = 'kenney-'
 J = lambda pack, f: f'{K}{pack}/audio/Audio/{f}'
@@ -261,6 +272,10 @@ RECIPES = {
     'tweet':    ('found', f_tweet),
     'rumble':   ('found', f'{K}foley-sounds/audio/Audio/Rocks/stoneDrag2.ogg'),
     'fizz':     ('synth', s_fizz),
+    # The Bell Song: low, middle and high, a fourth and a fifth apart (G4, C5, G5), so they are easy to tell apart.
+    'bell_1':   ('synth', lambda: s_bell(392.0)),
+    'bell_2':   ('synth', lambda: s_bell(523.25)),
+    'bell_3':   ('synth', lambda: s_bell(783.99)),
 }
 
 # ---------------------------------------------------------------- processing
@@ -299,7 +314,10 @@ def finish(x):
     return x
 
 report = {}
+# ONLY=bell_1,bell_2 makes just those (the found sounds need downloading; see the top).
+only = [n for n in os.environ.get('ONLY', '').split(',') if n]
 for name, (kind, src) in RECIPES.items():
+    if only and name not in only: continue
     x = src() if callable(src) else load(src)
     y = finish(np.asarray(x, dtype=np.float64))
     w = os.path.join(TMP, name + '.wav'); sf.write(w, y.astype(np.float32), SR, subtype='FLOAT')

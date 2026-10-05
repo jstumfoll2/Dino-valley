@@ -1357,6 +1357,91 @@ def scene_workshop():
     return d.svg(vignette=0.3)
 
 
+def big_bell(d, x, y, s=1.0):
+    """A great bronze bell on a wooden yoke, hanging from its top at (x, y)."""
+    bronze = d.lin([(0, "#f0c26a"), (0.45, "#c98f3a"), (1, "#8a5a22")], 0, 0, 1, 0)
+    rim = d.lin([(0, "#ffe09a"), (1, "#9a6a28")], 0, 0, 0, 1)
+    out = (f'<rect x="{x - 150 * s:.0f}" y="{y - 14 * s:.0f}" width="{300 * s:.0f}" height="{34 * s:.0f}" rx="{10 * s:.0f}" fill="#6a4a34" stroke="{INK}" stroke-width="5"/>'
+           f'<path d="M{x - 40 * s:.0f} {y + 20 * s:.0f} L{x - 46 * s:.0f} {y + 70 * s:.0f} L{x + 46 * s:.0f} {y + 70 * s:.0f} L{x + 40 * s:.0f} {y + 20 * s:.0f} Z" fill="#8a5a33" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+           f'<path d="M{x - 92 * s:.0f} {y + 70 * s:.0f} C{x - 92 * s:.0f} {y + 70 * s:.0f} {x - 88 * s:.0f} {y + 40 * s:.0f} {x:.0f} {y + 40 * s:.0f} C{x + 88 * s:.0f} {y + 40 * s:.0f} {x + 92 * s:.0f} {y + 70 * s:.0f} {x + 92 * s:.0f} {y + 70 * s:.0f} '
+           f'C{x + 100 * s:.0f} {y + 190 * s:.0f} {x + 120 * s:.0f} {y + 250 * s:.0f} {x + 160 * s:.0f} {y + 300 * s:.0f} L{x - 160 * s:.0f} {y + 300 * s:.0f} C{x - 120 * s:.0f} {y + 250 * s:.0f} {x - 100 * s:.0f} {y + 190 * s:.0f} {x - 92 * s:.0f} {y + 70 * s:.0f} Z" '
+           f'fill="{bronze}" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'
+           f'<path d="M{x - 160 * s:.0f} {y + 300 * s:.0f} L{x + 160 * s:.0f} {y + 300 * s:.0f} C{x + 160 * s:.0f} {y + 330 * s:.0f} {x + 120 * s:.0f} {y + 340 * s:.0f} {x:.0f} {y + 340 * s:.0f} '
+           f'C{x - 120 * s:.0f} {y + 340 * s:.0f} {x - 160 * s:.0f} {y + 330 * s:.0f} {x - 160 * s:.0f} {y + 300 * s:.0f} Z" fill="{rim}" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'
+           f'<path d="M{x - 80 * s:.0f} {y + 90 * s:.0f} C{x - 90 * s:.0f} {y + 170 * s:.0f} {x - 108 * s:.0f} {y + 230 * s:.0f} {x - 130 * s:.0f} {y + 276 * s:.0f}" fill="none" stroke="#fff3c8" stroke-width="{12 * s:.0f}" stroke-linecap="round" opacity="0.55"/>'
+           f'<path d="M{x - 108 * s:.0f} {y + 190 * s:.0f} L{x + 108 * s:.0f} {y + 190 * s:.0f} M{x - 126 * s:.0f} {y + 240 * s:.0f} L{x + 126 * s:.0f} {y + 240 * s:.0f}" stroke="#8a5a22" stroke-width="{6 * s:.0f}" opacity="0.7"/>'
+           f'<circle cx="{x:.0f}" cy="{y + 340 * s:.0f}" r="{22 * s:.0f}" fill="#7a5a30" stroke="{INK}" stroke-width="5"/>')
+    return out
+
+
+def scene_belfry():
+    d = Doc(113)
+    r = d.r
+    wall = d.lin([(0, "#4a3d4e"), (0.4, "#7a6a66"), (1, "#8f7b6c")])
+    d.add(f'<rect width="{W}" height="{H}" fill="{wall}"/>')
+    d.add(f'<g opacity="0.45">{stone_blocks(r, 0, 60, W, 830, 150, 74, "#7d6c68", "#948079", "#625560", 0.7)}</g>')
+    d.add(glow(d, 1180, 560, 760, "#ffd8a0", 0.22, ry=420))
+    # two tall arched openings onto the dusk: the big one on the left holds the great bell
+    def opening(x0, x1, top, bottom, moon=None):
+        sky = d.lin([(0, "#2e2a5e"), (0.55, "#a8627a"), (1, "#f2b27a")])
+        out = (f'<path d="{arch_path(x0 - 26, x1 + 26, top + (x1 - x0) / 2, bottom + 26)}" fill="#5a4640" stroke="{INK}" stroke-width="6"/>'
+               f'<path d="{arch_path(x0, x1, top + (x1 - x0) / 2, bottom)}" fill="{sky}"/>')
+        for _ in range(16):
+            sx, sy = r.uniform(x0 + 14, x1 - 14), r.uniform(top + 24, top + (bottom - top) * 0.45)
+            if (sx - (x0 + x1) / 2) ** 2 + (sy - (top + (x1 - x0) / 2)) ** 2 > ((x1 - x0) / 2 - 14) ** 2 and sy < top + (x1 - x0) / 2:
+                continue
+            out += sparkle(sx, sy, r.uniform(3, 7), "#fff6d0", r.uniform(0.6, 1))
+        if moon:
+            mid = d.uid("mk")
+            d.defs.append(f'<mask id="{mid}" maskUnits="userSpaceOnUse" x="{moon[0] - 50}" y="{moon[1] - 50}" width="100" height="100">'
+                          f'<rect x="{moon[0] - 50}" y="{moon[1] - 50}" width="100" height="100" fill="#fff"/>'
+                          f'<circle cx="{moon[0] + 14}" cy="{moon[1] - 10}" r="30" fill="#000"/></mask>')
+            out += f'<circle cx="{moon[0]}" cy="{moon[1]}" r="34" fill="#fff4c4" mask="url(#{mid})"/>'
+        # far hills and the roofs of a little town, so the tower is clearly high up
+        hills = d.lin([(0, "#6a4a78"), (1, "#3e3262")])
+        hy = bottom - (bottom - top) * 0.28
+        out += (f'<path d="M{x0} {hy:.0f} Q{x0 + (x1 - x0) * 0.25:.0f} {hy - 40:.0f} {x0 + (x1 - x0) * 0.5:.0f} {hy - 12:.0f} T{x1} {hy - 24:.0f} L{x1} {bottom} L{x0} {bottom} Z" fill="{hills}"/>')
+        tx = x0 + 18
+        while tx < x1 - 30:
+            w, h = r.uniform(26, 44), r.uniform(26, 42)
+            by = bottom - 14
+            out += (f'<rect x="{tx:.0f}" y="{by - h:.0f}" width="{w:.0f}" height="{h:.0f}" fill="#2e2650"/>'
+                    f'<path d="M{tx - 4:.0f} {by - h:.0f} L{tx + w / 2:.0f} {by - h - 20:.0f} L{tx + w + 4:.0f} {by - h:.0f} Z" fill="#3a2e5e"/>'
+                    f'<rect x="{tx + w * 0.3:.0f}" y="{by - h * 0.6:.0f}" width="7" height="9" fill="#ffd77a"/>')
+            tx += w + r.uniform(8, 22)
+        return out
+    d.add(opening(80, 400, 90, 560))
+    d.add(opening(1730, 1890, 170, 640, moon=(1812, 300)))
+    # the great bell hangs in the big opening
+    d.add(big_bell(d, 240, 170, 0.78))
+    # moonlight spill from the big opening
+    spill = d.lin([(0, "#f0c0a0", 0.2), (1, "#f0c0a0", 0)])
+    d.add(f'<path d="M80 560 L400 560 L860 1080 L260 1080 Z" fill="{spill}" filter="{d.blur(16)}"/>')
+    # heavy timber beams across the top and down the sides, with braces
+    for x in (470, 1640):
+        d.add(f'<rect x="{x - 24}" y="0" width="48" height="830" fill="#5a3e2c" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
+    d.add(f'<rect x="0" y="20" width="{W}" height="40" fill="#5a3e2c" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
+    for bx, dx in ((470, 150), (1640, -150)):
+        d.add(f'<path d="M{bx} 400 L{bx + dx} 60 L{bx + dx * 0.78:.0f} 60 L{bx} 330 Z" fill="#6a4a34" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
+    # a sleepy pigeon pair on the small window's sill, and two hanging lanterns
+    for px in (1790, 1850):
+        d.add(f'<ellipse cx="{px}" cy="618" rx="26" ry="20" fill="#a7a6b4" stroke="{INK}" stroke-width="3"/><circle cx="{px + 18}" cy="604" r="11" fill="#b8b7c4" stroke="{INK}" stroke-width="3"/>'
+              f'<path d="M{px + 28} 604 l10 4 l-10 3 Z" fill="#e8a45a"/><circle cx="{px + 21}" cy="602" r="2.2" fill="{INK}"/>')
+    d.add(lantern(d, 590, 60, 190, 0.9))
+    d.add(lantern(d, 1530, 60, 220, 0.9))
+    # a stout rope coil and a little bell-ringer's stool on the floor, out of the stand-up zone
+    # wooden floor
+    fl = d.lin([(0, "#8a6a4e"), (1, "#54382a")])
+    d.add(f'<rect x="0" y="830" width="{W}" height="250" fill="{fl}"/>')
+    d.add(floor_planks(r, 830, 1080, "#7a5a40", "#9a7652", "#3e2a1e", 6))
+    d.add(f'<rect x="0" y="822" width="{W}" height="14" fill="#4e3424"/>')
+    d.add(f'<path d="M1810 940 q40 -40 80 -4 q-6 40 -46 40 q-44 0 -34 -36 Z" fill="none" stroke="#b08a52" stroke-width="12" stroke-linecap="round"/>'
+          f'<path d="M1822 940 q30 -26 56 -4 q-8 28 -38 28" fill="none" stroke="#d1ad72" stroke-width="7" stroke-linecap="round"/>')
+    d.add(glow(d, 1100, 880, 560, "#ffc87a", 0.22, ry=110))
+    d.add(motes(r, 26, 0, W, 150, 1000, "#ffe9c8", 1.5, 3, avoid=(700, 300, 1650, 1000)))
+    return d.svg(vignette=0.3)
+
+
 def scene_lair():
     d = Doc(112)
     r = d.r
@@ -1921,6 +2006,7 @@ def scenes() -> dict:
         "scene_vault": scene_vault(),
         "scene_goblin_den": scene_goblin_den(),
         "scene_workshop": scene_workshop(),
+        "scene_belfry": scene_belfry(),
         "scene_lair": scene_lair(),
         "scene_map": scene_map(),
         "scene_storeroom": scene_storeroom(),
