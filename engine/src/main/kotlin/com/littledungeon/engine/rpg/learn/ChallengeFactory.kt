@@ -243,7 +243,7 @@ object ChallengeFactory {
         val total = step * shown
         // Wrong answers are near misses: one jump short, one too far, or counting by ones.
         val wrong = listOf(total - step, total + step, total + 1, total - 1).filter { it > 0 && it != total }.distinct().shuffled(r)
-        val options = (listOf(total) + wrong.take(opts - 1)).sorted()
+        val options = (listOf(total) + wrong.take(opts - 1)).shuffled(r)
         val by = when (step) {
             2 -> "twos"
             3 -> "threes"
@@ -380,9 +380,10 @@ object ChallengeFactory {
         return MapChallenge(level, seed, Speech.of(clue), doors, target)
     }
 
-    /** The right number and its nearest neighbors, so wrong choices are close, not silly. */
+    /** The right number and its nearest neighbors, so wrong choices are close, not silly, in no particular order. */
     fun numberOptions(answer: Int, count: Int, r: Random): List<Int> {
         val near = (1..maxOf(answer + count, count + 1)).filter { it != answer }.sortedBy { kotlin.math.abs(it - answer) * 10 + r.nextInt(10) }
-        return (listOf(answer) + near.take(count - 1)).sorted()
+        // Shuffled, so where the right card sits tells nothing: sorted, it was the middle one far too often.
+        return (listOf(answer) + near.take(count - 1)).shuffled(r)
     }
 }
