@@ -35,7 +35,7 @@ Everything the child does happens in `rpg/run`:
 - **A journey is its seed and the child's taps.** Every random draw comes from `Random(seed)`, and every tap is a `Command` (a `Reply` and its
   time). `Journey.replay(seed, hero, skills, world, commands)` rebuilds the same journey beat for beat. This is how the app saves after every
   tap and how a playtest note can be replayed. Nothing in the engine may use another source of randomness or time.
-- **Days.** `Beat.effortSeconds()` estimates how long a beat takes a child. After `Journey.DAY_SECONDS` of it, the party camps (`Beat.Night`).
+- **Days.** `Beat.effortSeconds()` estimates how long a beat takes a child. After `Settings.dayMinutes` of it, the party camps (`Beat.Night`).
 
 What the journey is made from, in `rpg/*`:
 
