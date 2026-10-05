@@ -1441,6 +1441,253 @@ def scene_belfry():
     return d.svg(vignette=0.3)
 
 
+def bunting(d, x0, x1, y0, y1, sag, n, colors):
+    """A sagging string of little flags from (x0, y0) to (x1, y1)."""
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2 + 2 * sag
+    out = f'<path d="M{x0} {y0} Q{cx:.0f} {cy:.0f} {x1} {y1}" stroke="#4a3a30" stroke-width="4" fill="none"/>'
+    for i in range(n):
+        t = (i + 0.5) / n
+        bx = (1 - t) ** 2 * x0 + 2 * t * (1 - t) * cx + t ** 2 * x1
+        by = (1 - t) ** 2 * y0 + 2 * t * (1 - t) * cy + t ** 2 * y1
+        out += f'<path d="M{bx - 16:.0f} {by - 2:.0f} L{bx + 16:.0f} {by - 2:.0f} L{bx:.0f} {by + 38:.0f} Z" fill="{colors[i % len(colors)]}" stroke="{INK}" stroke-width="3" stroke-linejoin="round" stroke-opacity="0.7"/>'
+    return out
+
+
+def pie(x, y, s=1.0):
+    """A pie with a lattice top, sitting on y."""
+    return (f'<ellipse cx="{x:.0f}" cy="{y + 4 * s:.0f}" rx="{44 * s:.0f}" ry="{10 * s:.0f}" fill="#000" opacity="0.15"/>'
+            f'<path d="M{x - 40 * s:.0f} {y - 10 * s:.0f} L{x + 40 * s:.0f} {y - 10 * s:.0f} L{x + 34 * s:.0f} {y + 2 * s:.0f} L{x - 34 * s:.0f} {y + 2 * s:.0f} Z" fill="#d9a15a" stroke="{INK}" stroke-width="{3.5 * s:.1f}" stroke-linejoin="round"/>'
+            f'<ellipse cx="{x:.0f}" cy="{y - 10 * s:.0f}" rx="{40 * s:.0f}" ry="{12 * s:.0f}" fill="#f0c27a" stroke="{INK}" stroke-width="{3.5 * s:.1f}"/>'
+            f'<path d="M{x - 26 * s:.0f} {y - 14 * s:.0f} L{x + 14 * s:.0f} {y - 6 * s:.0f} M{x - 12 * s:.0f} {y - 18 * s:.0f} L{x + 28 * s:.0f} {y - 10 * s:.0f} M{x + 26 * s:.0f} {y - 14 * s:.0f} L{x - 14 * s:.0f} {y - 6 * s:.0f} M{x + 12 * s:.0f} {y - 18 * s:.0f} L{x - 28 * s:.0f} {y - 10 * s:.0f}" stroke="#b8793a" stroke-width="{3.5 * s:.1f}" stroke-linecap="round"/>')
+
+
+def basket_of_apples(d, x, y, s=1.0):
+    out = (f'<ellipse cx="{x:.0f}" cy="{y + 4:.0f}" rx="{58 * s:.0f}" ry="{10 * s:.0f}" fill="#000" opacity="0.15"/>'
+           f'<path d="M{x - 52 * s:.0f} {y - 36 * s:.0f} L{x + 52 * s:.0f} {y - 36 * s:.0f} L{x + 42 * s:.0f} {y:.0f} L{x - 42 * s:.0f} {y:.0f} Z" fill="#c9a062" stroke="{INK}" stroke-width="{4 * s:.1f}" stroke-linejoin="round"/>')
+    out += "".join(f'<path d="M{x - 48 * s + k * 2:.0f} {y - 36 * s + k * 12 * s:.0f} L{x + 48 * s - k * 2:.0f} {y - 36 * s + k * 12 * s:.0f}" stroke="#8a6a3a" stroke-width="{3 * s:.1f}" opacity="0.7"/>' for k in (1, 2))
+    apples = "".join(apple(x + dx * s, y - 38 * s + dy * s, 0.8 * s, col) for dx, dy, col in ((-30, 0, "#e04a3a"), (0, -8, "#6aa84a"), (30, 0, "#e04a3a"), (-14, 10, "#e8903a"), (16, 10, "#e04a3a")))
+    return apples + out
+
+
+def scene_market_stall():
+    d = Doc(114)
+    r = d.r
+    wall = d.lin([(0, "#e9c9a2"), (0.6, "#d8b088"), (1, "#bf9168")])
+    d.add(f'<rect width="{W}" height="{H}" fill="{wall}"/>')
+    d.add(f'<g opacity="0.3">{stone_blocks(r, 0, 90, W, 830, 170, 84, "#d9b890", "#e6c9a4", "#b8906a", 0.8)}</g>')
+    d.add(glow(d, 1250, 560, 760, "#fff0c4", 0.3, ry=420))
+    # strings of little flags and two lanterns
+    d.add(bunting(d, 0, 1000, 70, 120, 40, 14, ["#e04a3a", "#ffd34d", "#5aa0e0", "#6aa84a", "#d98ac8"]))
+    d.add(bunting(d, 960, 1920, 120, 60, 44, 14, ["#ffd34d", "#e04a3a", "#6aa84a", "#5aa0e0", "#d98ac8"]))
+    d.add(lantern(d, 760, 100, 200, 0.8))
+    d.add(lantern(d, 1420, 90, 190, 0.8))
+    # the stall: shelf behind, counter in front, striped awning over both
+    d.add(f'<rect x="40" y="290" width="26" height="560" fill="#7a4e2e" stroke="{INK}" stroke-width="5"/><rect x="590" y="290" width="26" height="560" fill="#7a4e2e" stroke="{INK}" stroke-width="5"/>')
+    d.add(f'<rect x="66" y="380" width="524" height="150" fill="#9a6a44" stroke="{INK}" stroke-width="4" stroke-opacity="0.6"/>')
+    d.add(shelf_board(66, 590, 452, "#b07a4a", "#7a4e2e", 12))
+    for k, x in enumerate((110, 190, 270, 350, 430, 510)):
+        d.add(pie(x, 452, 0.6) if k % 2 == 0 else bottle(x, 452, 0.6, r.choice(["#e04a3a", "#7fd0a0", "#ffd34d"]), k % 3))
+    stripes = ["#d9473f", "#fff6dc"]
+    for i in range(8):
+        tx0, tx1 = 20 + i * 70, 20 + (i + 1) * 70
+        bx0, bx1 = -20 + i * 80, -20 + (i + 1) * 80
+        d.add(f'<path d="M{tx0} 262 L{tx1} 262 L{bx1} 350 A40 28 0 0 1 {bx0} 350 Z" fill="{stripes[i % 2]}" stroke="{INK}" stroke-width="4" stroke-linejoin="round" stroke-opacity="0.75"/>')
+    d.add(f'<rect x="10" y="246" width="620" height="22" rx="8" fill="#8a5a33" stroke="{INK}" stroke-width="5"/>')
+    # counter
+    d.add(f'<rect x="20" y="540" width="600" height="300" rx="6" fill="#b5804a" stroke="{INK}" stroke-width="6"/>')
+    for k in range(1, 6):
+        d.add(f'<path d="M{20 + k * 100} 556 L{20 + k * 100} 836" stroke="#7a4e2a" stroke-width="4" opacity="0.6"/>')
+    d.add(f'<rect x="4" y="520" width="632" height="34" rx="8" fill="#e0a868" stroke="{INK}" stroke-width="6"/><path d="M20 530 L620 530" stroke="#fff3d6" stroke-width="5" opacity="0.5" stroke-linecap="round"/>')
+    d.add(basket_of_apples(d, 120, 520, 1.0))
+    d.add(pie(260, 520, 1.2) + pie(380, 520, 1.2))
+    d.add(basket_of_apples(d, 520, 520, 0.9))
+    # cobbles
+    fl = d.lin([(0, "#b89a7a"), (1, "#7a5e48")])
+    d.add(f'<rect x="0" y="830" width="{W}" height="250" fill="{fl}"/>')
+    row = 0
+    y = 830
+    while y < H:
+        h = 34 + row * 9
+        x = -r.uniform(0, 60)
+        while x < W:
+            w = r.uniform(70, 120) * (1 + row * 0.1)
+            d.add(f'<rect x="{x + 3:.0f}" y="{y + 3:.0f}" width="{w - 6:.0f}" height="{h - 6:.0f}" rx="{h * 0.3:.0f}" fill="{r.choice(["#c4a888", "#b39478", "#d0b698", "#a88a70"])}" opacity="0.8" stroke="{INK}" stroke-width="2" stroke-opacity="0.25"/>')
+            x += w
+        y += h
+        row += 1
+    d.add(f'<rect x="0" y="822" width="{W}" height="12" fill="#6a4e3a" opacity="0.6"/>')
+    # crates and a barrel at the far right edge, out of the answers' way
+    d.add(crate(1790, 960, 150, 130) + barrel(1850, 835, 110, 130))
+    d.add(glow(d, 1100, 880, 560, "#ffd890", 0.22, ry=110))
+    d.add(motes(r, 22, 0, W, 150, 1000, "#fff0c0", 1.5, 3, avoid=(700, 300, 1650, 1000)))
+    return d.svg(vignette=0.26)
+
+
+def scene_rhyme_bridge():
+    d = Doc(115)
+    r = d.r
+    sk = d.lin([(0, "#79c4ee"), (0.55, "#bfe6f4"), (1, "#fff0c8")])
+    d.add(f'<rect width="{W}" height="{H}" fill="{sk}"/>')
+    d.add(glow(d, 1640, 230, 380, "#fff6c8", 0.55))
+    d.add('<circle cx="1640" cy="230" r="56" fill="#fff4b8" stroke="#ffd36a" stroke-width="5"/>')
+    for cx, cy, s in ((300, 190, 1.2), (1000, 130, 0.9), (1500, 380, 0.8)):
+        for k in range(4):
+            d.add(f'<ellipse cx="{cx + k * 64 * s - 96 * s:.0f}" cy="{cy - (k % 2) * 18 * s:.0f}" rx="{(92 - k * 6) * s:.0f}" ry="{26 * s:.0f}" fill="#fff" opacity="0.7"/>')
+    # far mountains and forested hills across the gorge
+    for cx, base, w, h, col in ((260, 640, 640, 300, ("#c3b6dc", "#9a8cba")), (900, 650, 760, 250, ("#b6c8e0", "#8aa0c4")), (1560, 640, 700, 330, ("#c3b6dc", "#9a8cba"))):
+        g = d.lin([(0, col[0]), (1, col[1])])
+        d.add(f'<path d="M{cx - w / 2} {base} L{cx - w * 0.06} {base - h} L{cx + w * 0.1} {base - h * 0.9} L{cx + w / 2} {base} Z" fill="{g}" stroke="{INK}" stroke-width="3" stroke-opacity="0.2" stroke-linejoin="round"/>')
+        d.add(f'<path d="M{cx - w * 0.16} {base - h * 0.7} L{cx - w * 0.06} {base - h} L{cx + w * 0.1} {base - h * 0.9} L{cx + w * 0.18} {base - h * 0.68} L{cx + w * 0.08} {base - h * 0.74} L{cx} {base - h * 0.64} L{cx - w * 0.07} {base - h * 0.74} Z" fill="#fafafa" opacity="0.9"/>')
+    hills = d.lin([(0, "#8fc06a"), (1, "#5f9a4c")])
+    d.add(f'<path d="M-40 700 Q300 600 640 680 Q1000 610 1400 690 Q1700 620 1960 690 L1960 {H} L-40 {H} Z" fill="{hills}"/>')
+    for x in (120, 380, 1180, 1500, 1780):
+        d.add(pine(x, 710 + r.uniform(-10, 20), r.uniform(0.9, 1.4), "#3f7a4a", "#2f6040"))
+    # the gorge the bridge crosses: deep and blue, with a river far below and mist on top
+    gorge = d.lin([(0, "#8fc4d8"), (1, "#3f7a9a")])
+    d.add(f'<path d="M-40 760 Q480 730 960 770 Q1440 740 1960 764 L1960 840 L-40 840 Z" fill="{gorge}"/>')
+    d.add('<path d="M-40 800 Q300 784 640 806 Q1000 826 1400 800 Q1700 784 1960 804" stroke="#d6f0fa" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="30 26" opacity="0.8"/>')
+    mist = d.lin([(0, "#ffffff", 0), (1, "#ffffff", 0.5)])
+    d.add(f'<rect x="0" y="640" width="{W}" height="130" fill="{mist}"/>')
+    # rope rails with posts
+    for x in (60, 700, 1340, 1900):
+        d.add(f'<rect x="{x - 18}" y="590" width="36" height="260" rx="8" fill="#8a5a33" stroke="{INK}" stroke-width="5"/><path d="M{x - 8} 600 L{x - 8} 840" stroke="#c98f5a" stroke-width="6" opacity="0.6" stroke-linecap="round"/>'
+              f'<circle cx="{x}" cy="590" r="14" fill="#a8693c" stroke="{INK}" stroke-width="4"/>')
+    for (xa, xb) in ((60, 700), (700, 1340), (1340, 1900)):
+        for y0, sag in ((620, 26), (730, 20)):
+            d.add(f'<path d="M{xa} {y0} Q{(xa + xb) / 2} {y0 + 2 * sag} {xb} {y0}" stroke="{INK}" stroke-width="14" fill="none" stroke-linecap="round"/>'
+                  f'<path d="M{xa} {y0} Q{(xa + xb) / 2} {y0 + 2 * sag} {xb} {y0}" stroke="#d8b070" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="14 5"/>')
+    # the deck of the bridge
+    deck = d.lin([(0, "#b98a56"), (1, "#7a5232")])
+    d.add(f'<rect x="0" y="830" width="{W}" height="250" fill="{deck}"/>')
+    d.add(floor_planks(r, 830, 1080, "#a97848", "#c49a68", "#4a2e1e", 6))
+    d.add(f'<rect x="0" y="822" width="{W}" height="14" fill="#5a3a22"/>')
+    d.add(glow(d, 1100, 900, 560, "#ffe0a0", 0.2, ry=110))
+    d.add(motes(r, 20, 0, W, 200, 800, "#ffffff", 1.5, 3, avoid=(700, 300, 1650, 1000)))
+    return d.svg(vignette=0.2)
+
+
+def hanging_bat(x, y, s=1.0, body="#4a3a6a", wing="#3a2c58"):
+    """A bat asleep, upside down, hanging from (x, y) with its wings wrapped round it."""
+    out = f'<path d="M{x} {y - 6 * s:.0f} L{x} {y + 6 * s:.0f}" stroke="{INK}" stroke-width="{3 * s:.1f}" stroke-linecap="round"/>'
+    out += f'<path d="M{x - 3 * s:.0f} {y + 2 * s:.0f} C{x - 30 * s:.0f} {y + 14 * s:.0f} {x - 30 * s:.0f} {y + 50 * s:.0f} {x - 4 * s:.0f} {y + 64 * s:.0f} L{x} {y + 30 * s:.0f} Z" fill="{wing}" stroke="{INK}" stroke-width="{3 * s:.1f}" stroke-linejoin="round"/>'
+    out += f'<path d="M{x + 3 * s:.0f} {y + 2 * s:.0f} C{x + 30 * s:.0f} {y + 14 * s:.0f} {x + 30 * s:.0f} {y + 50 * s:.0f} {x + 4 * s:.0f} {y + 64 * s:.0f} L{x} {y + 30 * s:.0f} Z" fill="{wing}" stroke="{INK}" stroke-width="{3 * s:.1f}" stroke-linejoin="round"/>'
+    out += f'<ellipse cx="{x}" cy="{y + 26 * s:.0f}" rx="{14 * s:.0f}" ry="{22 * s:.0f}" fill="{body}" stroke="{INK}" stroke-width="{3 * s:.1f}"/>'
+    hy = y + 50 * s
+    out += (f'<path d="M{x - 13 * s:.0f} {hy - 4 * s:.0f} L{x - 16 * s:.0f} {hy + 18 * s:.0f} L{x - 3 * s:.0f} {hy + 6 * s:.0f} Z M{x + 13 * s:.0f} {hy - 4 * s:.0f} L{x + 16 * s:.0f} {hy + 18 * s:.0f} L{x + 3 * s:.0f} {hy + 6 * s:.0f} Z" fill="{body}" stroke="{INK}" stroke-width="{2.5 * s:.1f}" stroke-linejoin="round"/>'
+            f'<circle cx="{x}" cy="{hy + 4 * s:.0f}" r="{13 * s:.0f}" fill="{body}" stroke="{INK}" stroke-width="{3 * s:.1f}"/>'
+            f'<circle cx="{x - 5 * s:.0f}" cy="{hy + 2 * s:.0f}" r="{3.2 * s:.1f}" fill="#ffe27a"/><circle cx="{x + 5 * s:.0f}" cy="{hy + 2 * s:.0f}" r="{3.2 * s:.1f}" fill="#ffe27a"/>'
+            f'<path d="M{x - 3 * s:.0f} {hy + 9 * s:.0f} L{x} {hy + 13 * s:.0f} L{x + 3 * s:.0f} {hy + 9 * s:.0f}" stroke="#fff" stroke-width="{1.8 * s:.1f}" fill="none"/>')
+    return out
+
+
+def scene_bat_cave():
+    d = Doc(116)
+    r = d.r
+    bg = d.rad([(0, "#5a4c86"), (0.55, "#3e3566"), (1, "#241f44")], cx=0.6, cy=0.55, r=0.8)
+    d.add(f'<rect width="{W}" height="{H}" fill="{bg}"/>')
+    mask = d.fade_mask(1250, 640, 700, 420, 0.2)
+    lumps = ""
+    for _ in range(26):
+        x, y = r.uniform(0, W), r.uniform(120, 820)
+        lumps += f'<path d="{smooth(blob_pts(r, x, y, r.uniform(90, 220), r.uniform(50, 120), 9, 0.2))}" fill="{r.choice(["#4a3f78", "#5a4e8a", "#3a3162"])}" opacity="0.5"/>'
+    d.add(f'<g mask="{mask}">{lumps}</g>')
+    d.add(glow(d, 1250, 620, 760, "#b8a4ff", 0.16, ry=420))
+    # roof of the cave, with sleeping bats and lanterns they have collected
+    d.add(f'<path d="M0 0 L{W} 0 L{W} 120 Q1500 200 960 150 Q420 200 0 130 Z" fill="#2a2450"/>')
+    d.add(stalactites(r, 0, W, 120, 50, 150, "#2a2450", "#15112e", (60, 120)))
+    for x, y, sc in ((70, 190, 1.1), (220, 160, 0.9), (360, 200, 1.0), (560, 170, 0.8), (1420, 175, 0.9), (1580, 195, 1.1), (1740, 160, 0.9), (1860, 210, 1.0), (1000, 150, 0.7), (1180, 160, 0.7)):
+        d.add(hanging_bat(x, y, sc, r.choice(["#4a3a6a", "#5a4678", "#3e3260"])))
+    for x, yt, yl in ((470, 100, 250), (1300, 100, 230), (1680, 110, 340)):
+        d.add(lantern(d, x, yt, yl, 0.85))
+    # walls and floor
+    d.add(f'<path d="M0 0 L0 820 Q90 700 120 560 Q150 380 70 200 Z" fill="#241f44" opacity="0.7"/>')
+    fl = d.lin([(0, "#4a4070"), (0.3, "#3a3160"), (1, "#241f44")])
+    d.add(f'<path d="M-20 830 Q500 800 1000 820 Q1500 840 1940 810 L1940 1100 L-20 1100 Z" fill="{fl}"/>')
+    d.add(f'<path d="M-20 830 Q500 800 1000 820 Q1500 840 1940 810" stroke="#8a7ac8" stroke-width="5" fill="none" opacity="0.45"/>')
+    for _ in range(18):
+        x, y = r.uniform(0, W), r.uniform(870, 1060)
+        d.add(f'<ellipse cx="{x:.0f}" cy="{y:.0f}" rx="{r.uniform(14, 40):.0f}" ry="{r.uniform(8, 18):.0f}" fill="#5a4e8a" stroke="{INK}" stroke-width="2.5" stroke-opacity="0.4"/>')
+    # a berry bush at the far right edge, and glowing mushrooms at the far left
+    d.add(f'<path d="{smooth(blob_pts(r, 1860, 900, 120, 80, 10, 0.15))}" fill="#3f7a4a" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
+    for bx, by in ((1810, 880), (1860, 850), (1900, 900), (1840, 930), (1790, 920)):
+        d.add(f'<circle cx="{bx}" cy="{by}" r="14" fill="#e04a5a" stroke="{INK}" stroke-width="3"/><circle cx="{bx - 4}" cy="{by - 4}" r="4" fill="#fff" opacity="0.7"/>')
+    for x, y, sc in ((50, 1000, 1.2), (110, 1030, 0.9), (170, 1010, 0.7)):
+        d.add(mushroom(d, x, y, sc, "#7ff0e0", "#d8f0ee", 0.35))
+    d.add(motes(r, 22, 0, W, 200, 900, "#c8b8ff", 1.5, 3, avoid=(700, 300, 1650, 1000)))
+    return d.svg(vignette=0.32)
+
+
+def chandelier(d, x, y, s=1.0):
+    """A gold chandelier hanging by a chain from the top edge, with candles and a warm glow."""
+    out = glow(d, x, y + 20 * s, 300 * s, "#ffd98a", 0.5)
+    out += f'<path d="M{x} -10 L{x} {y - 30 * s:.0f}" stroke="#8a6a2a" stroke-width="{6 * s:.1f}"/>'
+    out += f'<path d="M{x - 8 * s:.0f} {y - 36 * s:.0f} L{x + 8 * s:.0f} {y - 36 * s:.0f} L{x + 14 * s:.0f} {y - 14 * s:.0f} L{x - 14 * s:.0f} {y - 14 * s:.0f} Z" fill="#e8b84a" stroke="{INK}" stroke-width="{3.5 * s:.1f}" stroke-linejoin="round"/>'
+    out += f'<path d="M{x - 110 * s:.0f} {y + 30 * s:.0f} Q{x:.0f} {y + 70 * s:.0f} {x + 110 * s:.0f} {y + 30 * s:.0f}" fill="none" stroke="{INK}" stroke-width="{12 * s:.1f}" stroke-linecap="round"/>'
+    out += f'<path d="M{x - 110 * s:.0f} {y + 30 * s:.0f} Q{x:.0f} {y + 70 * s:.0f} {x + 110 * s:.0f} {y + 30 * s:.0f}" fill="none" stroke="#f0c44a" stroke-width="{7 * s:.1f}" stroke-linecap="round"/>'
+    out += f'<path d="M{x} {y - 14 * s:.0f} L{x} {y + 50 * s:.0f} M{x} {y - 6 * s:.0f} Q{x - 60 * s:.0f} {y + 6 * s:.0f} {x - 110 * s:.0f} {y + 30 * s:.0f} M{x} {y - 6 * s:.0f} Q{x + 60 * s:.0f} {y + 6 * s:.0f} {x + 110 * s:.0f} {y + 30 * s:.0f}" stroke="#f0c44a" stroke-width="{5 * s:.1f}" fill="none" stroke-linecap="round"/>'
+    for k, dx in enumerate((-110, -55, 0, 55, 110)):
+        cy = y + 30 * s + (0 if dx in (-110, 110) else 24 * s if dx == 0 else 14 * s)
+        cx = x + dx * s
+        out += f'<rect x="{cx - 6 * s:.0f}" y="{cy - 30 * s:.0f}" width="{12 * s:.0f}" height="{30 * s:.0f}" rx="{3 * s:.0f}" fill="#fff6dc" stroke="{INK}" stroke-width="{2.5 * s:.1f}" stroke-opacity="0.6"/>'
+        out += flame(cx, cy - 32 * s, 0.4 * s)
+    out += f'<path d="M{x - 8 * s:.0f} {y + 50 * s:.0f} L{x} {y + 78 * s:.0f} L{x + 8 * s:.0f} {y + 50 * s:.0f} Z" fill="#9ad8ff" stroke="{INK}" stroke-width="{3 * s:.1f}" stroke-linejoin="round"/>'
+    return out
+
+
+def scene_ballroom():
+    d = Doc(117)
+    r = d.r
+    wall = d.lin([(0, "#8a5a7a"), (0.4, "#c98a8a"), (1, "#e8b890")])
+    d.add(f'<rect width="{W}" height="{H}" fill="{wall}"/>')
+    d.add(f'<g opacity="0.25">{stone_blocks(r, 0, 80, W, 820, 190, 90, "#d9a8a0", "#f0c8b0", "#a87088", 0.8)}</g>')
+    d.add(glow(d, 1100, 520, 780, "#ffe8b8", 0.3, ry=420))
+    # two tall windows onto the night, with curtains, at the edges
+    for cx in (230, 1700):
+        x0, x1 = cx - 120, cx + 120
+        sky = d.lin([(0, "#1e2350"), (1, "#5a4a96")])
+        d.add(f'<path d="{arch_path(x0 - 22, x1 + 22, 150 + 120, 780)}" fill="#e8b84a" stroke="{INK}" stroke-width="6"/>')
+        d.add(f'<path d="{arch_path(x0, x1, 150 + 120, 770)}" fill="{sky}"/>')
+        for _ in range(16):
+            sx, sy = r.uniform(x0 + 14, x1 - 14), r.uniform(190, 700)
+            if sy < 270 and (sx - cx) ** 2 + (sy - 270) ** 2 > 106 ** 2:
+                continue
+            d.add(sparkle(sx, sy, r.uniform(4, 9), "#fff6d0", r.uniform(0.6, 1)))
+        d.add(f'<path d="M{cx} 160 L{cx} 770 M{x0} 480 L{x1} 480" stroke="#e8b84a" stroke-width="10"/>')
+        d.add(f'<path d="M{x0 - 70} 130 C{x0 - 40} 300 {x0 - 20} 560 {x0 - 60} 800 L{x0 + 10} 800 C{x0 + 20} 560 {x0 + 20} 300 {x0 + 10} 130 Z" fill="#b8363f" stroke="{INK}" stroke-width="5" stroke-opacity="0.7"/>'
+              f'<path d="M{x1 + 70} 130 C{x1 + 40} 300 {x1 + 20} 560 {x1 + 60} 800 L{x1 - 10} 800 C{x1 - 20} 560 {x1 - 20} 300 {x1 - 10} 130 Z" fill="#b8363f" stroke="{INK}" stroke-width="5" stroke-opacity="0.7"/>')
+    # gold-trimmed star banners on the pilasters between the windows
+    for bx in (520, 1400):
+        d.add(f'<rect x="{bx - 22}" y="0" width="44" height="830" fill="#e8c878" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
+        d.add(banner(bx, 70, 120, 300, "#7a3a9a", "#4a2266", "star"))
+    d.add(chandelier(d, 760, 190, 1.0))
+    d.add(chandelier(d, 1160, 170, 0.9))
+    d.add(f'<rect x="0" y="20" width="{W}" height="26" fill="#e8c878" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
+    # a marble floor, black and white squares running to a point
+    fl = d.lin([(0, "#d8c8b0"), (1, "#a89478")])
+    d.add(f'<rect x="0" y="820" width="{W}" height="260" fill="{fl}"/>')
+    vx, vy, yb = 960, 560, 1160
+    ys = [820, 860, 910, 975, 1055, 1160]
+    for i in range(len(ys) - 1):
+        for j in range(-8, 9):
+            def X(xb, y):
+                return vx + (xb - vx) * (y - vy) / (yb - vy)
+            xa, xb2 = 960 + j * 300, 960 + (j + 1) * 300
+            pts = [(X(xa, ys[i]), ys[i]), (X(xb2, ys[i]), ys[i]), (X(xb2, ys[i + 1]), ys[i + 1]), (X(xa, ys[i + 1]), ys[i + 1])]
+            if max(p[0] for p in pts) < 0 or min(p[0] for p in pts) > W:
+                continue
+            col = "#f6eedd" if (i + j) % 2 == 0 else "#7a6a8a"
+            d.add(f'<polygon points="{" ".join(f"{x:.0f},{y:.0f}" for x, y in pts)}" fill="{col}" opacity="0.72"/>')
+    d.add(f'<rect x="0" y="812" width="{W}" height="14" fill="#c9a84a" stroke="{INK}" stroke-width="3" stroke-opacity="0.5"/>')
+    # confetti and sparkles, kept out of the middle
+    for _ in range(40):
+        x, y = r.uniform(0, W), r.uniform(60, 1040)
+        if 700 < x < 1650 and 260 < y < 1000:
+            continue
+        d.add(f'<rect x="{x:.0f}" y="{y:.0f}" width="10" height="5" rx="2" fill="{r.choice(["#ffd34d", "#ff8aa8", "#7fd0ff", "#b58cff", "#7fe0a0"])}" transform="rotate({r.uniform(0, 180):.0f} {x:.0f} {y:.0f})" opacity="0.85"/>')
+    d.add(motes(r, 24, 0, W, 150, 1000, "#fff0c0", 1.5, 3, avoid=(700, 300, 1650, 1000)))
+    return d.svg(vignette=0.25)
+
+
 def scene_lair():
     d = Doc(112)
     r = d.r
@@ -2006,6 +2253,10 @@ def scenes() -> dict:
         "scene_goblin_den": scene_goblin_den(),
         "scene_workshop": scene_workshop(),
         "scene_belfry": scene_belfry(),
+        "scene_market_stall": scene_market_stall(),
+        "scene_rhyme_bridge": scene_rhyme_bridge(),
+        "scene_bat_cave": scene_bat_cave(),
+        "scene_ballroom": scene_ballroom(),
         "scene_lair": scene_lair(),
         "scene_map": scene_map(),
         "scene_storeroom": scene_storeroom(),

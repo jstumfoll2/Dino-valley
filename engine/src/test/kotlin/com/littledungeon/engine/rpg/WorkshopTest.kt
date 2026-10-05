@@ -71,3 +71,21 @@ class BellSongTest {
         assertTrue(lengths[2].second.any { c -> c.song.zipWithNext().any { (a, b) -> a == b } })
     }
 }
+
+class EveryRoomTest {
+    @Test
+    fun `every kind of room deals a puzzle of its own skill, with one try, on a backdrop that exists`() {
+        for (kind in RoomKind.learningRooms) {
+            val j = Journey(11, Hero(), SkillBook(), WorldMemory(), Clock { 0L })
+            val steps = j.roomPuzzle(kind, j.roomScene(kind), solved = { emptyList() }, failed = { emptyList() })
+            val ask = steps.map { it.beat }.filterIsInstance<Beat.Ask>().single()
+            assertTrue(ask.challenge.skill == kind.skill, "$kind deals ${ask.challenge.skill}")
+            assertTrue(ask.oneTry, "$kind is one try")
+        }
+        // The rooms the newer skills are dealt in: every skill with a room is reached by dungeons.
+        val skillsWithRooms = RoomKind.learningRooms.mapNotNull { it.skill }.toSet()
+        for (s in listOf(com.littledungeon.engine.rpg.learn.Skill.MONEY, com.littledungeon.engine.rpg.learn.Skill.RHYMES, com.littledungeon.engine.rpg.learn.Skill.SHARING, com.littledungeon.engine.rpg.learn.Skill.MAPS, com.littledungeon.engine.rpg.learn.Skill.LISTENING, com.littledungeon.engine.rpg.learn.Skill.RECIPES)) {
+            assertTrue(s in skillsWithRooms, "$s has a room")
+        }
+    }
+}

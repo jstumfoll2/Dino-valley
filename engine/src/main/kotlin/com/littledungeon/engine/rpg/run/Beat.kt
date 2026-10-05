@@ -26,6 +26,12 @@ data class Place(val id: String) {
         val MOSAIC_HALL = Place("mosaic_hall")
         val WORKSHOP = Place("workshop")
         val BELFRY = Place("belfry")
+        val MARKET_STALL = Place("market_stall")
+        val RHYME_BRIDGE = Place("rhyme_bridge")
+        val BAT_CAVE = Place("bat_cave")
+
+        /** Hoot's map table is the old parchment backdrop, `art_scene_map`. */
+        val MAP_TABLE = Place("map")
         val WORLD_MAP = Place("world_map")
     }
 }
@@ -44,6 +50,10 @@ fun placeOf(kind: RoomKind): Place = when (kind) {
     RoomKind.MOSAIC_HALL -> Place.MOSAIC_HALL
     RoomKind.WORKSHOP -> Place.WORKSHOP
     RoomKind.BELFRY -> Place.BELFRY
+    RoomKind.MARKET_STALL -> Place.MARKET_STALL
+    RoomKind.RHYME_BRIDGE -> Place.RHYME_BRIDGE
+    RoomKind.BAT_CAVE -> Place.BAT_CAVE
+    RoomKind.MAP_ROOM -> Place.MAP_TABLE
 }
 
 /** Who can be on screen. COMPANION is the child's baby dragon. */

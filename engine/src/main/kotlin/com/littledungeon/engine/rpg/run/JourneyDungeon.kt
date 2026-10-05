@@ -91,6 +91,10 @@ internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JSt
             rooms.workshopOops(), rooms.workshopYay(), Obstacle.RIDDLE,
         )
         RoomKind.BELFRY -> Room5(rooms.belfry(), ChallengeFactory.bells(lv(Skill.LISTENING), seed), rooms.belfryOops(), rooms.belfryYay(), Obstacle.RIDDLE)
+        RoomKind.MARKET_STALL -> Room5(rooms.marketStall(), PictureFactory.money(lv(Skill.MONEY), seed), rooms.marketStallOops(), rooms.marketStallYay(), Obstacle.LOCK)
+        RoomKind.RHYME_BRIDGE -> Room5(rooms.rhymeBridge(), PictureFactory.rhyme(lv(Skill.RHYMES), seed), rooms.rhymeBridgeOops(), rooms.rhymeBridgeYay(), Obstacle.CROSS)
+        RoomKind.BAT_CAVE -> Room5(rooms.batCave(), PictureFactory.share(lv(Skill.SHARING), seed), rooms.batCaveOops(), rooms.batCaveYay(), Obstacle.DARK)
+        RoomKind.MAP_ROOM -> Room5(rooms.mapRoom(), PictureFactory.map(lv(Skill.MAPS), seed), rooms.mapRoomOops(), rooms.mapRoomYay(), Obstacle.RIDDLE)
         else -> Room5(rooms.mosaic(), ChallengeFactory.puzzle(lv(Skill.PUZZLES), seed), rooms.mosaicOops(), rooms.mosaicYay(), Obstacle.RIDDLE)
     }
     return listOf(tell(s, intro), askOnce(s, c, oops, yay, obstacle, onWin = { solved() }, onFail = { listOf(tell(s, say.failedFor(obstacle))) + failed() }))
@@ -189,12 +193,15 @@ internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge =
     "bats" -> PictureFactory.share(level(Skill.SHARING), nextSeed(), step.intro, PictureFactory.ShareTheme.BATS)
     "map" -> PictureFactory.map(level(Skill.MAPS), nextSeed(), step.intro)
     "bells" -> ChallengeFactory.bells(level(Skill.LISTENING), nextSeed(), step.intro)
-    "trace" -> tunnelTrace(level(Skill.TRACING), nextSeed(), step.intro, "to light the lanterns.").let { c ->
-        // The words of a line or a shape have no room for the boss's own, so theirs go first; a letter's already begin with them.
-        if (c.glyph == null) c.copy(prompt = Speech.of("${step.intro} ${com.littledungeon.engine.model.Voice.caption(c.prompt)}")) else c
-    }
+    "trace" -> traceStep(step, "to light the lanterns.")
     else -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")
 }
+
+/** A tracing puzzle in a boss's own words. A line or a shape has no room for them in its sentence, so they go first; a letter's already begin with them. */
+private fun Journey.traceStep(step: PeaceStep, goal: String): Challenge =
+    tunnelTrace(level(Skill.TRACING), nextSeed(), step.intro, goal).let { c ->
+        if (c.glyph == null) c.copy(prompt = Speech.of("${step.intro} ${com.littledungeon.engine.model.Voice.caption(c.prompt)}")) else c
+    }
 
 /** The story ends: a page of the Storybook comes home, and what the child chose is remembered. */
 private fun Journey.ending(l: Location, fought: Boolean, friend: Boolean = false): List<JStep> {

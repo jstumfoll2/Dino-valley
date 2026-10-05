@@ -129,6 +129,42 @@ internal class RoomLines(private val r: Random) {
 
     fun belfryYay() = pick("The bells ring out in a happy song! <pet>You have good ears!", "You played the song! All the bells ring together, and the door swings open.")
 
+    fun marketStall() = pick(
+        "A market stall with a striped awning! The stallkeeper has too many pies, and cannot work out the coins. <pet>Ooh, it smells so good!",
+        "Pies and apples are piled high at a busy little stall. The stallkeeper waves, and holds out a hand for coins.",
+    )
+
+    fun marketStallOops() = pick("Clink. Those coins are not right for this pie. Look at the price again!", "The stallkeeper shakes their head. That is not the right amount. Count the coins again!")
+
+    fun marketStallYay() = pick("Just the right coins! The stallkeeper hands over a warm pie. <pet>Yum!", "That is exactly right! The stallkeeper smiles, and the door opens.")
+
+    fun rhymeBridge() = pick(
+        "A rope bridge hangs over a deep, deep gorge. Its planks are pictures, and they only hold for words that rhyme! <pet>Wobble, wobble!",
+        "A swaying bridge, with a picture painted on every plank. The old troll who built it says only a rhyming word can cross.",
+    )
+
+    fun rhymeBridgeOops() = pick("The plank wobbles and groans. That one does not rhyme! Listen to the ends of the words.", "Creak! The bridge shakes. Those words do not sound the same at the end.")
+
+    fun rhymeBridgeYay() = pick("The planks click into place, and the bridge stands still. <pet>Rhymes are fun!", "You found the rhyme! The bridge stops swaying, and you cross.")
+
+    fun batCave() = pick(
+        "A dark cave full of sleeping bats! A heap of berries sits on a rock, and the bats are hungry. <pet>They want to share, but they cannot count!",
+        "Dozens of little bats hang from the ceiling, and a pile of berries waits below. They will only let you pass if the berries are shared fairly.",
+    )
+
+    fun batCaveOops() = pick("The bats squeak and flap. That is not fair! Share the berries again.", "Squeak! One bat got too few. Try sharing again.")
+
+    fun batCaveYay() = pick("Every bat gets the same! The bats cheer with tiny squeaks, and let you through.", "That is fair! The bats munch happily, and the way is open.")
+
+    fun mapRoom() = pick(
+        "Professor Hoot's map table! An old map lies unrolled, with a circle to start from. <pet>Where is the treasure?",
+        "A big old map is spread out on a table. A little circle shows where to start, and the route is written beside it.",
+    )
+
+    fun mapRoomOops() = pick("Hmm, there is nothing buried there. Follow the route again, one step at a time!", "Not that square! Start at the circle, and count the steps carefully.")
+
+    fun mapRoomYay() = pick("X marks the spot! You found the treasure, and the door swings open.", "You followed the map just right! Hoot would be so proud.")
+
     fun vault() = pick("A treasure vault! A big chest with a magic lock sits in the middle.", "Gold glitters everywhere! This is a treasure vault.")
 
     fun vaultOops() = pick("[coins] The coins jump back out of your bag.", "The chest burps! [burp]")
