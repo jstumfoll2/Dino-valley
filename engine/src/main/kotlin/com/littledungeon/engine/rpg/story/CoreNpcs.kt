@@ -355,7 +355,7 @@ object CoreNpcs {
         "grumble", "Grumble the Troll", "Troll of Old Stone Bridge", Who.GROWLER,
         "Grumble has guarded the bridge since his friends moved away. He took Finn's boat to build a raft so he could visit them, but he is too shy to say so, so he just growls at everyone.",
         "Stop! This is my bridge. Nobody crosses without paying the toll. Three coins.",
-        listOf(Start("friend", Flag("grumble_befriended")), Start("hub")),
+        listOf(Start("friend", Flag("grumble_befriended")), Start("passed", Flag("run:grumble_paid")), Start("passed", Flag("run:grumble_beaten")), Start("hub")),
         listOf(
             n(
                 "hub", "Well? Are you paying, or not?",
@@ -378,16 +378,18 @@ object CoreNpcs {
                 "befriend", "You... you want to be my friend? <narrator>A very big tear rolls down a very big nose. <growler>I will take the boat back to Finn right away. And you may cross any time. Friends do not pay tolls.",
                 listOf(bye()), listOf(SetFlag("grumble_befriended"), SetFlag("friend:grumble_troll"), Relation("grumble", 5), Heal(99)),
             ),
-            n("beaten", "Ow. All right, you win. Cross, if you must.", listOf(bye())),
+            n("beaten", "Ow. All right, you win. Cross, if you must.", listOf(bye()), listOf(SetFlag("run:grumble_beaten"))),
+            n("passed", "We have settled things, you and I. Cross the bridge whenever you like.", listOf(bye("Wave goodbye"))),
             n("friend", "My friend! Cross whenever you like. Finn has his boat back, and I have been practicing my waving.", listOf(bye("Wave goodbye"))),
         ),
+        passFlags = listOf("run:grumble_paid", "grumble_befriended", "run:grumble_beaten"),
     )
 
     val bess = Npc(
         "bandit_bess", "Bandit Bess", "Bandit of Windy Pass", Who.SNEAK,
         "Bess is not really a bad person. She has a little brother to feed and no other way to do it. She takes tolls from travelers because nobody ever gave her a job.",
         "Halt! This is my pass. Five coins to cross, or play for it.",
-        listOf(Start("friend", Flag("bess_befriended")), Start("hub")),
+        listOf(Start("friend", Flag("bess_befriended")), Start("passed", Flag("run:bess_paid")), Start("passed", Flag("run:bess_beaten")), Start("hub")),
         listOf(
             n(
                 "hub", "Well? What will it be?",
@@ -395,6 +397,7 @@ object CoreNpcs {
                     o("Pay five coins", "talk_coin", "paid", listOf(Pay(5)), needs = listOf(Coins(5), NoFlag("run:bess_paid"))),
                     o("Sing her a song", "talk_sing", "song", needs = listOf(Stat(Attribute.KINDNESS, 2))),
                     o("Fight her", "talk_fight", null, listOf(Fight("bandit_bess", "beaten"))),
+                    bye("Back away"),
                 ),
             ),
             n("paid", "Pleasure. Off you go. And no, I am not saving up for anything. Do not ask me about my brother.", listOf(o("Tell me about your brother", "talk_listen", "brother", listOf(SetFlag("run:bess_paid"))), bye()), listOf(SetFlag("run:bess_paid"))),
@@ -407,9 +410,11 @@ object CoreNpcs {
                 "friend_made", "Hob would give me a job? And you would help me? Then I do not need to be a bandit at all! <narrator>Bess shows you a secret path over the mountain that only she knows. <sneak>Use it any time, friend.",
                 listOf(bye()), listOf(SetFlag("bess_befriended"), SetFlag("friend:bandit_bess"), Relation("bandit_bess", 5)),
             ),
-            n("beaten", "Ow. You are tougher than you look. Go on, then. The pass is yours.", listOf(bye())),
+            n("beaten", "Ow. You are tougher than you look. Go on, then. The pass is yours.", listOf(bye()), listOf(SetFlag("run:bess_beaten"))),
+            n("passed", "We are square, you and me. Off you go.", listOf(bye("Wave goodbye"))),
             n("friend", "My friend! The secret path is always open for you. And tell Hob I start my new job on Monday.", listOf(bye("Wave goodbye"))),
         ),
+        passFlags = listOf("run:bess_paid", "bess_befriended", "run:bess_beaten"),
     )
 
     val fern = Npc(

@@ -65,6 +65,7 @@ internal fun Journey.travel(): List<JStep> {
 internal fun Journey.go(road: Road): List<JStep> {
     moves++
     val from = here
+    cameFrom = from
     val dest = kingdom.location(road.other(from))
     val terrain = terrainOf(road)
     val s = scene(roadPlace(terrain))
@@ -95,8 +96,8 @@ internal fun Journey.go(road: Road): List<JStep> {
 /** A road monster fitted to the road: little ones on easy roads, a chance of a tough one on dangerous ones. */
 internal fun Journey.roadMonster(terrain: Terrain, danger: Int): Monster {
     val tier = if (danger >= 2 && random.nextInt(100) < 40) Tier.ELITE else Tier.MINION
-    val pool = Content.monsters.filter { it.tier == tier && (it.habitat.isEmpty() || terrain in it.habitat) }
-        .ifEmpty { Content.monsters.filter { it.tier == tier } }
+    val pool = Content.monsters.filter { it.roams && it.tier == tier && (it.habitat.isEmpty() || terrain in it.habitat) }
+        .ifEmpty { Content.monsters.filter { it.roams && it.tier == tier } }
     return pool.random(random)
 }
 

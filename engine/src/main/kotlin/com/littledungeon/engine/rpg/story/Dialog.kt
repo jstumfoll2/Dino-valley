@@ -116,6 +116,11 @@ data class Npc(
     val nodes: List<DialogNode>,
     /** True for shopkeepers and the like, who run a shop of this id. */
     val shop: String? = null,
+    /**
+     * Not empty for someone who holds the way (a troll at a bridge, a bandit at a pass): the hero is sent back the
+     * way they came after talking to them unless one of these things is true (paid, befriended, beaten).
+     */
+    val passFlags: List<String> = emptyList(),
 ) {
     val art: String get() = "npc_$id"
     fun node(id: String): DialogNode = nodes.first { it.id == id }

@@ -50,4 +50,13 @@ class BalanceTest {
         val rare = listOf(Skill.TRACING, Skill.MEMORY, Skill.SORTING, Skill.PUZZLES).sumOf { batch.share(it) }
         assertTrue(rare >= 0.04, "tracing, memory, sorting and jigsaws were 1% each; now ${"%.1f".format(rare * 100)}% together")
     }
+
+    @Test
+    fun nobodyIsForcedToFightOrAmbushedByAFriend() {
+        for (accuracy in listOf(0.6, 0.9)) {
+            val batch = BalanceSim.run(accuracy, children = 5, journeysEach = 6)
+            assertEquals(0, batch.forcedFights, "at $accuracy a conversation offered only a fight")
+            assertEquals(0, batch.namedAmbushes, "at $accuracy a person with a story was met as a random monster")
+        }
+    }
 }

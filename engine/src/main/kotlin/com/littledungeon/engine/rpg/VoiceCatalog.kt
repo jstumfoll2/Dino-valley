@@ -137,6 +137,9 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         for (thing in Thing.entries) hear(Speech.of(addStory("", thing, have, more, missing)))
         hear(Speech.of(vaultStory(have, more, missing)))
     }
+    // Lines that name a person, for every person it can name.
+    val lines = JourneyLines(Random(1))
+    for (npc in Content.npcs.filter { it.passFlags.isNotEmpty() }) repeat(40) { hear(Speech.of(lines.tollBlocked(npc.name))) }
     val own = Content.npcs.flatMap { n -> n.nodes.flatMap { it.effects + it.options.flatMap { o -> o.effects } } }
         .filterIsInstance<Effect.Puzzle>().mapNotNull { e -> e.skill?.let { Costume(it, e.ask.orEmpty(), e.thing ?: Thing.STONE) } }
     val costumes = Obstacle.entries.flatMap { costumesFor(it) } + own +

@@ -74,6 +74,9 @@ class Journey(
 
     val visited = mutableSetOf(kingdom.camp.id)
 
+    /** Where the hero set off from on the road that led here, so someone who holds the way can send them back. */
+    internal var cameFrom: String = kingdom.camp.id
+
     /** Health now; the most is [Hero.maxHp]. */
     var hp: Int = startHero.maxHp
         internal set

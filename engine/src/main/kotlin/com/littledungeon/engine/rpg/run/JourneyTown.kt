@@ -73,9 +73,21 @@ internal fun Journey.wild(l: Location, first: Boolean): List<JStep> {
     val people = l.residents.mapNotNull { Content.npc(it) }
     if (people.isNotEmpty()) {
         val someone = people.firstOrNull { p -> p.starts.any { holds(it.needs) } }
-        return steps + if (someone != null) talk(someone) { emptyList() } else listOf(tell(s, say.quiet(l.name)))
+        return steps + if (someone != null) talk(someone) { tollCheck(l, someone) } else listOf(tell(s, say.quiet(l.name)))
     }
     return steps + if (first) wildEvent(l, s) else listOf(tell(s, say.quiet(l.name)))
+}
+
+/**
+ * Someone who holds the way lets the hero by once they have paid, made friends or been beaten. Otherwise the hero is sent
+ * back the way they came and that road is closed for a few moves, and can go around, or come back with what is wanted.
+ */
+internal fun Journey.tollCheck(l: Location, npc: Npc): List<JStep> {
+    if (npc.passFlags.isEmpty() || npc.passFlags.any { hasFlag(it) }) return emptyList()
+    val back = kingdom.location(cameFrom)
+    kingdom.roadBetween(l.id, back.id)?.let { closed[it.id] = moves + 3 }
+    here = back.id
+    return listOf(tell(sceneAt(l, npc), say.tollBlocked(npc.name)))
 }
 
 /** Something happens at a place nobody lives: a chest, a shrine, a fight, a traveler or a hidden room. */

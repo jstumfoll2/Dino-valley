@@ -60,6 +60,11 @@ internal class JourneyLines(private val r: Random) {
 
     fun quiet(name: String) = pick("It is quiet at $name now. Time to move on.", "Nothing new at $name. <pet>Let's keep going!")
 
+    fun tollBlocked(name: String) = pick(
+        "$name will not let you pass yet. <pet>Let's find another way, or come back when you are ready.",
+        "$name still blocks the way. <pet>We can pay, make friends, or go around.",
+    )
+
     fun backAtCamp() = pick("Back at camp! Everyone is happy to see you. <pet>Home sweet home!", "Camp at last. The fire crackles, and you rest your feet.")
 
     // ------------------------------------------------------------- obstacles
