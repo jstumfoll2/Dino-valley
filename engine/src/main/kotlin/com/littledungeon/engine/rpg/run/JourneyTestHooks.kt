@@ -8,3 +8,6 @@ internal fun Journey.testShop(shopId: String): List<JStep> =
 
 /** The rooms a dungeon deals for this journey (dealt on first ask, then kept). */
 internal fun dealtRooms(j: Journey, dungeon: com.littledungeon.engine.rpg.world.Location): List<com.littledungeon.engine.rpg.world.RoomKind> = j.planOf(dungeon)
+
+/** How many wrong answers sparkle magic can still take away this journey. */
+internal fun Journey.sparklesLeft(): Int = sparkleLeft

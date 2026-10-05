@@ -81,6 +81,9 @@ object BalanceSim {
         var ambush = false
         while (!j.finished && guard++ < 4000) {
             val b = j.beat
+            // An encounter is announced ("A fox blocks the way!") and the fight starts on the very next beat.
+            val ambushNow = ambush
+            ambush = false
             val before = seconds
             val speechSeconds = b.speech().firstOrNull()?.let { words(it) / 2.3 } ?: 0.0
             b.speech().firstOrNull()?.let { spokenWords += words(it) }
@@ -91,8 +94,7 @@ object BalanceSim {
                 batch.battles++
                 batch.monsters.merge(battle.foe.id, 1, Int::plus)
                 // A road or wild encounter is announced ("A fox blocks the way!"); a fight picked in a conversation is not.
-                if (ambush && battle.foe.id in NAMED_FOES) batch.namedAmbushes++
-                ambush = false
+                if (ambushNow && battle.foe.id in NAMED_FOES) batch.namedAmbushes++
             }
             val reply: Reply = when (b) {
                 is Beat.Tell, is Beat.Found -> {

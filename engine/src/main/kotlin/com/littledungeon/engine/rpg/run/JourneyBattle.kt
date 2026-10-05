@@ -5,6 +5,7 @@ import com.littledungeon.engine.rpg.battle.Monster
 import com.littledungeon.engine.rpg.battle.Tier
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.hero.Attribute
+import com.littledungeon.engine.rpg.hero.Power
 import com.littledungeon.engine.rpg.items.BattleUse
 import com.littledungeon.engine.rpg.items.Item
 import com.littledungeon.engine.rpg.items.ItemKind
@@ -169,7 +170,19 @@ private fun Journey.foeAttacks(f: Fight, place: Place, onWin: () -> List<JStep>,
     val dmg = (f.attack - hero.defense).coerceAtLeast(1)
     hp -= dmg
     val hit = tell(fightScene(place, f), say.foeHits(name, dmg), if (hp > 0) say.healthLine(hp, hero.maxHp) else null)
-    return listOf(hit) + if (hp <= 0) faint(f, place) else turn(f, place, onWin, onEscape)
+    return listOf(hit) + when {
+        hp > 0 -> turn(f, place, onWin, onEscape)
+        braveHeart() -> listOf(tell(fightScene(place, f), say.braveHeart())) + turn(f, place, onWin, onEscape)
+        else -> faint(f, place)
+    }
+}
+
+/** The Knight's power: once a journey, a knock-out is not the end. They stand back up with a quarter of their health. */
+private fun Journey.braveHeart(): Boolean {
+    if (hero.heroClass.power != Power.BRAVE_HEART || "run:brave_heart" in runFlags) return false
+    runFlags += "run:brave_heart"
+    hp = (hero.maxHp / 4).coerceAtLeast(1)
+    return true
 }
 
 // ------------------------------------------------------------- the end of a fight

@@ -4,6 +4,7 @@ import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.battle.Monster
 import com.littledungeon.engine.rpg.battle.Tier
 import com.littledungeon.engine.rpg.content.Content
+import com.littledungeon.engine.rpg.hero.Power
 import com.littledungeon.engine.rpg.world.Location
 import com.littledungeon.engine.rpg.world.LocationKind
 import com.littledungeon.engine.rpg.world.Road
@@ -75,7 +76,7 @@ internal fun Journey.go(road: Road): List<JStep> {
             !road.terrain.monsters -> 0
             road.danger >= 2 -> 70
             else -> 50
-        }
+        } / (if (hero.heroClass.power == Power.KEEN_EYES) 2 else 1) // a Ranger spots trouble early
         if (terrain.monsters && road.id !in opened && random.nextInt(100) < chance) {
             val m = roadMonster(terrain, road.danger)
             listOf(tell(s, say.fightAsk(m.name.lowercase()))) + battle(m, s.place, arrive)

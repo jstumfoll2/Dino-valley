@@ -182,7 +182,7 @@ object CoreNpcs {
                     bye(),
                 ),
             ),
-            n("dragon", "I was a knight when the dragon came down from the peak. I did not fight it. I ran. Do you think that makes me a coward? <narrator>Sparky shakes its head. <pet>Running is smart sometimes!", listOf(o("You are not a coward", "talk_yes", "hub", listOf(Relation("smith_brogan", 1))))),
+            n("dragon", "I was a knight when the dragon came down from the peak. I did not fight it. I ran. Do you think that makes me a coward? <narrator>{name} shakes its head. <pet>Running is smart sometimes!", listOf(o("You are not a coward", "talk_yes", "hub", listOf(Relation("smith_brogan", 1))))),
             n("proof", "Sharp mind, steady hand. You have earned something. This helmet was meant for a knight, and I think you are one.", listOf(bye()), listOf(Give("iron_helm"), SetFlag("brogan_helm"), Relation("smith_brogan", 2))),
             n("proof_fail", "Not quite. Come back with a clearer head, and we will try again.", listOf(bye()), listOf(SetFlag("run:brogan_tried"))),
         ),

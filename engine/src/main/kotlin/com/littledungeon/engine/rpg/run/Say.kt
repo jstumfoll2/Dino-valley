@@ -50,7 +50,7 @@ object Say {
     fun heroLine(c: HeroClass) = when (c) {
         HeroClass.KNIGHT -> "The Knight! Brave and strong."
         HeroClass.WIZARD -> "The Wizard! Full of magic."
-        HeroClass.RANGER -> "The Ranger! Sharp eyes that see behind doors."
+        HeroClass.RANGER -> "The Ranger! Sharp eyes that spot trouble on the road."
         HeroClass.GUARDIAN -> "The Guardian! Everyone wants to be your friend."
         HeroClass.SPELLKEEPER -> "The Spellkeeper! Keeper of runes and stories."
     }

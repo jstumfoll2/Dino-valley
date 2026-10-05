@@ -22,6 +22,7 @@ import com.littledungeon.engine.rpg.run.Journey
 import com.littledungeon.engine.rpg.run.JourneyLines
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Reply
+import com.littledungeon.engine.rpg.run.RoomLines
 import com.littledungeon.engine.rpg.run.PICK_ONE_SKILLS
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.engine.rpg.run.addStory
@@ -150,6 +151,16 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         for (n in npc.nodes) hear(Speech.of("<${npc.who.tag}>${n.says}"))
     }
     for (m in Content.monsters) for (t in listOf(m.taunt, m.beaten, m.wins)) hear(Speech.of(t))
+    // Every line that takes nothing in, every way it can be said: a rare variant is drawn by asking many times.
+    fun everyPlainLine(from: Any) {
+        for (method in from::class.java.declaredMethods) {
+            if (method.parameterCount != 0 || method.returnType != String::class.java || method.isSynthetic) continue
+            method.isAccessible = true
+            repeat(60) { hear(Speech.of(method.invoke(from) as String)) }
+        }
+    }
+    everyPlainLine(JourneyLines(Random(2)))
+    everyPlainLine(RoomLines(Random(3)))
     // Lines that name a person, an item, a monster or a place, for every one of them.
     val lines = JourneyLines(Random(1))
     for (item in Content.items) repeat(30) {

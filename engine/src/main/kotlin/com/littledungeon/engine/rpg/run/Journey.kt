@@ -4,6 +4,7 @@ import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.hero.Attribute
 import com.littledungeon.engine.rpg.hero.Hero
+import com.littledungeon.engine.rpg.hero.Power
 import com.littledungeon.engine.rpg.hero.Progression
 import com.littledungeon.engine.rpg.items.Item
 import com.littledungeon.engine.rpg.items.Slot
@@ -190,6 +191,9 @@ class Journey(
     /** How many puzzles of each skill have been answered this journey, so no skill takes over. */
     internal val skillUse = mutableMapOf<Skill, Int>()
 
+    /** Wrong answers sparkle magic can still take away this journey (see [Hero.sparkleCharges]). */
+    internal var sparkleLeft: Int = startHero.sparkleCharges
+
     /**
      * The puzzle level for a skill: what the child has reached, with the first puzzle of each skill in a
      * journey one level easier so every skill starts with a win. The hero's own level never makes puzzles
@@ -250,14 +254,16 @@ class Journey(
 
     /** Being good to someone is kindness: every point of friendship earns stars of it. */
     internal fun befriend(npcId: String, delta: Int) {
-        world = world.copy(relations = world.relations + (npcId to relation(npcId) + delta))
+        val bonus = if (delta > 0 && hero.heroClass.power == Power.FRIEND_MAGNET) 1 else 0
+        world = world.copy(relations = world.relations + (npcId to relation(npcId) + delta + bonus))
         if (delta > 0) gain(Attribute.KINDNESS, delta * KINDNESS_PER_FRIENDSHIP)
     }
 
     internal fun holds(c: Cond): Boolean = when (c) {
         is Cond.HasItem -> hero.count(c.itemId) >= c.n
         is Cond.Coins -> hero.coins >= c.atLeast
-        is Cond.Stat -> hero.statLevel(c.attribute) >= c.atLeast
+        // A Guardian is a magnet for friends: kind choices are always open to them.
+        is Cond.Stat -> hero.statLevel(c.attribute) >= c.atLeast || (c.attribute == Attribute.KINDNESS && hero.heroClass.power == Power.FRIEND_MAGNET)
         is Cond.Flag -> hasFlag(c.name)
         is Cond.NoFlag -> !hasFlag(c.name)
         is Cond.Friend -> relation(c.npcId) >= c.atLeast

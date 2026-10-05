@@ -17,11 +17,11 @@ enum class Attribute(val word: String) {
 }
 
 /**
- * Original adventurer classes. Each has one special power per adventure that changes how a
- * moment plays out, never one that skips the learning.
+ * Original adventurer classes. Each has one special power that changes how a moment plays out, never one that skips the
+ * learning. What each does in a journey is written next to [Power].
  */
 enum class HeroClass(val title: String, val main: Attribute, val unlockLevel: Int, val power: Power) {
-    KNIGHT("Knight", Attribute.COURAGE, 1, Power.BRAVE_REROLL),
+    KNIGHT("Knight", Attribute.COURAGE, 1, Power.BRAVE_HEART),
     WIZARD("Wizard", Attribute.MAGIC, 1, Power.SPARKLE_HINT),
     RANGER("Ranger", Attribute.WISDOM, 1, Power.KEEN_EYES),
     GUARDIAN("Guardian", Attribute.KINDNESS, 3, Power.FRIEND_MAGNET),
@@ -29,16 +29,19 @@ enum class HeroClass(val title: String, val main: Attribute, val unlockLevel: In
 }
 
 enum class Power {
-    /** Knight: roll the die again once, keeping the better roll. */
-    BRAVE_REROLL,
+    /** Knight: once a journey, a knock-out in a fight is not the end: the Knight stands back up with a quarter of their health and the fight goes on. */
+    BRAVE_HEART,
 
-    /** Wizard and Spellkeeper: hints come one step sooner, ending in a glow on the right answer. */
+    /**
+     * Wizard (one charge a journey) and Spellkeeper (two): sparkle magic takes one wrong answer away from a puzzle that was
+     * missed and gives another look, like a charm; and hints in the forgiving puzzles come one step sooner.
+     */
     SPARKLE_HINT,
 
-    /** Ranger: peeks behind the doors on the map. */
+    /** Ranger: always sees how dangerous a road is, and spots trouble early (half as many ambushes on the road). */
     KEEN_EYES,
 
-    /** Guardian: everyone the hero meets wants to be friends. */
+    /** Guardian: kind choices are always open to them, and every friendship they make is worth one point more. */
     FRIEND_MAGNET,
 }
 
@@ -125,11 +128,22 @@ data class Hero(
     /** Extra health from every healing item. */
     val healBonus: Int get() = statLevel(Attribute.KINDNESS) - 1
 
-    /** Wisdom shows the danger on a road before you take it. */
-    val seesDangers: Boolean get() = statLevel(Attribute.WISDOM) >= 2
+    /** Wisdom shows the danger on a road before you take it, and a Ranger always sees it. */
+    val seesDangers: Boolean get() = statLevel(Attribute.WISDOM) >= 2 || heroClass.power == Power.KEEN_EYES
+
+    /**
+     * Wrong answers sparkle magic can take away in one journey: the Wizard has one, the Spellkeeper two, and from level
+     * [SPARKLE_BREATH_LEVEL] the baby dragon's sparkle breath is one more for everyone.
+     */
+    val sparkleCharges: Int
+        get() = (if (heroClass.power == Power.SPARKLE_HINT) (if (heroClass == HeroClass.SPELLKEEPER) 2 else 1) else 0) +
+            (if (level >= SPARKLE_BREATH_LEVEL) 1 else 0)
 
     fun priceOf(item: Item): Int = (item.price * (100 - discountPercent) / 100).coerceAtLeast(1)
 }
+
+/** The level at which the baby dragon learns sparkle breath. */
+const val SPARKLE_BREATH_LEVEL = 5
 
 object Progression {
     /**
@@ -153,17 +167,17 @@ object Progression {
         return (xp - from).toFloat() / (to - from)
     }
 
+    /**
+     * What levelling up gives, every one of it real: a hat and a cape the hero wears, two more heroes to play, and the
+     * dragon's sparkle breath ([Hero.sparkleCharges]). Rewards that need new painted art (a crown, magic boots, bigger
+     * dragon wings, dragon armor, a rainbow die) are in the improvement plan and are not announced until they exist.
+     */
     val unlocks = listOf(
         Unlock(2, "feather_hat", "You earned a feather hat!"),
         Unlock(3, "class_guardian", "A new adventurer can join: the Guardian!"),
         Unlock(4, "star_cape", "You earned a cape covered in stars!"),
-        Unlock(5, "dragon_sparkles", "Your dragon learned a new trick: sparkle breath!"),
+        Unlock(SPARKLE_BREATH_LEVEL, "dragon_sparkles", "Your dragon learned a new trick: sparkle breath!"),
         Unlock(6, "class_spellkeeper", "A new adventurer can join: the Spellkeeper!"),
-        Unlock(7, "golden_crown", "You earned a golden crown!"),
-        Unlock(8, "dragon_wings", "Your dragon's wings grew big and strong!"),
-        Unlock(9, "magic_boots", "You earned magic boots that sparkle when you walk!"),
-        Unlock(10, "dragon_armor", "Your dragon got shiny silver armor!"),
-        Unlock(12, "rainbow_dice", "You earned a rainbow die!"),
     )
 
     fun unlocksBetween(fromLevel: Int, toLevel: Int): List<Unlock> = unlocks.filter { it.level in (fromLevel + 1)..toLevel }

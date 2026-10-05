@@ -4,6 +4,7 @@ import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.battle.Monster
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.items.Item
+import com.littledungeon.engine.rpg.items.ItemKind
 import com.littledungeon.engine.rpg.items.Obstacle
 import com.littledungeon.engine.rpg.learn.Challenge
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
@@ -171,13 +172,17 @@ private fun Journey.rescue(
     val owned = hero.bag.keys.mapNotNull { Content.item(it) }
     val tool = if (obstacle != null) owned.firstOrNull { obstacle in it.opens } else null
     val charms = if (charmUsed) emptyList() else owned.filter { it.isCharm }.sortedBy { it.guess }.take(2)
-    if (tool == null && charms.isEmpty()) return onFail()
+    // Sparkle magic (the Wizard's, the Spellkeeper's, the baby dragon's breath) works like a charm that is never in the bag.
+    val sparkle = if (!charmUsed && sparkleLeft > 0 && c is PickOne) SPARKLE else null
+    if (tool == null && charms.isEmpty() && sparkle == null) return onFail()
     val options = buildList {
         tool?.let { add(it to "tool") }
         charms.forEach { add(it to "charm") }
+        sparkle?.let { add(it to "sparkle") }
     }
-    val choices = options.map { (item, _) -> Choice("item_${item.id}", "Use the ${item.name}") } + Choice("hub_leave", "Give up")
-    val ask = Speech.of(say.rescueAsk("the " + options.joinToString(" and the ") { it.first.name }))
+    // Sparkle magic has no picture of its own: it is shown as the wand it comes from.
+    val choices = options.map { (item, kind) -> Choice(if (kind == "sparkle") "item_magic_wand" else "item_${item.id}", "Use the ${item.name}") } + Choice("hub_leave", "Give up")
+    val ask = Speech.of(say.rescueAsk())
     return listOf(
         JStep(Beat.Choose(scene, ask, choices)) { reply ->
             val index = (reply as? Reply.Picked)?.index ?: options.size
@@ -189,10 +194,11 @@ private fun Journey.rescue(
                     listOf(tell(scene, say.toolWorks(picked.first.name, obstacle!!))) + onWin(Reply.Solved(2, 0, 0))
                 }
                 else -> {
-                    hero = hero.take(picked.first.id)
+                    val sparkling = picked.second == "sparkle"
+                    if (sparkling) sparkleLeft-- else hero = hero.take(picked.first.id)
                     val more = extraWrong(c, picked.first, wrong)
                     listOf(
-                        tell(scene, say.charmWorks(picked.first.name)),
+                        tell(scene, if (sparkling) say.sparkleWorks() else say.charmWorks(picked.first.name)),
                         askOnce(scene, c, oops, yay, obstacle, prop, wrong + more, charmUsed = true, onWin = onWin, onFail = onFail),
                     )
                 }
@@ -200,6 +206,9 @@ private fun Journey.rescue(
         },
     )
 }
+
+/** Sparkle magic as an item: not in any bag or shop, it takes one wrong answer away. */
+private val SPARKLE = Item("sparkle_magic", "Sparkle Magic", ItemKind.CHARM, "Sparkle magic takes one wrong answer away.", guess = 1)
 
 /** Wrong answers a charm takes away: as many as it says, never the right one or one already out. */
 internal fun Journey.extraWrong(c: Challenge, charm: Item, alreadyOut: List<Int>): List<Int> {
