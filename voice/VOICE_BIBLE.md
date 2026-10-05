@@ -49,6 +49,7 @@ their own and every person in the kingdom on a named voice. Named voices are nev
 | The Ink Shadow | bf_isabella (22), pitch 0.8 | whispery |
 | Skeletons, ghosts | bf_lily (23), pitch 0.9 | spooky |
 | Small creatures | af_sarah (9), pitch 1.1 | squeaky |
+| The Bat King | af_sarah (9), pitch 1.3 | tiny, regal, squeaky |
 | Trolls, wolves, golems | am_fenrir (14), pitch 0.85 | growly |
 
 Speaker choices were made by measuring each speaker's pitch on a test sentence and spreading the characters across the range; **nobody has listened to them yet**, so
@@ -56,7 +57,7 @@ the casting is a first draft for a person's ear (the audition clips can be remad
 
 ## What is wrong with it
 
-- **28 English speakers for about 30 voices:** creature kinds (and the big dragon, the Shadow, spooks) share a speaker with a named character but differ in pitch and pace.
+- **28 English speakers for about 30 voices** (the Bat King is the newest creature voice, a higher pitch of the small creatures' speaker, and has not been heard either): creature kinds (and the big dragon, the Shadow, spooks) share a speaker with a named character but differ in pitch and pace.
 - **Pitch by resampling** changes speed and formants too, and gives raised voices (critters, 1.12) a slight metallic edge.
 - **Every line has the same energy.** There is no whisper, shout, sleepy or excited delivery.
 - **The dragon's name is made on the phone**, not recorded (a grown-up types it), so that sentence sounds a little different.

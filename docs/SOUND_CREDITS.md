@@ -60,6 +60,9 @@ Every "Original file" path below is relative to the root of the repository above
 | `tweet.ogg` | bird chirp (twice) | Ninja Adventure | `ninja-adventure/2D/top-down-rpg/Audio/Sounds/Creature/Bird.wav` (played twice, 0.2 s apart) | Pixel-boy & AAA | CC0 1.0 |
 | `rumble.ogg` | stone door rumbling open | Kenney Foley Sounds | `kenney-foley-sounds/audio/Audio/Rocks/stoneDrag2.ogg` | Kenney | CC0 1.0 |
 | `fizz.ogg` | fizzing potion | synthesized | none (sparse high crackles, hiss and tiny rising bubble blips) | project | CC0 1.0 |
+| `bell_1.ogg` | the Bell Song's low bell (G4, 392 Hz) | synthesized | none (a sine at the note with four faster-fading overtones and a tick of strike) | project | CC0 1.0 |
+| `bell_2.ogg` | the Bell Song's middle bell (C5, 523 Hz) | synthesized | none (as `bell_1.ogg`) | project | CC0 1.0 |
+| `bell_3.ogg` | the Bell Song's high bell (G5, 784 Hz) | synthesized | none (as `bell_1.ogg`) | project | CC0 1.0 |
 
 The synthesized sounds were generated with Python (numpy and scipy) and contain no sampled material.
 

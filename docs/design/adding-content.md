@@ -7,6 +7,7 @@ an id used twice fails when the content is put together. These tests fail with t
 - `ArtCoverageTest`: content that has no picture.
 - `ContentRegistryTest` and `KingdomTest`: ids, the map is one connected world, every lair and dungeon can be reached.
 - `StoryMemoryTest`: the flag rule (below).
+- `ArcsTest`: every story is wired to places and things that exist, plays through both ways, and is remembered.
 - `VoiceCatalogTest`: every sentence a journey can say is in the voice catalog (below).
 
 | To add | Data | Pictures (in `art/src/`, built by `art/build.py`) |
@@ -37,12 +38,16 @@ that gets past them; what happens next is theirs to say.
 1. Name where it ends (`lairId`), the dungeon that must be explored (`keyDungeonId`) and the item its guardian holds (`keyItemId`), and the boss.
 2. `setup` (told at camp), `returnSetup` (shorter, when it has been played), `sealed`, `keyFound`, `gateOpens`, `ask`.
 3. At least one `Variant` (meeting, fight ending, peace ending) so the story can be told more than one way.
-4. `peaceSteps`: the puzzles the boss sets on the peaceful way; `skippedBy` a flag the hero learned along the road lets one be skipped.
+4. `peaceSteps`: the puzzles the boss sets on the peaceful way; `skippedBy` a flag the hero learned along the road lets one be skipped. A step's `kind` is one of
+   `letters`, `pattern`, `colors`, `numbers`, `count`, `rhyme`, `money`, `share` (pies on plates), `bats` (berries for bats), `map`, `bells` and `trace` (`peaceChallenge` in `JourneyDungeon.kt`).
+   A new kind is a line there, a generator, and its sentences in `VoiceCatalog`.
 5. `friendMeeting`, `friendSteps` and `friendEnd` for a boss who was made a friend before; `rivalMeeting` for one who was beaten.
 6. `moments`: clues and scenes shown the first time the hero reaches a place. A story that leaves nothing on the roads is a story told only
    at the end.
 7. At least one new person with a backstory and a choice that matters, and every conversation needs a peaceful way out.
 8. `minChapter` to keep it for later in the campaign.
+9. The key item needs an `Item` in `CoreItems` and an icon (`art/src/items.py`); a new lair is a `Location` of kind `LAIR` with two roads that share nothing, at least five roads from camp, and a
+   backdrop (`theme` names it; the Bat Belfry reuses `scene_belfry`). Add the lair's landmark to the map painting (`belfry_tower` in `art/src/world.py`).
 
 Rules for stories: see `story-variations.md`.
 
