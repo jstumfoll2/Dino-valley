@@ -86,26 +86,35 @@ object Rigs {
         neck = TransformOrigin(0.6f, 0.55f), shoulder = TransformOrigin(0.64f, 0.6f),
     )
 
-    /** The hero for a class, wearing what they've unlocked. */
+    /**
+     * The hero for a class, wearing what they've unlocked and what they have put on. Layers go in a fixed order by
+     * where they sit on the body, never in the order the bag happens to list them: shadow, cape, legs, boots, back
+     * arm, body, body armor (which breathes with the body), head, face, head gear, then the front arm and what is
+     * held in it. Head gear and a held item replace the class's own hat and weapon instead of piling onto them.
+     */
     fun hero(heroClass: HeroClass, unlocked: Set<String>, worn: Map<Slot, String> = emptyMap()): Rig {
         val k = kid(heroClass)
+        fun gear(slot: Slot): Int? = worn[slot]?.let { Art.byName("art_gear_$it") }
         val pieces = buildList {
             add(Piece(k.shadow, Part.STILL))
             if ("star_cape" in unlocked) add(Piece(k.cape, Part.BODY))
             add(Piece(k.legs, Part.STILL))
+            gear(Slot.FEET)?.let { add(Piece(it, Part.STILL)) }
             add(Piece(k.armBack, Part.BODY))
             add(Piece(k.body, Part.BODY))
+            gear(Slot.BODY)?.let { add(Piece(it, Part.BODY)) }
             add(Piece(k.head, Part.HEAD))
             add(Piece(0, Part.FACE))
-            if (Slot.HEAD !in worn) add(Piece(k.hat, Part.HEAD))
-            if ("feather_hat" in unlocked && Slot.HEAD !in worn) add(Piece(k.feather, Part.HEAD))
-            add(Piece(k.gear, Part.ARM))
-            add(Piece(k.armFront, Part.ARM))
-            // What the hero wears, painted over them: hats move with the head, held things with the arm.
-            for ((slot, id) in worn) {
-                val res = Art.byName("art_gear_$id") ?: continue
-                add(Piece(res, when (slot) { Slot.HEAD -> Part.HEAD; Slot.HAND -> Part.ARM; else -> Part.STILL }))
+            if (Slot.HEAD in worn) {
+                gear(Slot.HEAD)?.let { add(Piece(it, Part.HEAD)) }
+            } else {
+                add(Piece(k.hat, Part.HEAD))
+                if ("feather_hat" in unlocked) add(Piece(k.feather, Part.HEAD))
             }
+            // The class's own weapon is put away when the hero holds something else.
+            if (Slot.HAND !in worn) add(Piece(k.gear, Part.ARM))
+            add(Piece(k.armFront, Part.ARM))
+            gear(Slot.HAND)?.let { add(Piece(it, Part.ARM)) }
         }
         return Rig(pieces, k.eyeOpen, k.eyeClosed, k.mouthCalm, k.mouthHappy, k.mouthTalk, neck = TransformOrigin(0.55f, 0.55f), shoulder = TransformOrigin(0.6f, 0.6f))
     }
