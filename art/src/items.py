@@ -200,12 +200,44 @@ def magic_beans():
     ))
 
 
+def mountain_key():
+    """A chunky stone key for the mountain gate: a rough grey bow with a peak cut into it, and a warm amber stone that glows."""
+    stone = "#aaa296"
+    return icon(G("g", stone) + rg("m", [(0, "#fff3c4"), (0.5, "#ffb347"), (1, "#c4651a")], cx=0.35, cy=0.3), (
+        '<circle cx="80" cy="84" r="62" fill="#ffd27a" opacity="0.16"/>'
+        f'<g transform="rotate(-35 80 80)">'
+        f'<path d="M14 82 C14 54 32 40 48 40 C68 40 82 56 82 80 C82 104 68 122 48 122 C30 122 14 108 14 82 Z" fill="url(#g)" {S("#3d3530")}/>'
+        f'<g transform="translate(7.5 13.8) scale(0.85)">'
+        f'<path d="M26 108 L40 78 L47 90 L58 66 L74 108 Z" fill="#6f6a62" {S("#3d3530", 3.5)}/>'
+        f'<path d="M34 90 L40 78 L46 88 L42 86 L38 90 Z" fill="#fff"/><path d="M52 80 L58 66 L66 86 L61 82 L56 86 Z" fill="#fff"/></g>'
+        f'<circle cx="48" cy="54" r="9.5" fill="url(#m)" {S("#3d3530", 3.5)}/>'
+        f'<rect x="76" y="70" width="64" height="20" rx="6" fill="url(#g)" {S("#3d3530")}/>'
+        f'<rect x="108" y="86" width="16" height="26" rx="4" fill="url(#g)" {S("#3d3530", 4)}/><rect x="128" y="86" width="14" height="18" rx="4" fill="url(#g)" {S("#3d3530", 4)}/>'
+        f'<path d="M24 62 C28 52 36 46 46 44" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/></g>'
+        + sparkle(124, 36, 10, "#fff3b0") + sparkle(30, 128, 7, "#fff3b0")
+    ))
+
+
+def glow_silk():
+    """A spool of spider silk that glows: pale blue thread wound on a little wooden spool, with a loose curl and a soft halo."""
+    return icon(G("w", "#c99a5a") + lg("t", [(0, "#f4fdff"), (0.5, "#a8e6ff"), (1, "#5ab8e6")], 0, 0, 1, 1), (
+        '<circle cx="80" cy="84" r="62" fill="#a8e6ff" opacity="0.3"/><circle cx="80" cy="84" r="44" fill="#d8f6ff" opacity="0.3"/>'
+        f'<rect x="44" y="108" width="72" height="16" rx="8" fill="url(#w)" {S()}/><rect x="44" y="36" width="72" height="16" rx="8" fill="url(#w)" {S()}/>'
+        f'<rect x="52" y="48" width="56" height="64" rx="6" fill="url(#t)" {S("#3a7a9a")}/>'
+        + "".join(f'<path d="M52 {y} C68 {y + 6} 92 {y + 6} 108 {y}" fill="none" stroke="#3a7a9a" stroke-width="2.5" opacity="0.55"/>' for y in (60, 72, 84, 96))
+        + f'<path d="M108 84 C132 80 140 104 124 118 C112 128 100 122 108 112" fill="none" {S("#3a7a9a", 6)}/><path d="M108 84 C132 80 140 104 124 118 C112 128 100 122 108 112" fill="none" stroke="#e8fbff" stroke-width="3" stroke-linecap="round"/>'
+        f'<path d="M58 54 L58 104" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>'
+        + sparkle(130, 40, 11, "#fff") + sparkle(30, 78, 8, "#d8f6ff") + sparkle(122, 134, 7, "#fff")
+    ))
+
+
 ITEMS = {
     "berry": berry, "honey_cake": honey_cake, "big_potion": big_potion, "sleep_dust": sleep_dust, "spark_bomb": spark_bomb,
     "smoke_pearl": smoke_pearl, "friendship_cookie": friendship_cookie, "bubble_shield": bubble_shield, "rope": rope,
     "lantern": lantern, "rusty_key": rusty_key, "silver_key": silver_key, "lucky_clover": lucky_clover,
     "owl_feather": owl_feather, "hint_scroll": hint_scroll, "storybook_page": storybook_page, "silver_quill": silver_quill,
     "ink_cleaner": ink_cleaner, "recipe_page": recipe_page, "magic_beans": magic_beans,
+    "mountain_key": mountain_key, "glow_silk": glow_silk,
 }
 
 
