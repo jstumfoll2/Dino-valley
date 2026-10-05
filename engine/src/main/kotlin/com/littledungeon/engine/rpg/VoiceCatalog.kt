@@ -151,6 +151,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
             hear(c.prompt)
             hear(c.because)
         }
+        PictureFactory.map(level, seed).let { hear(it.prompt); hear(it.because) }
     }
     // Every recipe a workshop can ask for: each step is its own sentence, so a few hundred recipes reach them all.
     for (level in 1..5) for (potion in com.littledungeon.engine.rpg.learn.PotionKind.entries) for (seed in 0L until 150L) {

@@ -83,6 +83,7 @@ import com.littledungeon.engine.rpg.learn.MemoryChallenge
 import com.littledungeon.engine.rpg.learn.NumberChallenge
 import com.littledungeon.engine.rpg.learn.PatternChallenge
 import com.littledungeon.engine.rpg.learn.Card
+import com.littledungeon.engine.rpg.learn.GridChallenge
 import com.littledungeon.engine.rpg.learn.PickOne
 import com.littledungeon.engine.rpg.learn.PictureChallenge
 import com.littledungeon.engine.rpg.learn.Shown
@@ -306,6 +307,7 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
             is SkipCountChallenge -> PondRoom(c, turn, zone)
             is PuzzleChallenge -> PuzzleRoom(c, turn, zone)
             is PictureChallenge -> PicturePick(c, turn, zone)
+            is GridChallenge -> TreasureMap(c, turn, zone)
         }
     }
 }
@@ -443,6 +445,37 @@ private fun Pictures(arts: List<String>, w: Dp, h: Dp) {
             }
         }
     }
+}
+
+// ------------------------------------------------------------------ Hoot's treasure map
+
+/** A grid of squares on parchment: follow the route from the circle and tap where the treasure is. */
+@Composable
+private fun TreasureMap(c: GridChallenge, turn: Turn, z: Zone) {
+    val pick = remember { Pick(turn, c) }
+    val cell = minOf(z.width / c.cols, z.h * 0.7f / c.rows)
+    val gridW = cell * c.cols
+    val gridH = cell * c.rows
+    val cx = z.cx
+    val cy = z.h * 0.6f
+    Box(
+        Modifier.at(cx, cy, gridW + 16.dp, gridH + 16.dp).background(Color(0xFFF3E4BF), RoundedCornerShape(12.dp)).border(4.dp, Palette.PaperEdge, RoundedCornerShape(12.dp)),
+    )
+    for (i in 0 until c.optionCount) {
+        val row = i / c.cols
+        val col = i % c.cols
+        val x = cx - gridW / 2 + cell * (col + 0.5f)
+        val y = cy - gridH / 2 + cell * (row + 0.5f)
+        Tile(pick, i, Modifier.at(x, y, cell, cell).spot()) {
+            Box(Modifier.fillMaxSize().padding(2.dp).border(2.dp, Color(0x66B8913F), RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+                if (row == c.startRow && col == c.startCol) Box(Modifier.size(cell * 0.5f).border(5.dp, Palette.Berry, CircleShape))
+                // The treasure shows once the square is found (or shown, when the only try is spent).
+                if (turn.done && i == c.answer) Image(painterResource(Art.byName("art_mini_chest") ?: R.drawable.art_treasure), null, Modifier.size(cell * 0.8f))
+            }
+        }
+    }
+    // With compass words, the compass says which way is north (up).
+    if (c.compass) Image(painterResource(Art.byName("art_mini_compass") ?: R.drawable.art_treasure), null, Modifier.at(z.right - z.h * 0.08f, z.h * 0.3f, z.h * 0.14f, z.h * 0.14f))
 }
 
 // ------------------------------------------------------------------ counting

@@ -146,4 +146,40 @@ object PictureFactory {
             Speech.of("${Words.capital(total)} berries shared by ${Words.number(bats)} bats is ${Words.number(each)} each."),
         )
     }
+
+    private fun said(m: Move, compass: Boolean) = "Go ${if (compass) m.way.compass else m.way.plain} ${Words.number(m.steps)} ${if (m.steps == 1) "step" else "steps"}."
+
+    /** Hoot's treasure map: one to three moves on a grid; compass words from level 4. */
+    fun map(level: Int, seed: Long, intro: String = ""): GridChallenge {
+        val r = Random(seed)
+        val (rows, cols) = when (level) { 1 -> 3 to 3; 2 -> 3 to 4; 3 -> 4 to 4; 4 -> 4 to 5; else -> 5 to 5 }
+        val count = when (level) { 1, 2 -> 1; 3, 4 -> 2; else -> 3 }
+        val compass = level >= 4
+        while (true) {
+            val start = r.nextInt(rows) to r.nextInt(cols)
+            var row = start.first
+            var col = start.second
+            val moves = mutableListOf<Move>()
+            repeat(count) {
+                val options = Way.entries.flatMap { w -> (1..(if (level <= 2) 2 else 3)).map { Move(w, it) } }.filter { m ->
+                    val nr = row + m.way.dRow * m.steps
+                    val nc = col + m.way.dCol * m.steps
+                    nr in 0 until rows && nc in 0 until cols && (moves.isEmpty() || moves.last().way != m.way)
+                }
+                if (options.isEmpty()) return@repeat
+                val m = options.random(r)
+                moves += m
+                row += m.way.dRow * m.steps
+                col += m.way.dCol * m.steps
+            }
+            if (moves.size != count || (row == start.first && col == start.second)) continue
+            val lead = if (intro.isBlank()) "" else "$intro "
+            val route = moves.map { said(it, compass) }
+            return GridChallenge(
+                level, seed, Speech.of("${lead}You start at the circle. ${route.joinToString(" ")} Where is the treasure?"),
+                rows, cols, start.first, start.second, moves, compass,
+                Speech.of("Start at the circle. ${route.joinToString(" ")} That is where the treasure is."),
+            )
+        }
+    }
 }

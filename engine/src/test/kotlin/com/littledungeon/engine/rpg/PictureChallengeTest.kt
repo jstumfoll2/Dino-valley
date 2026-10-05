@@ -75,4 +75,23 @@ class PictureChallengeTest {
             assertTrue(have - change.options[change.answer].label.toInt() in 1 until have)
         }
     }
+
+    @Test
+    fun `a treasure map route stays on the map and ends somewhere new`() {
+        for (level in 1..5) for (s in 0L until 300L) {
+            val c = PictureFactory.map(level, s)
+            assertTrue(c.endRow in 0 until c.rows && c.endCol in 0 until c.cols, "L$level seed $s: the route leaves the map")
+            assertTrue(c.endRow != c.startRow || c.endCol != c.startCol, "the route ends where it began")
+            assertEquals(c.answer, c.endRow * c.cols + c.endCol)
+            // No step takes the child off the map part-way, either.
+            var r = c.startRow
+            var col = c.startCol
+            for (m in c.moves) for (k in 1..m.steps) {
+                r += m.way.dRow
+                col += m.way.dCol
+                assertTrue(r in 0 until c.rows && col in 0 until c.cols)
+            }
+            assertEquals(c.level >= 4, c.compass)
+        }
+    }
 }

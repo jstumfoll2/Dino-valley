@@ -61,6 +61,7 @@ object Coach {
             Speech.of("Count by $by: $said.")
         }
         is PictureChallenge -> c.because
+        is GridChallenge -> c.because
         else -> emptyList()
     }
 }

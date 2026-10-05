@@ -30,6 +30,7 @@ internal fun costumesFor(o: Obstacle): List<Costume> = when (o) {
         Costume(Skill.NUMBERS, "Numbers are carved into the steps."),
         Costume(Skill.MONEY, "A toll keeper sells a rope for coins."),
         Costume(Skill.SHARING, "Hungry bats guard the trail."),
+        Costume(Skill.MAPS, "A treasure map is stuck to the rocks."),
     )
     Obstacle.CROSS -> listOf(
         Costume(Skill.SKIP_COUNTING, "Hop across the river on the lily pads."),
@@ -53,6 +54,7 @@ internal fun costumesFor(o: Obstacle): List<Costume> = when (o) {
         Costume(Skill.COLORS, "The stone face", Thing.GEM),
         Costume(Skill.PATTERNS, "The stone face shows a pattern."),
         Costume(Skill.RHYMES, "The stone face loves rhymes."),
+        Costume(Skill.MAPS, "Professor Hoot's old map is torn."),
     )
 }
 
@@ -76,7 +78,7 @@ internal val BATTLE_SKILLS = listOf(
 )
 
 /** Every skill that has a pick-one puzzle (one tap per try). */
-internal val PICK_ONE_SKILLS = BATTLE_SKILLS + listOf(Skill.RHYMES, Skill.MONEY, Skill.SHARING)
+internal val PICK_ONE_SKILLS = BATTLE_SKILLS + listOf(Skill.RHYMES, Skill.MONEY, Skill.SHARING, Skill.MAPS)
 
 /**
  * One pick-one puzzle for [skill], set up with [intro] and counting [thing]s. The words always say what to
@@ -96,6 +98,7 @@ internal fun Journey.puzzleFor(skill: Skill, intro: String, thing: Thing = Thing
         Skill.RHYMES -> PictureFactory.rhyme(lvl, seed, intro)
         Skill.MONEY -> PictureFactory.money(lvl, seed, intro)
         Skill.SHARING -> PictureFactory.share(lvl, seed, intro)
+        Skill.MAPS -> PictureFactory.map(lvl, seed, intro)
         else -> error("$skill has no pick-one puzzle")
     }
 }
