@@ -10,6 +10,7 @@ import com.littledungeon.engine.rpg.learn.Challenge
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
 import com.littledungeon.engine.rpg.learn.Coach
 import com.littledungeon.engine.rpg.learn.PickOne
+import com.littledungeon.engine.rpg.learn.PictureFactory
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.Words
@@ -27,25 +28,31 @@ internal fun costumesFor(o: Obstacle): List<Costume> = when (o) {
         Costume(Skill.COUNTING, "Count the stones in the staircase."),
         Costume(Skill.ADDITION, "Some stones in the staircase are missing."),
         Costume(Skill.NUMBERS, "Numbers are carved into the steps."),
+        Costume(Skill.MONEY, "A toll keeper sells a rope for coins."),
+        Costume(Skill.SHARING, "Hungry bats guard the trail."),
     )
     Obstacle.CROSS -> listOf(
         Costume(Skill.SKIP_COUNTING, "Hop across the river on the lily pads."),
         Costume(Skill.COUNTING, "Count the stepping stones across the river."),
         Costume(Skill.COLORS, "The river frog", Thing.GEM),
+        Costume(Skill.RHYMES, "The planks of the bridge are pictures."),
     )
     Obstacle.DARK -> listOf(
         Costume(Skill.PATTERNS, "Glowing marks show the safe path."),
         Costume(Skill.COLORS, "The marsh sprite", Thing.GEM),
         Costume(Skill.LETTERS, "Glowing letters show the safe path."),
+        Costume(Skill.SHARING, "Hungry bats squeak in the dark."),
     )
     Obstacle.LOCK -> listOf(
         Costume(Skill.NUMBERS, "The lock wants a number."),
         Costume(Skill.ADDITION, "The lock counts the coins you put in.", Thing.COIN),
+        Costume(Skill.MONEY, "The lock only takes exact coins."),
     )
     Obstacle.RIDDLE -> listOf(
         Costume(Skill.LETTERS, "The stone face wants a letter."),
         Costume(Skill.COLORS, "The stone face", Thing.GEM),
         Costume(Skill.PATTERNS, "The stone face shows a pattern."),
+        Costume(Skill.RHYMES, "The stone face loves rhymes."),
     )
 }
 
@@ -63,10 +70,13 @@ internal fun Journey.pickSkill(candidates: List<Skill>, preferred: Collection<Sk
     }
 }
 
-/** Every skill that has a pick-one puzzle (one tap per try). */
-internal val PICK_ONE_SKILLS = listOf(
+/** The skills a monster can ask in a fight (each dresses as the monster); the newer picture skills are asked at obstacles. */
+internal val BATTLE_SKILLS = listOf(
     Skill.COUNTING, Skill.NUMBERS, Skill.ADDITION, Skill.COLORS, Skill.PATTERNS, Skill.LETTERS, Skill.SKIP_COUNTING,
 )
+
+/** Every skill that has a pick-one puzzle (one tap per try). */
+internal val PICK_ONE_SKILLS = BATTLE_SKILLS + listOf(Skill.RHYMES, Skill.MONEY, Skill.SHARING)
 
 /**
  * One pick-one puzzle for [skill], set up with [intro] and counting [thing]s. The words always say what to
@@ -83,6 +93,9 @@ internal fun Journey.puzzleFor(skill: Skill, intro: String, thing: Thing = Thing
         Skill.PATTERNS -> ChallengeFactory.pattern(lvl, seed, "$intro Which symbol comes next?")
         Skill.LETTERS -> ChallengeFactory.letter(lvl, seed, intro)
         Skill.SKIP_COUNTING -> ChallengeFactory.skipCount(lvl, seed, intro)
+        Skill.RHYMES -> PictureFactory.rhyme(lvl, seed, intro)
+        Skill.MONEY -> PictureFactory.money(lvl, seed, intro)
+        Skill.SHARING -> PictureFactory.share(lvl, seed, intro)
         else -> error("$skill has no pick-one puzzle")
     }
 }
@@ -123,7 +136,7 @@ internal fun battleCostume(m: Monster, skill: Skill): Costume {
 
 /** A monster's attack puzzle: one of its own skills leaning to the one the child needs most, dressed in its name. */
 internal fun Journey.battlePuzzle(m: Monster): PickOne {
-    val c = battleCostume(m, pickSkill(PICK_ONE_SKILLS, preferred = m.skills))
+    val c = battleCostume(m, pickSkill(BATTLE_SKILLS, preferred = m.skills))
     return puzzleFor(c.skill, c.intro, c.thing)
 }
 

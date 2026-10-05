@@ -17,6 +17,9 @@ enum class Skill(val attribute: Attribute) {
     SORTING(Attribute.WISDOM),
     SKIP_COUNTING(Attribute.CLEVERNESS),
     PUZZLES(Attribute.MAGIC),
+    RHYMES(Attribute.WISDOM),
+    MONEY(Attribute.CLEVERNESS),
+    SHARING(Attribute.CLEVERNESS),
 }
 
 /**

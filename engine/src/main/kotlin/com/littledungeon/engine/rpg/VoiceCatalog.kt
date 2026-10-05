@@ -8,6 +8,7 @@ import com.littledungeon.engine.rpg.hero.Hero
 import com.littledungeon.engine.rpg.hero.HeroClass
 import com.littledungeon.engine.rpg.hero.Progression
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
+import com.littledungeon.engine.rpg.learn.PictureFactory
 import com.littledungeon.engine.rpg.learn.Coach
 import com.littledungeon.engine.rpg.learn.MemoryChallenge
 import com.littledungeon.engine.rpg.learn.RecipeChallenge
@@ -23,6 +24,7 @@ import com.littledungeon.engine.rpg.run.JourneyLines
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Reply
 import com.littledungeon.engine.rpg.run.RoomLines
+import com.littledungeon.engine.rpg.run.BATTLE_SKILLS
 import com.littledungeon.engine.rpg.run.PICK_ONE_SKILLS
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.engine.rpg.run.addStory
@@ -143,6 +145,13 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         for (thing in Thing.entries) hear(Speech.of(addStory("", thing, have, more, missing)))
         hear(Speech.of(vaultStory(have, more, missing)))
     }
+    // Every picture puzzle, at every level: small sets of words, foods and numbers, so a few hundred seeds reach them all.
+    for (level in 1..5) for (seed in 0L until 600L) {
+        for (c in listOf(PictureFactory.rhyme(level, seed), PictureFactory.money(level, seed), PictureFactory.share(level, seed))) {
+            hear(c.prompt)
+            hear(c.because)
+        }
+    }
     // Every recipe a workshop can ask for: each step is its own sentence, so a few hundred recipes reach them all.
     for (level in 1..5) for (potion in com.littledungeon.engine.rpg.learn.PotionKind.entries) for (seed in 0L until 150L) {
         val recipe = ChallengeFactory.recipe(level, seed, potion)
@@ -197,7 +206,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     val own = Content.npcs.flatMap { n -> n.nodes.flatMap { it.effects + it.options.flatMap { o -> o.effects } } }
         .filterIsInstance<Effect.Puzzle>().mapNotNull { e -> e.skill?.let { Costume(it, e.ask.orEmpty(), e.thing ?: Thing.STONE) } }
     val costumes = Obstacle.entries.flatMap { costumesFor(it) } + own +
-        Content.monsters.flatMap { m -> PICK_ONE_SKILLS.map { battleCostume(m, it) } }
+        Content.monsters.flatMap { m -> BATTLE_SKILLS.map { battleCostume(m, it) } }
     for (level in 1..5) {
         // A journey that has warmed up, with every skill at this level, so puzzles come at exactly this level.
         val j = Journey(level.toLong(), Hero(), SkillBook(levels = PICK_ONE_SKILLS.associateWith { level }), WorldMemory(), Clock { 0L })

@@ -82,7 +82,10 @@ import com.littledungeon.engine.rpg.learn.MapChallenge
 import com.littledungeon.engine.rpg.learn.MemoryChallenge
 import com.littledungeon.engine.rpg.learn.NumberChallenge
 import com.littledungeon.engine.rpg.learn.PatternChallenge
+import com.littledungeon.engine.rpg.learn.Card
 import com.littledungeon.engine.rpg.learn.PickOne
+import com.littledungeon.engine.rpg.learn.PictureChallenge
+import com.littledungeon.engine.rpg.learn.Shown
 import com.littledungeon.engine.rpg.learn.RecipeChallenge
 import com.littledungeon.engine.rpg.learn.RecipeStep
 import com.littledungeon.engine.rpg.learn.Thing
@@ -302,6 +305,7 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
             is SortChallenge -> SortRoom(c, turn, zone)
             is SkipCountChallenge -> PondRoom(c, turn, zone)
             is PuzzleChallenge -> PuzzleRoom(c, turn, zone)
+            is PictureChallenge -> PicturePick(c, turn, zone)
         }
     }
 }
@@ -392,6 +396,54 @@ private fun Modifier.spot(): Modifier = this
     .shadow(4.dp, CircleShape)
     .background(Color(0xDDFFF6E0), CircleShape)
     .border(3.dp, Palette.PaperEdge, CircleShape)
+
+// ------------------------------------------------------------------ picture cards: rhymes, money, sharing
+
+@Composable
+private fun PicturePick(c: PictureChallenge, turn: Turn, z: Zone) {
+    val pick = remember { Pick(turn, c) }
+    // What the question is about, above the cards: the picture to rhyme with, the food and its price, the bats and their berries.
+    if (c.scene.isNotEmpty()) {
+        Box(Modifier.at(z.cx, z.h * 0.3f, z.width, z.h * 0.3f)) { Pictures(c.scene.flatMap { s -> List(s.count) { s.art } }, z.width, z.h * 0.3f) }
+    }
+    val n = c.options.size
+    val tile = z.tile(n, z.h * 0.34f)
+    z.row(n, tile).forEachIndexed { i, x ->
+        Tile(pick, i, Modifier.at(x, z.h * 0.72f, tile, tile).spot()) {
+            Box(
+                Modifier.fillMaxSize().background(Palette.Paper, RoundedCornerShape(18.dp)).border(3.dp, Palette.PaperEdge, RoundedCornerShape(18.dp)).padding(tile * 0.06f),
+                contentAlignment = Alignment.Center,
+            ) { CardFace(c.options[i], tile) }
+        }
+    }
+}
+
+/** A card: a number drawn big, or its pictures (a rhyming word's picture, a handful of coins). */
+@Composable
+private fun CardFace(card: Card, tile: Dp) {
+    if (card.pictures.isEmpty()) {
+        val fs = with(LocalDensity.current) { (tile * 0.5f).toSp() }
+        Text(card.label, fontSize = fs, lineHeight = fs, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black, color = Palette.Ink)
+    } else {
+        Pictures(card.pictures.flatMap { s: Shown -> List(s.count) { s.art } }, tile * 0.88f, tile * 0.88f)
+    }
+}
+
+/** [arts] laid out in tidy rows that fill [w] by [h]: one big, or several smaller ones. */
+@Composable
+private fun Pictures(arts: List<String>, w: Dp, h: Dp) {
+    if (arts.isEmpty()) return
+    val cols = if (arts.size <= 4) arts.size else (arts.size + 1) / 2
+    val rows = (arts.size + cols - 1) / cols
+    val item = minOf(w / (cols * 1.05f), h / (rows * 1.05f))
+    Column(Modifier.size(w, h), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        for (row in arts.chunked(cols)) {
+            Row {
+                for (art in row) Image(painterResource(Art.byName("art_$art") ?: R.drawable.art_treasure), null, Modifier.size(item))
+            }
+        }
+    }
+}
 
 // ------------------------------------------------------------------ counting
 
