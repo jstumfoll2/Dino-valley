@@ -77,6 +77,7 @@ import com.littledungeon.engine.rpg.run.speech
 import com.littledungeon.ui.art.Art
 import com.littledungeon.ui.art.Character
 import com.littledungeon.ui.art.DieFace
+import com.littledungeon.ui.art.HueMark
 import com.littledungeon.ui.art.Mood
 import com.littledungeon.ui.art.Picto
 import com.littledungeon.ui.art.Rigs
@@ -363,6 +364,11 @@ private fun FoundBeat(beat: Beat.Found, say: (List<Speech>) -> Unit, celebrate: 
             painterResource(res), null,
             Modifier.at(w * 0.64f, h * 0.55f, h * 0.34f, h * 0.34f).graphicsLayer { scaleX = pop.value; scaleY = pop.value },
         )
+        // A gem wears the mark of its color, so it can be told from the others without the color.
+        val hue = beat.loot.hue
+        if (beat.loot.kind == com.littledungeon.engine.rpg.run.LootKind.GEM && hue != null) {
+            HueMark(hue, Modifier.at(w * 0.64f, h * 0.55f, h * 0.12f, h * 0.12f).graphicsLayer { scaleX = pop.value; scaleY = pop.value })
+        }
         if (beat.loot.count > 1) {
             Text(
                 "× ${beat.loot.count}", fontSize = 40.sp, fontWeight = FontWeight.Black, color = Color.White,

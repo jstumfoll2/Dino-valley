@@ -97,6 +97,7 @@ import com.littledungeon.engine.rpg.run.Prop
 import com.littledungeon.engine.rpg.run.Reply
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.ui.art.Art
+import com.littledungeon.ui.art.HueMark
 import com.littledungeon.ui.art.RuneIcon
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -510,6 +511,8 @@ private fun GemRoom(c: ColorChallenge, turn: Turn, z: Zone) {
         Tile(pick, i, Modifier.at(x, z.h * 0.6f, tile, tile).spot()) {
             val s = if (gem.size == GemSize.BIG) 0.86f else 0.5f
             Image(painterResource(Art.gem(gem.hue)), null, Modifier.size(tile * s))
+            // Every color has its own mark, so the gems can be told apart without telling the colors apart.
+            HueMark(gem.hue, Modifier.size(tile * s * 0.36f))
         }
     }
 }
@@ -524,6 +527,8 @@ private fun RuneDoor(c: PatternChallenge, turn: Turn, z: Zone) {
     val pick = remember { Pick(turn, c) }
     // Seven sockets: the pattern and the empty one. Long patterns drop their first symbol.
     val shown = if (c.shown.size >= SOCKETS) c.shown.takeLast(SOCKETS - 1) else c.shown
+    // When only the colors change, each color wears its mark too.
+    val marked = (c.shown + c.options).map { it.shape }.distinct().size == 1
     val open by animateFloatAsState(if (turn.done) 1f else 0f, tween(1400, delayMillis = 900), label = "open")
     val doorH = z.h * 0.74f
     val doorW = doorH * (600f / 700f)
@@ -544,11 +549,11 @@ private fun RuneDoor(c: PatternChallenge, turn: Turn, z: Zone) {
         val s = doorW * (62f / 600f)
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - open }) {
             shown.forEachIndexed { i, rune ->
-                RuneIcon(rune, Modifier.at(doorW * ((90f + 70f * i) / 600f), doorH * 0.5f, s, s))
+                RuneIcon(rune, Modifier.at(doorW * ((90f + 70f * i) / 600f), doorH * 0.5f, s, s), mark = marked)
             }
             val q = Modifier.at(doorW * ((90f + 70f * shown.size) / 600f), doorH * 0.5f, s, s)
             if (turn.done) {
-                RuneIcon(c.next, q)
+                RuneIcon(c.next, q, mark = marked)
             } else {
                 val fs = with(LocalDensity.current) { (s * 0.9f).toSp() }
                 Box(q.graphicsLayer { scaleX = pulse; scaleY = pulse }, contentAlignment = Alignment.Center) {
@@ -564,7 +569,7 @@ private fun RuneDoor(c: PatternChallenge, turn: Turn, z: Zone) {
     for (i in 0 until n) {
         val y = doorY + tile * 1.15f * (i - (n - 1) / 2f)
         Tile(pick, i, Modifier.at(x, y, tile, tile).spot()) {
-            RuneIcon(c.options[i], Modifier.size(tile * 0.7f))
+            RuneIcon(c.options[i], Modifier.size(tile * 0.7f), mark = marked)
         }
     }
 }
@@ -631,6 +636,7 @@ private fun MapPick(c: MapChallenge, turn: Turn, z: Zone) {
     z.row(c.doors.size, doorW).forEachIndexed { i, x ->
         Tile(pick, i, Modifier.at(x, z.h * 0.6f, doorW, doorW * 1.4f)) {
             Image(painterResource(Art.door(c.doors[i].hue)), null, Modifier.fillMaxSize())
+            HueMark(c.doors[i].hue, Modifier.size(doorW * 0.3f))
         }
     }
 }
@@ -1075,7 +1081,10 @@ private fun RecipeCard(c: RecipeChallenge, show: Boolean, added: Map<Ingredient,
 private fun SortableImage(item: Sortable, size: Dp) {
     if (item.thing == Thing.GEM) {
         val s = if (item.size == GemSize.BIG) 1f else 0.55f
-        Image(painterResource(Art.gem(item.hue)), null, Modifier.size(size * s))
+        Box(contentAlignment = Alignment.Center) {
+            Image(painterResource(Art.gem(item.hue)), null, Modifier.size(size * s))
+            HueMark(item.hue, Modifier.size(size * s * 0.36f))
+        }
     } else {
         Image(painterResource(Art.thing(item.thing)), null, Modifier.size(size * 0.9f))
     }
