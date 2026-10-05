@@ -41,19 +41,20 @@ time estimate), so the minutes are close but not exact comparisons. Everything i
 
 | Measure | Before (60% / 75% / 90%) | After (60% / 75% / 90%) |
 |---|---|---|
-| Median minutes in one sitting | 28.3 / 24.7 / 23.7 (the whole journey; no way to stop) | **10.1 / 10.2 / 10.0** (90th percentile 13.3 / 12.9 / 13.6) |
-| Median minutes in a whole journey | 28.3 / 24.7 / 23.7 | 20.8 / 23.2 / 21.8, in two or three days |
-| Mean level of counting, numbers, adding, colors, patterns and letters after ten journeys | 4.9 / n.a. / 5.0 | **1.2 / 2.1 / 3.1** |
+| Median minutes in one sitting | 28.3 / 24.7 / 23.7 (the whole journey; no way to stop) | **10.0 / 9.7 / 9.7** (90th percentile 13.3 / 12.8 / 13.4) |
+| Median minutes in a whole journey | 28.3 / 24.7 / 23.7 | 18.8 / 18.2 / 19.2, in two or three days |
+| Mean level of counting, numbers, adding, colors, patterns and letters after ten journeys | 4.9 / n.a. / 5.0 | **1.2 / 1.7 / 3.0** |
 | Counting level reached by a child who only guesses (40 one-try puzzles) | 3 | **1** |
 | How often the right card is in the best-guess position (counting, level 4) | 100% (fair is 20%) | **21%** (fair is 20%) |
 | Forced-fight menus per 100 journeys | 18 / 22 / 20 | **0** |
 | Named characters met as random monsters per 100 journeys | 92 / 83 / 88 | **0** |
-| Faints per journey | 0.91 / 0.42 / 0.13 | 0.22 / 0.08 / 0.03 |
-| One-try misses that say "try again" | (not measured) | **0 of 924 / 454 / 183** |
+| Faints per journey | 0.91 / 0.42 / 0.13 | 0.15 / 0.09 / 0.01 |
+| One-try misses that say "try again" | (not measured) | **0 of 696 / 387 / 152** |
 | Share of puzzles: patterns, the biggest skill | 19% | 16% (every everyday skill is 11% to 16%) |
 
 Not changed: tracing, memory, sorting and jigsaws are still 1% to 2% of puzzles each, and maps and recipes are 0%, because they need their minigames
-(roadmap Phase 6). A journey is still about 20 minutes; what changed is that it comes in sittings of about ten.
+(roadmap Phase 6). A journey is still about 19 minutes; what changed is that it comes in sittings of about ten. (Part of the drop since the first measurement is that a
+monster on the way is now a choice, and the simulated child goes away half the time.)
 
 ## Phase 0: clean foundation
 
@@ -71,7 +72,7 @@ Not changed: tracing, memory, sorting and jigsaws are still 1% to 2% of puzzles 
 | 1.1 | Command log, autosave after every command, "Continue" on the title screen, determinism test | **Done** (`CommandLogTest`; app compiled by the Build workflow) |
 | 1.2 | Challenge records appended as they happen | **Done** |
 | 1.3 | Back asks first | **Done** |
-| 1.4 | Shorter journeys with a camp-for-the-night stop; simulated median 14 minutes or less | **Done as sittings**: median sitting about 10 minutes, a whole journey still about 20 minutes over two or three days (`BalanceTest`). The story itself was not shortened. |
+| 1.4 | Shorter journeys with a camp-for-the-night stop; simulated median 14 minutes or less | **Done as sittings**: median sitting about 10 minutes, a whole journey still about 19 minutes over two or three days (`BalanceTest`). The story itself was not shortened. |
 
 ## Phase 2: learning integrity
 
@@ -99,7 +100,16 @@ Not changed: tracing, memory, sorting and jigsaws are still 1% to 2% of puzzles 
 | 3.7 | The dragon's name is spoken; "Sparky" never hard-coded | **Partly**: spoken, and never hard-coded. Sentences with a typed name are still made on the phone the first time, not pre-made when the name is set |
 | 3.8 | Clues once per world; greeting by state; Book One finale | **Partly**: greeting by state and a shorter second telling are done; clues once per world and the Book One finale are not |
 
-Also fixed under Phase 3: the Mossy Golem was an ordinary roaming monster as well as the mine's guardian; it is now a mini-boss that stays in its mine.
+Also fixed under Phase 3 (from the review's table of story and loop inconsistencies):
+
+- The Mossy Golem was an ordinary roaming monster as well as the mine's guardian; it is now a mini-boss that stays in its mine.
+- "A wolf pup blocks the way! What will you do?" started the fight whatever the child did. A monster on a road or in a wild place is now a real choice
+  (fight, or go away), held by `WorldRulesTest`.
+- Captions say "Professor Hoot:" and "Bandit Bess:", not "Elder:" and "Sneak:", when the scene knows who is speaking.
+
+Still open from that table: one story only (row 1), the Book One finale (3), clues that repeat every adventure (4), Dragon's Peak, the Bat King and the old cast
+without a role (16), time of day and scene state (17), peace and fight costing different things (18), coin sinks (19), and a journey that is mostly travel and
+quizzes (20). Rows 1, 3, 16 and 20 are what Phases 6 and 7 are for.
 
 ## Phase 4: presentation and art fixes
 
