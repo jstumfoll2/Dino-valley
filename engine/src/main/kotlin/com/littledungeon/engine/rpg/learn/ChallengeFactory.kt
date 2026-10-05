@@ -129,29 +129,42 @@ object ChallengeFactory {
         return PatternChallenge(level, seed, prompt, shown, next, options)
     }
 
+    /**
+     * Levels 1 and 2 ask for a capital by name (nine easy letters, then all of them), 3 adds the little partner
+     * of a capital and held sounds, 4 asks by the first sound of a word, 5 mixes them all. Letters that look alike
+     * (b d p q, m w, e f) are kept out of each other's choices until level 4.
+     */
     fun letter(level: Int, seed: Long, purpose: String): LetterChallenge {
         val r = Random(seed)
         val mode = when (level) {
             1, 2 -> LetterMode.NAME
-            3 -> LetterMode.SOUND
-            else -> LetterMode.FIRST_SOUND
+            3 -> if (r.nextBoolean()) LetterMode.MATCH_CASE else LetterMode.SOUND
+            4 -> LetterMode.FIRST_SOUND
+            else -> listOf(LetterMode.MATCH_CASE, LetterMode.SOUND, LetterMode.FIRST_SOUND).random(r)
         }
-        val pool = when {
-            mode != LetterMode.NAME -> Words.LETTER_SOUNDS.keys.toList()
+        val pool: List<Char> = when {
+            mode == LetterMode.SOUND -> Words.LETTER_SOUNDS.keys.toList()
+            // X says "ex", so "x-ray" does not start with its sound.
+            mode == LetterMode.FIRST_SOUND -> ('A'..'Z').filter { it != 'X' }
             level == 1 -> "ABCDEMOST".toList()
             else -> ('A'..'Z').toList()
         }
-        val letter = pool.random(r)
-        val word = Words.LETTER_WORDS.getValue(letter)
+        val capital = pool.random(r)
+        val word = Words.LETTER_WORDS.getValue(capital)
         val optionCount = when (level) {
             1 -> 3
             5 -> 5
             else -> 4
         }
-        val options = (listOf(letter) + pool.filter { it != letter }.shuffled(r).take(optionCount - 1)).shuffled(r)
+        val keepApart = level <= 3
+        val others = pool.filter { it != capital && !(keepApart && Words.confusable(it, capital)) }.shuffled(r).take(optionCount - 1)
+        val shown = { c: Char -> if (mode == LetterMode.MATCH_CASE) c.lowercaseChar() else c }
+        val options = (listOf(capital) + others).map(shown).shuffled(r)
+        val letter = shown(capital)
         val ask = when (mode) {
-            LetterMode.NAME -> "$purpose<narrator>Find the letter $letter. $letter, as in $word."
-            LetterMode.SOUND -> "$purpose<narrator>Listen to this sound. ${Words.LETTER_SOUNDS.getValue(letter)}. Which letter makes that sound?"
+            LetterMode.NAME -> "$purpose<narrator>Find the letter $capital. $capital, as in $word."
+            LetterMode.MATCH_CASE -> "$purpose<narrator>Find the little letter that goes with the big $capital. $capital, as in $word."
+            LetterMode.SOUND -> "$purpose<narrator>Listen to this sound. ${Words.LETTER_SOUNDS.getValue(capital)}. Which letter makes that sound?"
             LetterMode.FIRST_SOUND -> "$purpose<narrator>The magic word is ${word.uppercase()}. What letter does ${word.uppercase()} start with?"
         }
         return LetterChallenge(level, seed, Speech.of(ask), letter, word, mode, options)
@@ -251,7 +264,7 @@ object ChallengeFactory {
             else -> "tens"
         }
         val counted = (1 until shown).joinToString(", ") { number(step * it).uppercase() }
-        val ask = (intro?.let { "$it " } ?: "") + "Each lily pad has ${number(step)} ${thing.many}. Let's count them by $by! $counted... How many on the last lily pad?"
+        val ask = (intro?.let { "$it " } ?: "") + "Each lily pad has ${number(step)} ${thing.many}. Let's count them by $by! $counted... What number goes on the last lily pad?"
         return SkipCountChallenge(level, seed, Speech.of(ask), step, shown, thing, options)
     }
 

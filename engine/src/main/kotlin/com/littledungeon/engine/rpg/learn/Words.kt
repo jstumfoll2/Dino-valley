@@ -28,9 +28,16 @@ object Words {
         'Y' to "yo-yo", 'Z' to "zebra",
     )
 
-    /** How the narrator makes a letter's sound. Only letters with a clear, sayable sound. */
-    val LETTER_SOUNDS = mapOf(
-        'M' to "mmmm", 'S' to "ssss", 'F' to "ffff", 'L' to "llll", 'N' to "nnnn", 'R' to "rrrr",
-        'Z' to "zzzz", 'V' to "vvvv", 'A' to "ah", 'B' to "buh", 'D' to "duh", 'P' to "puh", 'T' to "tuh",
-    )
+    /**
+     * Letters with a sound that can be held without a vowel on the end: the build makes these from scratch
+     * (scripts/letter_sounds.py), so "mmmm" is the sound itself. Stop sounds (b, d, p, t, k, g) can't be said
+     * alone by a speech model without a "uh" after them, which teaches the wrong sound, so they are asked by
+     * the first sound of a whole word instead ("MOON starts with...").
+     */
+    val LETTER_SOUNDS = mapOf('M' to "mmmm", 'S' to "ssss", 'F' to "ffff", 'L' to "llll", 'N' to "nnnn", 'R' to "rrrr", 'Z' to "zzzz", 'V' to "vvvv")
+
+    /** Letters a child mixes up, so they are never offered together until the higher levels. */
+    val CONFUSABLE = listOf("BDPQ", "MW", "EF", "IL", "NU", "CG", "OQ", "VW", "HN")
+
+    fun confusable(a: Char, b: Char): Boolean = CONFUSABLE.any { a.uppercaseChar() in it && b.uppercaseChar() in it }
 }

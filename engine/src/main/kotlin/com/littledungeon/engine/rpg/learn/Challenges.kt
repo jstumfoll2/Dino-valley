@@ -27,8 +27,11 @@ enum class RuneShape(val word: String) { STAR("star"), MOON("moon"), SUN("sun"),
 
 data class Rune(val shape: RuneShape, val hue: Hue)
 
-/** How a letter is asked for, from easiest to hardest. */
-enum class LetterMode { NAME, SOUND, FIRST_SOUND }
+/**
+ * How a letter is asked for: by name (find the big B), by its little partner (find the b that goes with the big B),
+ * by the sound a held letter makes, or by the first sound of a word.
+ */
+enum class LetterMode { NAME, MATCH_CASE, SOUND, FIRST_SOUND }
 
 /** Paths to trace with a finger, from a straight line up to shapes (brief: pre-writing stages). */
 enum class TraceShape { LINE, CURVE, ZIGZAG, LOOP, CIRCLE, TRIANGLE, LETTER, NUMBER }
@@ -149,6 +152,7 @@ data class LetterChallenge(
     override val level: Int,
     override val seed: Long,
     override val prompt: List<Speech>,
+    /** The answer, as drawn: a capital, or a little letter for [LetterMode.MATCH_CASE]. */
     val letter: Char,
     val word: String,
     val mode: LetterMode,
