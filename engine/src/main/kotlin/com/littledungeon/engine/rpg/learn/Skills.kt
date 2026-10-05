@@ -40,7 +40,7 @@ data class ChallengeRecord(
 }
 
 /**
- * The child's level in every skill, 1..5, moved by what they actually show (ARCHITECTURE: "first-try
+ * The child's level in every skill, 1..5, moved by what they actually show (decision #54: "first-try
  * correctness at the current level is the only input to level changes"):
  *
  * - **Up one** once at least [MIN_ITEMS] puzzles have been seen at this level, at least [PROMOTE_AT] of the

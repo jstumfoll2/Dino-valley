@@ -1,3 +1,8 @@
+> **Superseded, 2026-10-05.** This is the plan for the first, single-dungeon version of the game (doors, rooms, hearts, a boss and a goblin).
+> That engine was replaced by the journey across Whisperwood ([`story-engine-plan.md`](story-engine-plan.md), decision #51 in
+> [`PROJECT_DECISIONS.md`](../../PROJECT_DECISIONS.md)) and then removed from the code. Read this for where the ideas came from (the five
+> attributes, the skills, the brief's three stories); for what the game is now, read [`ARCHITECTURE.md`](../../ARCHITECTURE.md).
+
 # The Little Dungeon: how the first dungeon works
 
 This turns the brief ([little-dungeon-brief.md](little-dungeon-brief.md)) and Jason's ask for
