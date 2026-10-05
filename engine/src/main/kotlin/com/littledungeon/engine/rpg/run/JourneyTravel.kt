@@ -9,6 +9,9 @@ import com.littledungeon.engine.rpg.world.LocationKind
 import com.littledungeon.engine.rpg.world.Road
 import com.littledungeon.engine.rpg.world.Terrain
 
+/** The chance, on the first walk of a road with no monster on it, that something is found along the way. */
+internal const val ROAD_EVENT_PERCENT = 30
+
 /** The backdrop for a road. */
 internal fun roadPlace(t: Terrain) = Place("road_${t.name.lowercase()}")
 
@@ -75,13 +78,15 @@ internal fun Journey.go(road: Road): List<JStep> {
         if (terrain.monsters && road.id !in opened && random.nextInt(100) < chance) {
             val m = roadMonster(terrain, road.danger)
             listOf(tell(s, say.fightAsk(m.name.lowercase()))) + battle(m, s.place, arrive)
+        } else if (walked.add(road.id) && random.nextInt(100) < ROAD_EVENT_PERCENT) {
+            roadEvent(s).andThen(arrive)
         } else {
             arrive()
         }
     }
     val obstacle = terrain.obstacle
     return if (obstacle != null) {
-        obstacle(obstacle, s, afterObstacle) { turnedBack(road, from) }
+        obstacle(obstacle, s, next = afterObstacle, turnBack = { turnedBack(road, from) })
     } else {
         afterObstacle()
     }

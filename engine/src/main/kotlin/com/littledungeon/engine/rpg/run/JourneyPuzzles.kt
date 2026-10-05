@@ -12,34 +12,106 @@ import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.Words
 
-/** The one-try puzzle for something blocking the way. All are pick-one puzzles so a try means one tap. */
-internal fun Journey.obstaclePuzzle(o: Obstacle): PickOne = when (o) {
-    Obstacle.CLIMB -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.STONE, "Count the stones in the staircase. How many stones are there?")
-    Obstacle.CROSS -> ChallengeFactory.skipCount(level(Skill.SKIP_COUNTING), nextSeed(), "Hop across the river on the lily pads.")
-    Obstacle.DARK -> ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed(), "Glowing marks show the safe path. Which mark comes next?")
-    Obstacle.LOCK -> ChallengeFactory.numeral(level(Skill.NUMBERS), nextSeed(), "The lock wants a number.")
-    Obstacle.RIDDLE -> ChallengeFactory.letter(level(Skill.LETTERS), nextSeed(), "The stone face wants a letter.")
+/**
+ * A puzzle dressed for a place: which skill it practices, and the words that set it up. The place decides
+ * the costume (a river has lily pads, a lock has a number); the child's needs decide which costume a
+ * given obstacle wears this time (see [pickSkill]). For colors, [intro] is who is asking ("The river frog").
+ */
+internal class Costume(val skill: Skill, val intro: String, val thing: Thing = Thing.STONE)
+
+/** What can dress each kind of obstacle. All are pick-one puzzles, so a try means one tap. */
+internal fun costumesFor(o: Obstacle): List<Costume> = when (o) {
+    Obstacle.CLIMB -> listOf(
+        Costume(Skill.COUNTING, "Count the stones in the staircase."),
+        Costume(Skill.ADDITION, "Some stones in the staircase are missing."),
+        Costume(Skill.NUMBERS, "Numbers are carved into the steps."),
+    )
+    Obstacle.CROSS -> listOf(
+        Costume(Skill.SKIP_COUNTING, "Hop across the river on the lily pads."),
+        Costume(Skill.COUNTING, "Count the stepping stones across the river."),
+        Costume(Skill.COLORS, "The river frog", Thing.GEM),
+    )
+    Obstacle.DARK -> listOf(
+        Costume(Skill.PATTERNS, "Glowing marks show the safe path."),
+        Costume(Skill.COLORS, "The marsh sprite", Thing.GEM),
+        Costume(Skill.LETTERS, "Glowing letters show the safe path."),
+    )
+    Obstacle.LOCK -> listOf(
+        Costume(Skill.NUMBERS, "The lock wants a number."),
+        Costume(Skill.ADDITION, "The lock counts the coins you put in.", Thing.COIN),
+    )
+    Obstacle.RIDDLE -> listOf(
+        Costume(Skill.LETTERS, "The stone face wants a letter."),
+        Costume(Skill.COLORS, "The stone face", Thing.GEM),
+        Costume(Skill.PATTERNS, "The stone face shows a pattern."),
+    )
 }
 
-/** A monster's attack puzzle: one of its own skills, dressed in its name. */
-internal fun Journey.battlePuzzle(m: Monster, skill: Skill): PickOne {
+/**
+ * Which of [candidates] to practice now. Skills already asked this journey wait for the others, so one
+ * skill never takes over a journey; after that the one practiced longest ago and the one at the lowest
+ * level come first, with a little shuffle so no two journeys ask in the same order. [preferred] skills
+ * (a monster's own tricks) get a small head start, never enough to beat a skill that has not been asked yet.
+ */
+internal fun Journey.pickSkill(candidates: List<Skill>, preferred: Collection<Skill> = emptyList()): Skill {
+    val oldestFirst = Skill.entries.sortedBy { skills.lastPracticed[it] ?: 0L }
+    return candidates.minBy { skill ->
+        (skillUse[skill] ?: 0) * 100.0 + oldestFirst.indexOf(skill) * 4.0 + skills.level(skill) * 3.0 +
+            random.nextDouble() * 12.0 - if (skill in preferred) 40.0 else 0.0
+    }
+}
+
+/** Every skill that has a pick-one puzzle (one tap per try). */
+internal val PICK_ONE_SKILLS = listOf(
+    Skill.COUNTING, Skill.NUMBERS, Skill.ADDITION, Skill.COLORS, Skill.PATTERNS, Skill.LETTERS, Skill.SKIP_COUNTING,
+)
+
+/**
+ * One pick-one puzzle for [skill], set up with [intro] and counting [thing]s. The words always say what to
+ * do, so the same sentence works wherever the costume is worn.
+ */
+internal fun Journey.puzzleFor(skill: Skill, intro: String, thing: Thing = Thing.STONE): PickOne {
     val lvl = level(skill)
     val seed = nextSeed()
     return when (skill) {
-        Skill.COUNTING -> ChallengeFactory.count(lvl, seed, Thing.COIN, "The ${m.name} hid some coins. How many coins can you count?")
-        Skill.NUMBERS -> ChallengeFactory.numeral(lvl, seed, "The ${m.name} holds up a card.")
-        Skill.ADDITION -> ChallengeFactory.add(lvl, seed, Thing.GEM) { have, more, missing ->
+        Skill.COUNTING -> ChallengeFactory.count(lvl, seed, thing, "$intro How many ${thing.many} are there?")
+        Skill.NUMBERS -> ChallengeFactory.numeral(lvl, seed, intro)
+        Skill.ADDITION -> ChallengeFactory.add(lvl, seed, thing) { have, more, missing ->
             if (missing) {
-                "The ${m.name} wants ${Words.number(have + more)} gems and has ${Words.number(have)}. How many more does it need?"
+                "$intro It needs ${Words.number(have + more)} ${thing.many} and has ${Words.number(have)}. How many more does it need?"
             } else {
-                "The ${m.name} has ${Words.number(have)} ${Thing.GEM.words(have)} and finds ${Words.number(more)} more. How many gems is that altogether?"
+                "$intro There ${if (have == 1) "is" else "are"} ${Words.number(have)} ${thing.words(have)}, and ${Words.number(more)} more. How many ${thing.many} is that altogether?"
             }
         }
-        Skill.COLORS -> ChallengeFactory.color(lvl, seed, "The ${m.name}", "gem")
-        Skill.PATTERNS -> ChallengeFactory.pattern(lvl, seed, "The ${m.name} makes a pattern. Which symbol comes next?")
-        Skill.LETTERS -> ChallengeFactory.letter(lvl, seed, "The ${m.name} scribbles a letter.")
-        Skill.SKIP_COUNTING -> ChallengeFactory.skipCount(lvl, seed, "The ${m.name} hops along.")
-        else -> ChallengeFactory.numeral(lvl, seed, "The ${m.name} holds up a card.")
+        Skill.COLORS -> ChallengeFactory.color(lvl, seed, intro, thing.one)
+        Skill.PATTERNS -> ChallengeFactory.pattern(lvl, seed, "$intro Which symbol comes next?")
+        Skill.LETTERS -> ChallengeFactory.letter(lvl, seed, intro)
+        Skill.SKIP_COUNTING -> ChallengeFactory.skipCount(lvl, seed, intro)
+        else -> error("$skill has no pick-one puzzle")
+    }
+}
+
+/** The one-try puzzle for something blocking the way, in the costume the child most needs. */
+internal fun Journey.obstaclePuzzle(o: Obstacle): PickOne {
+    val options = costumesFor(o)
+    val skill = pickSkill(options.map { it.skill })
+    val c = options.first { it.skill == skill }
+    return puzzleFor(skill, c.intro, c.thing)
+}
+
+/** A monster's attack puzzle: one of its own skills (the one the child needs most), dressed in its name. */
+internal fun Journey.battlePuzzle(m: Monster): PickOne {
+    val skill = pickSkill(PICK_ONE_SKILLS, preferred = m.skills)
+    val name = m.name
+    return when (skill) {
+        Skill.COUNTING -> puzzleFor(skill, "The $name hid some coins.", Thing.COIN)
+        Skill.NUMBERS -> puzzleFor(skill, "The $name holds up a card.")
+        Skill.ADDITION -> puzzleFor(skill, "The $name is counting its gems.", Thing.GEM)
+        Skill.COLORS -> puzzleFor(skill, "The $name", Thing.GEM)
+        Skill.PATTERNS -> puzzleFor(skill, "The $name makes a pattern.")
+        Skill.LETTERS -> puzzleFor(skill, "The $name scribbles a letter.")
+        Skill.SKIP_COUNTING -> puzzleFor(skill, "The $name hops along.")
+        else -> puzzleFor(Skill.NUMBERS, "The $name holds up a card.")
     }
 }
 

@@ -44,7 +44,7 @@ private fun Journey.enterDungeon(l: Location): List<JStep> {
 private fun Journey.rooms(l: Location, plan: List<RoomKind>, i: Int): List<JStep> {
     if (i >= plan.size) return guardian(l)
     val kind = plan[i]
-    val s = scene(placeOf(kind), *(if (kind == RoomKind.CRYSTAL_CAVE) arrayOf(Actor.WIZARD) else emptyArray()))
+    val s = roomScene(kind)
     return roomPuzzle(
         kind, s,
         solved = {
@@ -59,8 +59,12 @@ private fun Journey.rooms(l: Location, plan: List<RoomKind>, i: Int): List<JStep
     )
 }
 
+/** Where a room of this kind is drawn, and who is in it. */
+internal fun Journey.roomScene(kind: RoomKind): Scene =
+    scene(placeOf(kind), *(if (kind == RoomKind.CRYSTAL_CAVE) arrayOf(Actor.WIZARD) else emptyArray()))
+
 /** One room of one kind: a short scene, then its puzzle with one try. */
-private fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JStep>, failed: () -> List<JStep>): List<JStep> {
+internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JStep>, failed: () -> List<JStep>): List<JStep> {
     val seed = nextSeed()
     fun lv(skill: Skill) = level(skill)
     val (intro, c, oops, yay, obstacle) = when (kind) {

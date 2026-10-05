@@ -8,6 +8,7 @@ import com.littledungeon.engine.rpg.story.Npc
 import com.littledungeon.engine.rpg.story.ShopDef
 import com.littledungeon.engine.rpg.world.Location
 import com.littledungeon.engine.rpg.world.LocationKind
+import com.littledungeon.engine.rpg.world.RoomKind
 import com.littledungeon.engine.rpg.world.Terrain
 
 /** What a night at an inn costs. */
@@ -76,19 +77,47 @@ internal fun Journey.wild(l: Location, first: Boolean): List<JStep> {
     return steps + if (first) wildEvent(l, s) else listOf(tell(s, say.quiet(l.name)))
 }
 
-/** Something happens at a place nobody lives: a chest, a shrine, a fight or a traveler. */
+/** Something happens at a place nobody lives: a chest, a shrine, a fight, a traveler or a hidden room. */
 internal fun Journey.wildEvent(l: Location, s: Scene): List<JStep> = when (random.nextInt(100)) {
-    in 0 until 35 -> chestEvent(s)
-    in 35 until 55 -> {
-        heal(hero.maxHp)
-        gain(com.littledungeon.engine.rpg.hero.Attribute.COURAGE, 5)
-        listOf(tell(s.copy(mood = Mood.HAPPY), say.shrine()))
-    }
-    in 55 until 80 -> {
+    in 0 until 25 -> chestEvent(s)
+    in 25 until 40 -> shrineEvent(s)
+    in 40 until 65 -> {
         val m = roadMonster(Terrain.FOREST, 1 + random.nextInt(2))
         listOf(tell(s, say.fightAsk(m.name.lowercase()))) + battle(m, s.place, onWin = { emptyList() })
     }
-    else -> listOf(tell(s, say.wanderer())) + coins(s, 2 + random.nextInt(4))
+    in 65 until 80 -> wandererEvent(s)
+    else -> hiddenRoom(s)
+}
+
+/** Something found along a road that is walked for the first time and has no monster: a chest, a shrine, a traveler, a hidden room. */
+internal fun Journey.roadEvent(s: Scene): List<JStep> = when (random.nextInt(100)) {
+    in 0 until 25 -> chestEvent(s)
+    in 25 until 40 -> shrineEvent(s)
+    in 40 until 60 -> wandererEvent(s)
+    else -> hiddenRoom(s)
+}
+
+internal fun Journey.shrineEvent(s: Scene): List<JStep> {
+    heal(hero.maxHp)
+    gain(com.littledungeon.engine.rpg.hero.Attribute.COURAGE, 5)
+    return listOf(tell(s.copy(mood = Mood.HAPPY), say.shrine()))
+}
+
+internal fun Journey.wandererEvent(s: Scene): List<JStep> = listOf(tell(s, say.wanderer())) + coins(s, 2 + random.nextInt(4))
+
+/**
+ * A little door hidden by the road, into one of the puzzle rooms a dungeon can hold: the kind of puzzle the
+ * child has practiced least. Solving it earns coins; missing it just closes the door.
+ */
+internal fun Journey.hiddenRoom(s: Scene): List<JStep> {
+    val skill = pickSkill(RoomKind.learningRooms.map { it.skill!! })
+    val kind = RoomKind.learningRooms.first { it.skill == skill }
+    val room = roomScene(kind)
+    return listOf(tell(s, say.hiddenDoor())) + roomPuzzle(
+        kind, room,
+        solved = { coins(room, 3 + random.nextInt(5)) + tell(room.copy(mood = Mood.HAPPY), say.roomCleared()) },
+        failed = { listOf(tell(s, say.hiddenDoorShut())) },
+    )
 }
 
 /** A locked chest: one try at the lock, or a key from the bag. */

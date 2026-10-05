@@ -231,7 +231,8 @@ class JourneyTest {
         assertEquals(1, turned.coerceAtLeast(0).let { if (bare.beat is Beat.Tell) { bare.reply(Reply.Next); turned } else turned }, "turned back once")
 
         // With a Wise Owl Feather: one more guess, with a wrong answer taken away, and only once.
-        val sharp = SkillBook(levels = mapOf(com.littledungeon.engine.rpg.learn.Skill.COUNTING to 4))
+        // Whatever costume the obstacle wears, every skill is high enough that the puzzle has four or more answers to take one from.
+        val sharp = SkillBook(levels = com.littledungeon.engine.rpg.run.PICK_ONE_SKILLS.associateWith { 4 })
         val charmed = journey(1, Hero().give("owl_feather"), skills = sharp)
         var through = 0
         var back = 0

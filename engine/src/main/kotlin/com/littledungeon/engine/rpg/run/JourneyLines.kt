@@ -143,6 +143,13 @@ internal class JourneyLines(private val r: Random) {
 
     fun wanderer() = pick("A traveler waves hello and shares a snack and a coin.", "A cheerful peddler tips her hat and gives you a coin for your trouble.")
 
+    fun hiddenDoor() = pick(
+        "A little door is hidden in the rocks by the road. <pet>Ooh, a secret! Let's look inside.",
+        "You spot a tiny door under some leaves. <pet>Do you think we can fit?",
+    )
+
+    fun hiddenDoorShut() = pick("The little door swings shut with a click. <pet>Maybe next time!", "Whoosh! The secret door closes. <pet>It will be there another day.")
+
     // ------------------------------------------------------------- dungeons
 
     fun dungeonAsk(name: String) = pick("Will you go into $name?", "Do you dare to explore $name?")

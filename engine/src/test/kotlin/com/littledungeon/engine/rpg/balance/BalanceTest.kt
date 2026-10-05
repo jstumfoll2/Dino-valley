@@ -37,4 +37,17 @@ class BalanceTest {
     fun aChildWhoOnlyGuessesNeverClimbs() {
         assertTrue(BalanceSim.guesserLevel() <= 1, "guesser reached level ${BalanceSim.guesserLevel()}")
     }
+
+    @Test
+    fun noSkillTakesOverAJourney() {
+        val batch = BalanceSim.run(0.75, children = 5, journeysEach = 6)
+        val pickOne = listOf(Skill.COUNTING, Skill.NUMBERS, Skill.ADDITION, Skill.COLORS, Skill.PATTERNS, Skill.LETTERS, Skill.SKIP_COUNTING)
+        for (s in pickOne) {
+            val share = batch.share(s)
+            // Before, patterns were 19% of all puzzles and counting 9%.
+            assertTrue(share in 0.08..0.20, "$s is ${"%.0f".format(share * 100)}% of puzzles")
+        }
+        val rare = listOf(Skill.TRACING, Skill.MEMORY, Skill.SORTING, Skill.PUZZLES).sumOf { batch.share(it) }
+        assertTrue(rare >= 0.04, "tracing, memory, sorting and jigsaws were 1% each; now ${"%.1f".format(rare * 100)}% together")
+    }
 }

@@ -84,6 +84,7 @@ class Journey(
     internal var moves = 0
     internal val done = mutableSetOf<String>()
     internal val dungeonRooms = mutableMapOf<String, Int>()
+    internal val walked = mutableSetOf<String>()
     internal val dungeonPlans = mutableMapOf<String, List<com.littledungeon.engine.rpg.world.RoomKind>>()
     internal var monstersBeaten = 0
     internal var faints = 0
@@ -180,6 +181,9 @@ class Journey(
     /** Skills whose first puzzle of this journey has been answered; until then the puzzle is a level easier (a warm-up). */
     internal val warmedUp = mutableSetOf<Skill>()
 
+    /** How many puzzles of each skill have been answered this journey, so no skill takes over. */
+    internal val skillUse = mutableMapOf<Skill, Int>()
+
     /**
      * The puzzle level for a skill: what the child has reached, with the first puzzle of each skill in a
      * journey one level easier so every skill starts with a win. The hero's own level never makes puzzles
@@ -196,6 +200,7 @@ class Journey(
     internal fun record(c: Challenge, tries: Int, hints: Int, millis: Long, failed: Boolean = false) {
         val r = ChallengeRecord(c.skill, c.kind, c.level, tries.coerceAtLeast(1), hints, millis, clock.nowMillis(), c.seed, failed)
         warmedUp += c.skill
+        skillUse.merge(c.skill, 1, Int::plus)
         records += r
         skills = skills.record(r)
         gain(c.skill.attribute, if (r.firstTry) 15 else 10)
@@ -284,6 +289,16 @@ internal object JourneyStory {
 
     fun toTheMap(j: Journey, chapter: Int): String =
         "This is the kingdom of Whisperwood. You are at ${j.kingdom.camp.name}, and the story ends at ${j.kingdom.location(j.arc.lairId).name}. Many roads lead there. Visit the towns, make friends, and find what you need. Every friend you make could help!"
+}
+
+/**
+ * These steps, then whatever [next] lines up once the last of them (and anything it leads to) is done.
+ * [next] is only asked for then, so what it does (arriving somewhere) happens after, not before.
+ */
+internal fun List<JStep>.andThen(next: () -> List<JStep>): List<JStep> {
+    if (isEmpty()) return next()
+    val last = last()
+    return dropLast(1) + JStep(last.beat) { reply -> last.then(reply) + next() }
 }
 
 /** The XP and level bookkeeping used when an adventure ends. */

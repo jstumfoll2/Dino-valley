@@ -45,6 +45,11 @@ object BalanceSim {
         val monsters: MutableMap<String, Int> = sortedMapOf()
         val finalLevels = mutableListOf<Map<Skill, Int>>()
 
+        /** Estimated seconds and count by kind of beat: what a journey is made of. */
+        val secondsByKind: MutableMap<String, Double> = sortedMapOf()
+        val beatsByKind: MutableMap<String, Int> = sortedMapOf()
+        var clockStart = 1_000_000L
+
         fun median(xs: List<Double>) = xs.sorted()[(xs.size - 1) / 2]
         fun percentile(xs: List<Double>, q: Double) = xs.sorted()[((xs.size - 1) * q).toInt()]
         val medianMinutes get() = median(minutes)
@@ -66,7 +71,9 @@ object BalanceSim {
      * choices are random.
      */
     fun playJourney(accuracy: Double, seed: Long, hero: Hero, skills: SkillBook, world: WorldMemory, batch: Batch, r: Random): Journey {
-        val j = Journey(seed, hero, skills, world, Clock { 0L })
+        // A clock that moves 20 seconds per puzzle, so "practiced longest ago" means something.
+        var now = batch.clockStart
+        val j = Journey(seed, hero, skills, world, Clock { now += 20_000; now })
         var guard = 0
         var seconds = 0.0
         var spokenWords = 0
@@ -74,6 +81,8 @@ object BalanceSim {
         var ambush = false
         while (!j.finished && guard++ < 4000) {
             val b = j.beat
+            val before = seconds
+            val speechSeconds = b.speech().firstOrNull()?.let { words(it) / 2.3 } ?: 0.0
             b.speech().firstOrNull()?.let { spokenWords += words(it) }
             val battle = b.scene.battle
             if (battle == null) foe = null
@@ -126,9 +135,13 @@ object BalanceSim {
                 is Beat.Roll -> Reply.Rolled(false, 1)
                 is Beat.Finale -> Reply.Next
             }
+            val kind = b::class.simpleName.orEmpty()
+            batch.secondsByKind.merge(kind, (seconds - before) + speechSeconds, Double::plus)
+            batch.beatsByKind.merge(kind, 1, Int::plus)
             j.reply(reply)
         }
         batch.faints += j.faints
+        batch.clockStart += 600_000L
         seconds += spokenWords / 2.3 // narration at about 140 words a minute
         batch.journeys++
         if (j.finished) batch.finished++
@@ -199,6 +212,13 @@ object BalanceSim {
                     "${f1(b.puzzlesPerJourney)} | ${f1(b.menus.toDouble() / b.journeys)} | ${f1(b.battles.toDouble() / b.journeys)} | " +
                     "${"%.2f".format(b.faints.toDouble() / b.journeys)} | ${b.forcedFights} | ${b.namedAmbushes} | ${b.tellsWithRetryWords} of ${b.asksFailed} |",
             )
+        }
+        sb.appendLine("\n### Where the time goes (first batch, minutes and beats per journey)\n")
+        sb.appendLine("| Beat | Minutes | Beats |")
+        sb.appendLine("|---|---|---|")
+        val first = batches.first()
+        for ((kind, secs) in first.secondsByKind) {
+            sb.appendLine("| $kind | ${f1(secs / 60 / first.journeys)} | ${f1(first.beatsByKind.getValue(kind).toDouble() / first.journeys)} |")
         }
         sb.appendLine("\n### Share of puzzles by skill\n")
         sb.appendLine("| Skill | " + batches.joinToString(" | ") { pct(it.accuracy) + " accuracy" } + " |")

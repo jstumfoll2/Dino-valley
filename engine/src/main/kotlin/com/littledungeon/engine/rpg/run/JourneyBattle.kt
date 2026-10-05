@@ -88,8 +88,8 @@ private fun Journey.turn(f: Fight, place: Place, onWin: () -> List<JStep>, onEsc
 
 private fun Journey.attack(f: Fight, place: Place, onWin: () -> List<JStep>, onEscape: () -> List<JStep>): List<JStep> {
     f.round++
-    val skill = f.monster.skills[(f.round - 1 + random.nextInt(2)) % f.monster.skills.size]
-    val c = battlePuzzle(f.monster, skill)
+    val c = battlePuzzle(f.monster)
+    val skill = c.skill
     val s = fightScene(place, f)
     return listOf(
         askOnce(
