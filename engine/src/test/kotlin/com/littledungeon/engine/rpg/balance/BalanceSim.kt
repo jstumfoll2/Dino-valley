@@ -177,7 +177,7 @@ object BalanceSim {
         repeat(puzzles) { i ->
             val c = ChallengeFactory.count(book.level(Skill.COUNTING), i.toLong(), Thing.STONE, "")
             val ok = r.nextInt(c.optionCount) == c.answer
-            book = book.record(ChallengeRecord(Skill.COUNTING, "count", c.level, if (ok) 1 else 2, 0, 1, i.toLong(), 0))
+            book = book.record(ChallengeRecord(Skill.COUNTING, "count", c.level, 1, 0, 1, i.toLong(), 0, failed = !ok))
         }
         return book.level(Skill.COUNTING)
     }

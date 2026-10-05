@@ -70,6 +70,8 @@ class Save(context: Context) {
         .put("levels", JSONObject().also { o -> s.levels.forEach { (k, v) -> o.put(k.name, v) } })
         .put("streaks", JSONObject().also { o -> s.streaks.forEach { (k, v) -> o.put(k.name, v) } })
         .put("last", JSONObject().also { o -> s.lastPracticed.forEach { (k, v) -> o.put(k.name, v) } })
+        .put("recent", JSONObject().also { o -> s.recent.forEach { (k, v) -> o.put(k.name, v.joinToString("") { if (it) "1" else "0" }) } })
+        .put("misses", JSONObject().also { o -> s.misses.forEach { (k, v) -> o.put(k.name, v) } })
 
     private fun skills(o: JSONObject) = SkillBook(
         levels = ints<Skill>(o.optJSONObject("levels")),
@@ -77,6 +79,10 @@ class Save(context: Context) {
         lastPracticed = o.optJSONObject("last")?.let { x ->
             x.keys().asSequence().mapNotNull { k -> enumOrNull<Skill>(k)?.let { it to x.getLong(k) } }.toMap()
         } ?: emptyMap(),
+        recent = o.optJSONObject("recent")?.let { x ->
+            x.keys().asSequence().mapNotNull { k -> enumOrNull<Skill>(k)?.let { it to x.getString(k).map { c -> c == '1' } } }.toMap()
+        } ?: emptyMap(),
+        misses = ints<Skill>(o.optJSONObject("misses")),
     )
 
     // ------------------------------------------------------------- world
@@ -104,7 +110,7 @@ class Save(context: Context) {
 
     private fun record(r: ChallengeRecord) = JSONObject()
         .put("skill", r.skill.name).put("kind", r.kind).put("level", r.level).put("tries", r.tries)
-        .put("hints", r.hintsUsed).put("millis", r.millis).put("at", r.atMillis).put("seed", r.seed)
+        .put("hints", r.hintsUsed).put("millis", r.millis).put("at", r.atMillis).put("seed", r.seed).put("failed", r.failed)
 
     private inline fun <reified E : Enum<E>> ints(o: JSONObject?): Map<E, Int> =
         o?.let { x -> x.keys().asSequence().mapNotNull { k -> enumOrNull<E>(k)?.let { it to x.getInt(k) } }.toMap() } ?: emptyMap()

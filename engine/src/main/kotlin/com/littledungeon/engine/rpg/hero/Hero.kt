@@ -128,9 +128,6 @@ data class Hero(
     /** Wisdom shows the danger on a road before you take it. */
     val seesDangers: Boolean get() = statLevel(Attribute.WISDOM) >= 2
 
-    /** Puzzles get harder as the hero grows: one level up for every three hero levels. */
-    val puzzleBoost: Int get() = (level - 1) / 3
-
     fun priceOf(item: Item): Int = (item.price * (100 - discountPercent) / 100).coerceAtLeast(1)
 }
 

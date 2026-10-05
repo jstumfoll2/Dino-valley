@@ -177,14 +177,25 @@ class Journey(
         stars[attribute] = (stars[attribute] ?: 0) + amount
     }
 
-    /** The puzzle level for a skill: what the child has reached, pushed up as the hero grows. */
-    internal fun level(skill: Skill): Int = (skills.level(skill) + hero.puzzleBoost).coerceAtMost(5)
+    /** Skills whose first puzzle of this journey has been answered; until then the puzzle is a level easier (a warm-up). */
+    internal val warmedUp = mutableSetOf<Skill>()
+
+    /**
+     * The puzzle level for a skill: what the child has reached, with the first puzzle of each skill in a
+     * journey one level easier so every skill starts with a win. The hero's own level never makes puzzles
+     * harder (it makes monsters tougher); only what the child shows does.
+     */
+    internal fun level(skill: Skill): Int {
+        val reached = skills.level(skill)
+        return if (skill in warmedUp) reached else (reached - 1).coerceAtLeast(1)
+    }
 
     internal fun nextSeed() = random.nextLong()
 
     /** Notes a finished puzzle. A failed one counts as a miss, never as a drop in level. */
     internal fun record(c: Challenge, tries: Int, hints: Int, millis: Long, failed: Boolean = false) {
-        val r = ChallengeRecord(c.skill, c.kind, c.level, if (failed) 2 else tries.coerceAtLeast(1), hints, millis, clock.nowMillis(), c.seed)
+        val r = ChallengeRecord(c.skill, c.kind, c.level, tries.coerceAtLeast(1), hints, millis, clock.nowMillis(), c.seed, failed)
+        warmedUp += c.skill
         records += r
         skills = skills.record(r)
         gain(c.skill.attribute, if (r.firstTry) 15 else 10)
