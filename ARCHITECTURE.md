@@ -9,9 +9,10 @@ is in [`PROJECT_DECISIONS.md`](PROJECT_DECISIONS.md). Known problems and what is
 ## The idea
 
 A child walks across a kingdom, Whisperwood, choosing roads on a painted map. Towns have people with lives of their own; roads and dungeons
-have puzzles and monsters; one story (an *arc*) pulls it together and ends in a lair where the boss can be beaten or befriended. Every
-puzzle is practice for a skill (counting, numbers, adding, colors, patterns, letters, skip counting, tracing, memory, sorting, jigsaws), and the
-game chooses puzzles from what the child has shown. There is no network, no account and no AI at run time.
+have puzzles and monsters; one story (an *arc*) pulls it together and ends in a lair where the boss can be beaten or befriended. There are five
+stories, and a Storybook closes with its finale and a ball for the friends the child made. Every puzzle is practice for a skill (counting, numbers,
+adding, colors, patterns, letters, skip counting, tracing and writing, memory, sorting, jigsaws, maps, brewing, rhymes, money, sharing, listening, remembering
+the trip), and the game chooses puzzles from what the child has shown. There is no network, no account and no AI at run time.
 
 ## Two modules
 
@@ -27,7 +28,7 @@ need no phone. The app can only be compiled with the Android SDK, so the `Build`
 
 Everything the child does happens in `rpg/run`:
 
-- **`Journey`** is one adventure. It hands out a `Beat` (something to show: `Tell`, `Ask`, `Choose`, `Travel`, `Shop`, `Found`, `Roll`,
+- **`Journey`** is one adventure. (A dungeon deals its rooms by kind, `RoomKind`: sixteen of them, each a skill, a backdrop and three lines; a story's peaceful way is a list of puzzle kinds, `peaceChallenge`.) It hands out a `Beat` (something to show: `Tell`, `Ask`, `Choose`, `Travel`, `Shop`, `Found`, `Roll`,
   `Night`, `Finale`) and takes back a `Reply` (`Next`, `Solved`, `Picked`, `Bought`, `Rolled`). Inside it is a queue of `JStep(beat, then)`;
   `then` says what to line up after the reply. The parts live in extension files that share its state: `JourneyTravel` (the map and roads),
   `JourneyTown` (people, shops, dialog), `JourneyBattle`, `JourneyPuzzles` (obstacles, costumes, rescues), `JourneyDungeon` (rooms, vaults,
@@ -43,11 +44,11 @@ What the journey is made from, in `rpg/*`:
 |---|---|
 | `content` | `Content`: the registry. Items, monsters, locations, roads, arcs, people, shops and flag-opened roads are `ContentPack`s built once, looked up by id. |
 | `world` | `Kingdom` (places and roads, `CoreKingdom`), `Terrain`, `RoomKind`, `WorldMemory` (what is remembered between adventures). |
-| `story` | `Arc` (a story with variants, moments, setup, peace and fight steps), `ArcPicker`, `Npc` and dialog graphs (`Dialog.kt`: conditions and effects), `CoreArcs`, `CoreNpcs`. |
+| `story` | `Arc` (a story with variants, moments, setup, peace and fight steps, an optional companion, and a finale flag), `ArcPicker` (the finale when four pages are home), `Npc` and dialog graphs (`Dialog.kt`: conditions and effects), `CoreArcs`, `CoreNpcs`. |
 | `hero` | `Hero` (class, stars, coins, bag, worn gear), `HeroClass`, `Power`, `Progression` (levels and unlocks). |
 | `battle` | `Monster`, `Tier`, `CoreMonsters`; fights are rounds with a puzzle each. |
 | `items` | `Item`, `Slot`, `Obstacle`, shops. |
-| `learn` | `Skill`, `SkillBook` (levels), `ChallengeRecord`, `Challenge` kinds, `ChallengeFactory` (makes puzzles), `Coach` (hints and explanations), `Words` (numbers and letters said right). |
+| `learn` | `Skill`, `SkillBook` (levels), `ChallengeRecord`, `Challenge` kinds (pick one of several, `PictureChallenge` for pictures and numbers on cards, `GridChallenge`, tracing, memory, bells, recipes, sorting, jigsaws), `ChallengeFactory` and `PictureFactory` (make puzzles), `Coach` (hints and explanations), `Words` (numbers and letters said right). |
 | `rpg/VoiceCatalog.kt` | Lists every sentence the game can say, for the build to record. |
 
 ### Content is data
@@ -79,8 +80,8 @@ MainActivity            hides the system bars, provides the narrator, sound, dra
 ui/game/GameViewModel   holds the Journey; saves every tap; resumes a saved adventure; stores the hero when one ends
 ui/game/TitleScreen     the camp: pick a hero, name the dragon, start or continue
 ui/game/AdventureScreen draws a Beat: backdrop, cast, then the Tell/Ask/Choose/Travel/Shop/Found/Roll/Night beat on top
-ui/game/Challenges.kt   the puzzle screens (AskBeat: counting, adding, colors, patterns, letters, tracing, memory, sorting, skip counting, jigsaw, and
-                        screens for map and potion puzzles the journey doesn't deal yet); judge a try and reply Solved
+ui/game/Challenges.kt   the puzzle screens (AskBeat: counting, adding, colors, patterns, letters, tracing and the lamp wire, memory doors, the bell song, sorting, skip
+                        counting, jigsaw, potions, picture cards, the treasure map); judge a try and reply Solved
 ui/game/JourneyUi.kt    the map (TravelBeat), shops, people (NpcStand) and monsters (BattleStage) on stage
 ui/game/MagicFx.kt      magic effects the narrator's words set off (sparkles, poofs, the wizard's hat); Finale.kt: the end of an adventure
 ui/art                  Rigs (layered characters), Pictures (art by name), Pictos (button symbols drawn in code)
@@ -90,7 +91,7 @@ feedback                FeedbackLog: the playtest note (screen, seed, taps, last
 ```
 
 The UI decides nothing about the story: it shows a beat and sends back a reply. (One known exception: the puzzle screens still judge
-whether a try is right; moving that into the engine is step 2.8 of the improvement plan.)
+whether a try is right, except the bell song, which `BellChallenge.expects` judges; moving the rest into the engine is step 2.8 of the improvement plan.)
 
 ### Saving
 
@@ -101,24 +102,24 @@ whether a try is right; moving that into the engine is step 2.8 of the improveme
 ### Art
 
 Art is drawn as code in `art/src/*.py` (SVG), built into layered WebP pictures by `art/build.py` (Chromium and ffmpeg), and committed as
-`app/src/main/res/drawable-nodpi/art_*.webp`. `Rigs` stacks the layers of a character (body, gear, hat) and animates them; `Art.byName` finds a
+`app/src/main/res/drawable-nodpi/art_*.webp`. New pieces are previewed first with `art/preview.py`; the workflow and what each look found are in [`docs/art-plan.md`](docs/art-plan.md). `Rigs` stacks the layers of a character (body, gear, hat) and animates them; `Art.byName` finds a
 picture by name. Backdrops are 1920x1080 scenes. Known layering problems and the fix plan are in the review's section 6.
 
 ### Sound
 
-Spoken words are the recordings above. Sound effects are small files in `assets/sfx` (CC0 packs and `scripts/make-sfx.py`; credits in
-[`docs/SOUND_CREDITS.md`](docs/SOUND_CREDITS.md)). Held letter sounds and the dragon's growl are made, not spoken (decision #50). There is no music yet.
+Spoken words are the recordings above. Sound effects are small files in `assets/sfx` (CC0 packs and `scripts/make-sfx.py`, which also synthesizes the three bells of the Bell Song;
+credits in [`docs/SOUND_CREDITS.md`](docs/SOUND_CREDITS.md)). Held letter sounds and the dragon's growl are made, not spoken (decision #50). There is no music yet.
 
 ## Testing and CI
 
-- `./gradlew :engine:test` runs about 80 tests: rules, content, learning rules, the command log, voice coverage, and the **balance
+- `./gradlew :engine:test` runs about 120 tests: rules, content, learning rules, the command log, voice coverage, and the **balance
   harness** (`rpg/balance`): simulated children play many journeys and the tests hold what matters (levels follow ability, answers can't be
   guessed from where they sit, no forced fights, a sitting is about ten minutes). `./gradlew :engine:balanceReport` prints the full table.
 - The `Build` workflow: fetches the voice, lists and records every sentence, runs the engine tests, builds the debug APK, prints the balance
-  report in the run summary, and on `main` publishes the APK as the `latest` release.
+  report in the run summary, and on `main` publishes the APK as the `latest` release. A manual run can turn recording off (`record_voice`) to check quickly that the tests pass and the app compiles.
 - The app has no tests yet (they need the Android SDK); screenshot tests are step 4.6 of the plan.
 
 ## Dependencies
 
-Kotlin 2.3, Android Gradle Plugin 9.3, Jetpack Compose (BOM 2025.09), activity-compose, lifecycle. On the phone: sherpa-onnx (Apache-2.0) and
-the Kokoro v0.19 voice model (Apache-2.0), which includes espeak-ng data (GPL-3.0; see area X3 of the plan). minSdk 26, targetSdk 36.
+Kotlin 2.3, Android Gradle Plugin 9.3, Jetpack Compose (BOM 2025.09), activity-compose, lifecycle. On the phone: sherpa-onnx 1.13.8 (Apache-2.0) and
+the Kokoro v1.0 voice model (Apache-2.0, 54 speakers), which includes espeak-ng data (GPL-3.0; see area X3 of the plan). minSdk 26, targetSdk 36.

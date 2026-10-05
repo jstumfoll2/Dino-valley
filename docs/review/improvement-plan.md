@@ -55,7 +55,7 @@ time estimate), so the minutes are close but not exact comparisons. The sitting 
 | Share of puzzles: listening / recipes / tracing / memory / sorting / jigsaws | 0% / 0% / 1% / 1% / 1% / 1% | the same | **1.4% / 1.1% / 1.4% / 1.1% / 1.0% / 0.7%** |
 
 What did not move: the skills that are only dealt in dungeon rooms (listening, recipes, tracing, memory, sorting, jigsaws) are still 1% to 2% of puzzles each, short of the roadmap's 5%,
-because a journey visits few dungeons and each deals three of fifteen kinds of room. Raising that means more rooms per journey (longer) or putting them on the roads (a different
+because a journey visits few dungeons and each deals three of sixteen kinds of room. Raising that means more rooms per journey (longer) or putting them on the roads (a different
 design); neither is done. The whole-journey time grew from about 19 minutes to about 25 to 30: the Baron's story alone is up to five minutes longer than it was (probably the new rooms and the recap at the end; not separated out), and
 the other stories have lairs about six roads from the camp, which the simulated child (who follows the dragon's marked road only 60% of the time) wanders towards for longer. What the
 child feels, a sitting of about ten minutes, did not change. A real child follows the marked road more often than this one does, so the simulation is pessimistic here.
