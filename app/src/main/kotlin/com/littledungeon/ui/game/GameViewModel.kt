@@ -12,6 +12,9 @@ import com.littledungeon.engine.rpg.hero.HeroClass
 import com.littledungeon.engine.rpg.run.Journey
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Reply
+import com.littledungeon.engine.rpg.run.Settings
+import com.littledungeon.engine.rpg.learn.SkillProgress
+import com.littledungeon.engine.rpg.learn.progressOf
 
 /**
  * Bridges the engine and the screens: the title screen, then one [Journey] beat at a time.
@@ -35,6 +38,18 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     /** Bumped on every new beat, so screens restart their animations even for equal beats. */
     var beatNumber by mutableIntStateOf(0)
         private set
+
+    /** What a grown-up has set (behind the parent gate); a new adventure begins with them. */
+    var settings by mutableStateOf(save.settings())
+        private set
+
+    fun changeSettings(s: Settings) {
+        settings = s
+        save.storeSettings(s)
+    }
+
+    /** How each skill is going, from the challenge log. */
+    fun progress(): List<SkillProgress> = progressOf(save.records(), state.skills)
 
     /** An adventure was put down and can be carried on. */
     var canContinue by mutableStateOf(save.hasSaved())
@@ -62,8 +77,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun start() {
         letGo()
         val seed = System.nanoTime()
-        val a = Journey(seed, state.hero, state.skills, state.world)
-        save.begin(seed, state)
+        val a = Journey(seed, state.hero, state.skills, state.world, settings = settings)
+        save.begin(seed, state, settings)
         recordsLogged = 0
         canContinue = false
         // So a feedback note can say exactly which adventure this was.
@@ -77,7 +92,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     /** Carries on the adventure that was put down, from the beat it was left at. */
     fun resume() {
         val saved = save.saved() ?: return start()
-        val a = Journey.replay(saved.seed, saved.start.hero, saved.start.skills, saved.start.world, saved.commands)
+        val a = Journey.replay(saved.seed, saved.start.hero, saved.start.skills, saved.start.world, saved.commands, settings = saved.settings)
         // Everything answered so far was added to the challenge log when it happened.
         recordsLogged = a.records.size
         // The adventure was begun as this hero, whoever the camp screen last showed.
@@ -119,7 +134,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private fun letGo() {
         val saved = save.saved()
         if (saved != null) {
-            val a = Journey.replay(saved.seed, saved.start.hero, saved.start.skills, saved.start.world, saved.commands)
+            val a = Journey.replay(saved.seed, saved.start.hero, saved.start.skills, saved.start.world, saved.commands, settings = saved.settings)
             state = state.copy(skills = a.skills)
             save.store(state)
         }

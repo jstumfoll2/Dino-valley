@@ -79,6 +79,7 @@ fun TitleScreen(vm: GameViewModel) {
     var dragonMood by remember { mutableStateOf(Mood.CALM) }
     var naming by remember { mutableStateOf(false) }
     var replacing by remember { mutableStateOf(false) }
+    var grownUps by remember { mutableStateOf(false) }
     val hero = vm.state.hero
     // An adventure was put down: the big arrow carries on with it, and the hero is the one it began with.
     val waiting = vm.canContinue
@@ -145,6 +146,13 @@ fun TitleScreen(vm: GameViewModel) {
         // Level and stars
         LevelBadge(hero.level, Progression.progress(hero.totalXp), Modifier.align(Alignment.TopStart).padding(12.dp), h * 0.12f)
         FeedbackButton(h * 0.1f, Modifier.align(Alignment.BottomStart).padding(12.dp))
+        // For grown-ups: settings and how it is going, behind a question.
+        Text(
+            "Grown-ups", fontSize = 13.sp, color = Palette.Ink,
+            modifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp + h * 0.1f + 10.dp, bottom = 12.dp + h * 0.03f)
+                .background(Color(0xAAFFF6E0), RoundedCornerShape(50)).clickable { grownUps = true }.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+        if (grownUps) ParentSpace(vm) { grownUps = false }
 
         // Pick a hero
         Row(
