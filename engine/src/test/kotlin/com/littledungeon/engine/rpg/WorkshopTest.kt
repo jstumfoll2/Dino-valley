@@ -24,3 +24,14 @@ class WorkshopTest {
         assertTrue(ask.oneTry)
     }
 }
+
+class TunnelTest {
+    @Test
+    fun `writing starts with lines and shapes, then letters from straight to twisty`() {
+        val shapes = (1L..60L).map { com.littledungeon.engine.rpg.run.tunnelTrace(1, it, "x").shape }.toSet() + (1L..60L).map { com.littledungeon.engine.rpg.run.tunnelTrace(2, it, "x").shape }.toSet()
+        assertTrue(shapes.all { it != com.littledungeon.engine.rpg.learn.TraceShape.LETTER }, "levels 1 and 2 are shapes: $shapes")
+        assertTrue(com.littledungeon.engine.rpg.learn.TraceShape.LINE in shapes && com.littledungeon.engine.rpg.learn.TraceShape.ZIGZAG in shapes)
+        assertTrue((1L..30L).all { com.littledungeon.engine.rpg.run.tunnelTrace(3, it, "x").shape == com.littledungeon.engine.rpg.learn.TraceShape.LETTER })
+        assertTrue((1L..30L).all { com.littledungeon.engine.rpg.run.tunnelTrace(3, it, "x").glyph.let { g -> g != null && g in "LTIHEF147" } })
+    }
+}

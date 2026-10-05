@@ -68,15 +68,15 @@ internal class RoomLines(private val r: Random) {
     fun libraryYay() = pick("[whoosh] The books settle back on their shelves. The spell is finished!", "You got it! The spell book glows with happy magic! <pet>Hooray!")
 
     fun tunnel() = pick(
-        "This tunnel is so dark! Magic letters on the wall light the way, but they are fading. <pet>I'm not scared. Much.",
-        "A dark, twisty tunnel. If we write magic letters on the wall, they will glow and light the way!",
+        "This tunnel is so dark! Magic lines and letters on the wall light the way, but they are fading. <pet>I'm not scared. Much.",
+        "A dark, twisty tunnel. If we draw magic lines and letters on the wall, they will glow and light the way!",
     )
 
-    fun writePurpose() = pick("Let's light the tunnel!", "Write with your magic finger!", "Make the wall glow!")
+    fun writePurpose() = pick("Let's light the tunnel!", "Draw with your magic finger!", "Make the wall glow!")
 
     fun tunnelOops() = pick("The magic fizzles out like a sparkler. It wandered off the line.", "Oops, the magic wandered off the line!")
 
-    fun tunnelYay() = pick("It glows! The whole tunnel lights up!", "Your letter shines brightly. Now we can see!")
+    fun tunnelYay() = pick("It glows! The whole tunnel lights up!", "Your drawing shines brightly. Now we can see!")
 
     fun mirrorHall() = pick(
         "A hall full of mirrors! Only one door is the real way out. Watch carefully...",

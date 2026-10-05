@@ -75,7 +75,7 @@ internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JSt
         RoomKind.BRIDGE -> Room5(rooms.bridge(), ChallengeFactory.count(lv(Skill.COUNTING), seed, Thing.STONE, "How many stones are on the bridge?"), rooms.bridgeOops(), rooms.bridgeYay(), Obstacle.CROSS)
         RoomKind.CRYSTAL_CAVE -> Room5(rooms.crystalCave(), ChallengeFactory.color(lv(Skill.COLORS), seed, "", speaker = Who.WIZARD), rooms.crystalOops(), rooms.crystalYay(), Obstacle.DARK)
         RoomKind.LIBRARY -> Room5(rooms.library(), ChallengeFactory.letter(lv(Skill.LETTERS), seed, rooms.letterPurpose()), rooms.libraryOops(), rooms.libraryYay(), Obstacle.RIDDLE)
-        RoomKind.TUNNEL -> Room5(rooms.tunnel(), ChallengeFactory.write(lv(Skill.TRACING), seed, rooms.writePurpose()), rooms.tunnelOops(), rooms.tunnelYay(), Obstacle.DARK)
+        RoomKind.TUNNEL -> Room5(rooms.tunnel(), tunnelTrace(lv(Skill.TRACING), seed, rooms.writePurpose()), rooms.tunnelOops(), rooms.tunnelYay(), Obstacle.DARK)
         RoomKind.MIRROR_HALL -> Room5(rooms.mirrorHall(), ChallengeFactory.memory(lv(Skill.MEMORY), seed), rooms.mirrorOops(), rooms.mirrorYay(), Obstacle.RIDDLE)
         RoomKind.VAULT -> Room5(
             rooms.vault(),
@@ -212,4 +212,16 @@ private fun Journey.ending(l: Location, fought: Boolean, friend: Boolean = false
     steps += tell(s, say.pageFound(), say.pagesLine(pagesNow))
     if (pagesNow % BOOK_PAGES == 0) steps += tell(s, say.bookWhole(), say.newBook())
     return steps
+}
+
+/**
+ * Learning to write starts before letters: a line, a curve, a zigzag, a loop, a circle and a triangle (levels 1 and 2), then letters from
+ * straight ones to twisty ones (levels 3 to 5). Writing letters from the first level skipped the strokes they are made of.
+ */
+internal fun tunnelTrace(level: Int, seed: Long, purpose: String) = when (level) {
+    1 -> ChallengeFactory.trace(1 + (seed and 1L).toInt(), seed, "to light up the tunnel.")
+    2 -> ChallengeFactory.trace(3 + ((seed and 0xffffL) % 3).toInt(), seed, "to light up the tunnel.")
+    3 -> ChallengeFactory.write(1, seed, purpose)
+    4 -> ChallengeFactory.write(2 + (seed and 1L).toInt(), seed, purpose)
+    else -> ChallengeFactory.write(4 + (seed and 1L).toInt(), seed, purpose)
 }
