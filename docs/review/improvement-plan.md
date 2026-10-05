@@ -155,6 +155,9 @@ Each needs a generator, a judge, a screen, a place in the world, tests, voice li
 
 ## Phase 7: new stories
 
+Book One, as the roadmap wanted it (five different stories, each bringing one page home, ending with a finale), is complete: the Baron, the dragon, the lanterns and Ruby come in any
+order (one that was not told last time comes first), and the Ink Shadow always closes the book, when four pages are home. Book Two's stories (7.4, 7.6 to 7.8) are not started.
+
 | Step | Story | Status |
 |---|---|---|
 | 7.1 | The Night of a Thousand Lanterns | **Done as data** (decision #68): glow-silk from the Spider Caves, the Bat Belfry (a new lair, drawn on the map and as a backdrop), three ways to tell it, the Bell Song, a glowing path and shared berries on the peaceful way. The roadmap's lit-lantern map state is not built |
