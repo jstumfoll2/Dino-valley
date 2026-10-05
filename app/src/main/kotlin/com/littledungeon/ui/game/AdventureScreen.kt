@@ -599,8 +599,8 @@ private fun RollBeat(beat: Beat.Roll, say: (List<Speech>) -> Unit, celebrate: ()
                 pop.animateTo(0f, tween(400))
                 heartPop = false
             }
-            Text(
-                "💔", fontSize = with(LocalDensity.current) { (h * 0.18f).toSp() },
+            Image(
+                painterResource(Art.byName("art_mini_heart_broken") ?: R.drawable.art_treasure), null,
                 modifier = Modifier.at(w * 0.66f, h * 0.42f, h * 0.3f, h * 0.3f).graphicsLayer { scaleX = pop.value; scaleY = pop.value; alpha = pop.value.coerceIn(0f, 1f) },
             )
         }

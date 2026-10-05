@@ -126,7 +126,7 @@ look is for a playtest (or the screenshot tests of 4.6). Each fix was worked out
 | 4.2 | Stage layout: choice tray, battle portrait during puzzles, shop keeper visible, feet anchored | **Partly**: choices in a bottom tray clear of the face, the foe a portrait during puzzles with both health bars in fixed HUD rows, a narrower shop counter with the keeper at the edge. Feet on a common ground line need per-picture foot positions (4.3) |
 | 4.3 | Backdrop stage contract, floors out of the water, landmarks out of the puzzle zone | Planned (art redraw: a floor band, a landmark box and a 20:9 safe area for every scene, then metadata the app reads) |
 | 4.4 | World map from data, aspect kept, fog for later places | **Partly**: stretched at most a quarter instead of 1.55 times. A true-shaped map overlaps nine pairs of places at the current marker size, so it needs the places moved and the painting redone, with roads painted from the same data |
-| 4.5 | Painted icons replace emoji | **Partly**: the feedback bubble, loading book, stars-earned and gift icons are drawn in code. The magic bunny and frog (and the dice screen's broken heart) still need art |
+| 4.5 | Painted icons replace emoji | **Done in code**: the feedback bubble, loading book, stars-earned and gift icons are drawn in code, and the magic bunny, the magic frog and the dice screen's broken heart are painted (`mini_bunny`, `mini_frog`, `mini_heart_broken`); no emoji is left in the app. Not yet seen on a phone |
 | 4.6 | Screenshot tests at 16:9 and 20:9 | Planned (needs the Android SDK) |
 
 ## Phase 5: voice, music and sound

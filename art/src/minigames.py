@@ -334,6 +334,50 @@ def r_jar():
     ))
 
 
+def bunny():
+    """The magic bunny that pops out of the wizard's hat: a round white bunny sitting up, with pink ears."""
+    fur = "#fbf6ee"
+    return icon(G("b", fur, "radial") + G("e", "#ffb3c4"), (
+        f'<path d="M58 70 C44 32 50 8 66 10 C82 12 80 50 74 74 Z" fill="url(#b)" {S()}/><path d="M63 62 C56 36 58 22 66 21 C73 23 72 46 70 62 Z" fill="url(#e)"/>'
+        f'<path d="M102 70 C116 32 110 8 94 10 C78 12 80 50 86 74 Z" fill="url(#b)" {S()}/><path d="M97 62 C104 36 102 22 94 21 C87 23 88 46 90 62 Z" fill="url(#e)"/>'
+        f'<ellipse cx="80" cy="120" rx="38" ry="30" fill="url(#b)" {S()}/><circle cx="116" cy="132" r="11" fill="#fff" {S(INK, 3.5)}/>'
+        f'<ellipse cx="62" cy="144" rx="13" ry="7" fill="url(#b)" {S(INK, 3.5)}/><ellipse cx="98" cy="144" rx="13" ry="7" fill="url(#b)" {S(INK, 3.5)}/>'
+        f'<circle cx="80" cy="84" r="30" fill="url(#b)" {S()}/>'
+        + eyes(80, 80, 12, 5) +
+        f'<path d="M75 92 L85 92 L80 98 Z" fill="#ff8aa0" {S(INK, 2.5)}/><path d="M80 98 Q74 105 68 101 M80 98 Q86 105 92 101" fill="none" {S(INK, 2.8)}/>'
+        f'<ellipse cx="60" cy="94" rx="7" ry="4.5" fill="#ffb3c4" opacity="0.7"/><ellipse cx="100" cy="94" rx="7" ry="4.5" fill="#ffb3c4" opacity="0.7"/>'
+    ))
+
+
+def frog():
+    """The magic frog that hops across the screen: a friendly green frog with big eyes and a wide smile."""
+    c = "#6fbf4a"
+    return icon(G("g", c, "radial") + G("l", "#eaf6b8"), (
+        f'<ellipse cx="38" cy="132" rx="22" ry="12" fill="url(#g)" {S()}/><ellipse cx="122" cy="132" rx="22" ry="12" fill="url(#g)" {S()}/>'
+        f'<ellipse cx="80" cy="112" rx="46" ry="34" fill="url(#g)" {S()}/><ellipse cx="80" cy="122" rx="28" ry="20" fill="url(#l)" opacity="0.9"/>'
+        f'<ellipse cx="50" cy="138" rx="14" ry="7" fill="url(#g)" {S(INK, 3.5)}/><ellipse cx="110" cy="138" rx="14" ry="7" fill="url(#g)" {S(INK, 3.5)}/>'
+        f'<circle cx="56" cy="66" r="19" fill="url(#g)" {S()}/><circle cx="104" cy="66" r="19" fill="url(#g)" {S()}/>'
+        f'<circle cx="56" cy="64" r="12" fill="#fff" {S(INK, 3)}/><circle cx="104" cy="64" r="12" fill="#fff" {S(INK, 3)}/>'
+        f'<circle cx="58" cy="66" r="6" fill="{INK}"/><circle cx="102" cy="66" r="6" fill="{INK}"/><circle cx="60" cy="63" r="2" fill="#fff"/><circle cx="104" cy="63" r="2" fill="#fff"/>'
+        f'<path d="M48 104 Q80 126 112 104" fill="none" {S(INK, 4)}/>'
+        f'<circle cx="72" cy="94" r="2.5" fill="{INK}"/><circle cx="88" cy="94" r="2.5" fill="{INK}"/>'
+        f'<ellipse cx="56" cy="99" rx="7" ry="4.5" fill="#ff9aa8" opacity="0.6"/><ellipse cx="104" cy="99" rx="7" ry="4.5" fill="#ff9aa8" opacity="0.6"/>'
+    ))
+
+
+def heart_broken():
+    """The heart that pops when a sum is missed on the dice screen: a red heart split in two along a zigzag, the halves a little apart."""
+    zig = "80,40 68,64 90,84 70,106 88,126 78,150"
+    left = f'0,0 {zig.replace(" ", " ")} 0,160'
+    right = f'160,0 {zig} 160,160'
+    heart = "M80 138 C16 98 22 44 56 42 C70 42 80 52 80 64 C80 52 90 42 104 42 C138 44 144 98 80 138 Z"
+    defs = G("h", "#e23b4a", "radial") + f'<clipPath id="cl"><polygon points="{left}"/></clipPath><clipPath id="cr"><polygon points="{right}"/></clipPath>'
+    return icon(defs, (
+        f'<g transform="translate(-7 2) rotate(-7 80 140)" clip-path="url(#cl)"><path d="{heart}" fill="url(#h)" {S()}/><path d="M34 62 C36 54 44 50 52 52" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/></g>'
+        f'<g transform="translate(7 2) rotate(7 80 140)" clip-path="url(#cr)"><path d="{heart}" fill="url(#h)" {S()}/></g>'
+    ))
+
+
 SPRITES = {
     "bell_red": lambda: bell("#e23b4a", "triangle"),
     "bell_blue": lambda: bell("#2f7de1", "ring"),
@@ -351,6 +395,7 @@ SPRITES = {
     "pie": pie,
     "apple": apple,
     "bat_small": bat_small,
+    "bunny": bunny, "frog": frog, "heart_broken": heart_broken,
     "stall": stall,
     "rhyme_cat": r_cat, "rhyme_hat": r_hat, "rhyme_bat": bat_small, "rhyme_mat": r_mat,
     "rhyme_dog": r_dog, "rhyme_log": r_log, "rhyme_frog": r_frog, "rhyme_pig": r_pig, "rhyme_wig": r_wig,

@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -23,9 +24,12 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import com.littledungeon.R
 import com.littledungeon.audio.Narrator
 import com.littledungeon.engine.rpg.run.Fx
+import com.littledungeon.ui.art.Art
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -187,14 +191,14 @@ private fun Magic(burst: Burst, w: Dp, h: Dp, hat: Offset?) {
     }
     // The hat really turns into a bunny, and a frog really hops out.
     when (fx) {
-        Fx.BUNNY -> Pop("🐰", spot.x, spot.y - 0.02f, 0.17f, w, h, p, wobble = true)
-        Fx.FROG -> Pop("🐸", 0.55f + 0.25f * p, 0.55f - 0.3f * sin(PI.toFloat() * p), 0.16f, w, h, p, wobble = false)
+        Fx.BUNNY -> Pop("art_mini_bunny", spot.x, spot.y - 0.02f, 0.17f, w, h, p, wobble = true)
+        Fx.FROG -> Pop("art_mini_frog", 0.55f + 0.25f * p, 0.55f - 0.3f * sin(PI.toFloat() * p), 0.16f, w, h, p, wobble = false)
         else -> Unit
     }
 }
 
 @Composable
-private fun Pop(emoji: String, x: Float, y: Float, size: Float, w: Dp, h: Dp, p: Float, wobble: Boolean) {
+private fun Pop(art: String, x: Float, y: Float, size: Float, w: Dp, h: Dp, p: Float, wobble: Boolean) {
     val s = if (p < 0.1f) p / 0.1f else if (wobble) 1f + 0.06f * sin(p * 30f) else 1f
     val fade = if (p > 0.9f) (1f - p) / 0.1f else 1f
     Box(
@@ -207,7 +211,7 @@ private fun Pop(emoji: String, x: Float, y: Float, size: Float, w: Dp, h: Dp, p:
                 rotationZ = if (wobble) 6f * sin(p * 18f) else 0f
             },
     ) {
-        Text(emoji, fontSize = with(LocalDensity.current) { (h * size * 0.8f).toSp() })
+        Image(painterResource(Art.byName(art) ?: R.drawable.art_treasure), null, Modifier.fillMaxSize())
     }
 }
 

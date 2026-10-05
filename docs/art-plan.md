@@ -92,6 +92,13 @@ What was drawn on this branch, and what was found when it was looked at. Everyth
 | `scene_ballroom` (the Storybook Ball) | Nothing that needed changing for a scene with no answers on it. The right window sits where answers would be, but the Ball is only people on stage; the curtains are a little swollen | None |
 | `scene_map` (reused for Hoot's map table) | Already drawn; it is the parchment table, calm everywhere, and the screen draws its own grid on it | None |
 
+### The last emoji (`mini_bunny`, `mini_frog`, `mini_heart_broken`)
+
+| Piece | Found on the first look | Fixed |
+|---|---|---|
+| Bunny, frog | Both read clearly at once. The frog's blush sat on the edge of its body, over the outline | Moved inward |
+| Broken heart | Reads as a heart split along a zigzag with the halves apart; nothing needed changing | None |
+
 ### Knocker, the doorknob and the Hall of Doors
 
 | Piece | Found on the first look | Fixed |
@@ -119,7 +126,7 @@ Counts are files in `app/src/main/res/drawable-nodpi` (each layered character is
 | Monsters | 120 files | Complete (the Bat King and the Dragon now have a story; Knocker is new) |
 | Items | 43 | Complete; the three story keys are new |
 | Gear overlays | 20 | Complete |
-| Minigame pictures | 34 | Complete for the minigames built so far |
+| Minigame pictures | 37 | Complete for the minigames built so far (includes the bunny, frog and broken heart that replaced the last emoji) |
 | Dialog and menu icons | 23 | Complete |
 | Hero and dragon rigs | 103 | Complete |
 
@@ -130,7 +137,6 @@ In the order the plan needs them.
 | Piece | Needed for | Notes |
 |---|---|---|
 | A lantern field backdrop and a lit Lantern Hollow at night | "Lumi's Lanterns" as its own place; lanterns "stay lit on the map" after the story | The lamp pictures exist; the scene does not |
-| Painted bunny and frog icons, the dice screen's broken heart | Step 4.5 (painted icons replace the last emoji) | Small; same module as the other icons |
 | Backdrops redrawn with a floor line, a landmark box and a 20:9 safe area | Steps 4.2 and 4.3 (feet on a common ground, nothing in the answer zone) | A pass over every `scene_*`; needs per-picture foot positions the app can read |
 | A map painted from the same data as the roads | Step 4.4 | Needs the places moved first (nine pairs overlap at the current marker size) |
 | The Lakeside Isles | "Grumble's Raft" | A new map region; the largest single piece of art left |
