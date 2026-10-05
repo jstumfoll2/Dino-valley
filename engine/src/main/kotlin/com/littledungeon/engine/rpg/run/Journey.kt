@@ -48,7 +48,7 @@ class Journey(
 ) {
     internal val random = Random(seed)
     internal val say = JourneyLines(Random(random.nextLong()))
-    internal val rooms = Lines(Random(random.nextLong()))
+    internal val rooms = RoomLines(Random(random.nextLong()))
 
     val kingdom: Kingdom = Content.kingdom
     val arc: Arc = ArcPicker.pick(startWorld, random)
@@ -161,7 +161,7 @@ class Journey(
     internal fun scene(
         place: Place, vararg extra: Actor, mood: Mood = Mood.CALM, cleared: Boolean = false,
         npc: NpcView? = null, battle: BattleView? = null,
-    ) = Scene(place, cast + extra, mood, null, cleared, npc, battle)
+    ) = Scene(place, cast + extra, mood, cleared, npc, battle)
 
     /** The backdrop for where the hero is. */
     internal fun placeOf(l: Location): Place = Place(l.theme)

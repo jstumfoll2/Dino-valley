@@ -5,9 +5,7 @@ import com.littledungeon.engine.rpg.hero.Attribute
 import com.littledungeon.engine.rpg.hero.Unlock
 import com.littledungeon.engine.rpg.learn.Challenge
 import com.littledungeon.engine.rpg.learn.Hue
-import com.littledungeon.engine.rpg.learn.MapChallenge
 import com.littledungeon.engine.rpg.world.RoomKind
-import com.littledungeon.engine.rpg.world.Stop
 
 /**
  * Where a beat happens: the name of a painted backdrop (`art_scene_<id>`). Places are open data so
@@ -16,7 +14,6 @@ import com.littledungeon.engine.rpg.world.Stop
 data class Place(val id: String) {
     companion object {
         val CAMP = Place("camp")
-        val GATE = Place("gate")
         val RUNE_HALL = Place("rune_hall")
         val BRIDGE = Place("bridge")
         val CRYSTAL_CAVE = Place("crystal_cave")
@@ -27,17 +24,13 @@ data class Place(val id: String) {
         val STOREROOM = Place("storeroom")
         val POND = Place("pond")
         val MOSAIC_HALL = Place("mosaic_hall")
-        val GOBLIN_DEN = Place("goblin_den")
         val WORKSHOP = Place("workshop")
-        val LAIR = Place("lair")
-        val MAP = Place("map")
         val WORLD_MAP = Place("world_map")
     }
 }
 
 /** Where each kind of room is drawn. */
 fun placeOf(kind: RoomKind): Place = when (kind) {
-    RoomKind.GATE -> Place.GATE
     RoomKind.RUNE_DOOR -> Place.RUNE_HALL
     RoomKind.BRIDGE -> Place.BRIDGE
     RoomKind.CRYSTAL_CAVE -> Place.CRYSTAL_CAVE
@@ -48,9 +41,7 @@ fun placeOf(kind: RoomKind): Place = when (kind) {
     RoomKind.STOREROOM -> Place.STOREROOM
     RoomKind.POND -> Place.POND
     RoomKind.MOSAIC_HALL -> Place.MOSAIC_HALL
-    RoomKind.GOBLIN_DEN -> Place.GOBLIN_DEN
     RoomKind.WORKSHOP -> Place.WORKSHOP
-    RoomKind.LAIR -> Place.LAIR
 }
 
 /** Who can be on screen. COMPANION is the child's baby dragon. */
@@ -74,8 +65,6 @@ data class Scene(
     val place: Place,
     val cast: Set<Actor>,
     val mood: Mood = Mood.CALM,
-    /** In the lair: how many of the three boss stars are lit. */
-    val bossStars: Int? = null,
     /** The room's obstacle is cleared (door open, bridge whole, lights on). */
     val cleared: Boolean = false,
     /** Someone from the world is here talking. */
@@ -84,13 +73,8 @@ data class Scene(
     val battle: BattleView? = null,
 )
 
-/** Picture choices. The app draws each; the narrator says [Choice.said]. */
-enum class ChoicePicture { SHARE_SNACK, SING_SONG, TIPTOE, MAKE_FRIENDS, CAST_SPELL, LIGHT_SPELL, LULLABY }
-
-/** [icon] is a painted icon (`art_<icon>`) for choices that are not one of the story pictures. */
-data class Choice(val picture: ChoicePicture?, val said: String, val icon: String? = null) {
-    constructor(icon: String, said: String) : this(null, said, icon)
-}
+/** A picture choice: [icon] is a painted icon (`art_<icon>`) the child taps; the narrator says [said]. */
+data class Choice(val icon: String, val said: String)
 
 /** Things drawn along with a challenge. */
 enum class Prop { NONE, CHEST }
@@ -146,23 +130,6 @@ sealed interface Beat {
 
     /** A story choice between pictures. Reply [Reply.Picked]. */
     data class Choose(override val scene: Scene, val prompt: List<Speech>, val options: List<Choice>) : Beat
-
-    /**
-     * Pick a door on the map. With [clue] it's the map challenge (one door is right); without,
-     * any door is fine. [peek] shows what's behind each door (Ranger power). Reply [Reply.Picked].
-     */
-    data class Doors(
-        override val scene: Scene,
-        val prompt: List<Speech>,
-        val fork: Stop.Fork,
-        val clue: MapChallenge?,
-        val peek: Boolean,
-        val stopIndex: Int,
-        /** Said while each door lifts: its color and the kind of puzzle behind it (empty for closed doors). */
-        val offers: List<List<Speech>> = emptyList(),
-        /** Doors already tried, whose path wound back round to these doors. They can't be picked again. */
-        val closed: Set<Int> = emptySet(),
-    ) : Beat
 
     /**
      * Pick where to go on the map of the kingdom. Reply [Reply.Picked] with the index of the route.
@@ -252,7 +219,6 @@ fun Beat.speech(): List<List<Speech>> = when (this) {
     }
     is Beat.Roll -> listOf(why)
     is Beat.Choose -> listOf(prompt)
-    is Beat.Doors -> listOf(prompt) + offers
     is Beat.Travel -> listOf(prompt) + routes.map { it.said }
     is Beat.Shop -> listOf(prompt)
     is Beat.Finale -> listOf(summary.lines)

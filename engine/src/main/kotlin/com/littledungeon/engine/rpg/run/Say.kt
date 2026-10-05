@@ -16,19 +16,14 @@ object Say {
     const val WHISPER = "{name} whispers a hint!"
     const val SLOW_DOWN = "Whoa, slow down! Look carefully, then pick one."
     const val ONE_TRY_MISS = "Oh no, that is not the one. Look, this is the right answer."
-    const val NOT_THAT = "Not that one."
     const val KEEP_GOING = "Keep going!"
     const val NEXT_LINE = "Now the next line!"
     const val TRACE_HELP = "Start at the green star, and follow the glowing line."
     const val WHICH_NEXT_DOOR = "Which door comes next?"
     const val LOOK_RECIPE = "Look at the recipe!"
-    const val PICK_DOOR = "Which door will you pick?"
     const val ROLL_AGAIN = "Knight power! Do you want to roll again? Tap the dice to roll, or tap the check to keep them."
     const val FIRST_ROLL_BETTER = "The first roll was better. Let's keep it!"
     const val HEART_POPS = "Oh no, a heart pops! Let's count the dots together."
-    const val TAP_TO_ROLL = "Tap the dice to roll them!"
-    const val SORT_YES = "Yes!"
-    const val PIECE_FITS = "It fits!"
     const val WELCOME_NEW = "Welcome to the Little Dungeon! This is your baby dragon, {name}. Pick your hero, then tap the big green button!"
     const val WELCOME_BACK = "Welcome back, adventurer! {name} is ready. Pick your hero, then tap the big green button!"
     const val NAME_ASK = "What should we call your baby dragon? Ask a grown-up to type the name."
@@ -37,8 +32,7 @@ object Say {
     /** "One!" when counting things with a finger. */
     fun count(n: Int) = Words.capital(n) + "!"
 
-    fun doorPicked(hue: Hue) = "The ${hue.word.uppercase()} door! [creak]"
-
+    /** Names a door by its color, for the memory doors. */
     fun doorName(hue: Hue) = "The ${hue.word.uppercase()} door!"
 
     fun option(said: String, last: Boolean) = if (last) "Or... $said?" else "$said?"
@@ -67,13 +61,13 @@ object Say {
     fun all(choices: List<String>): List<String> = buildList {
         addAll(
             listOf(
-                TRY_AGAIN, SPARKLE, GLOW, WHISPER, SLOW_DOWN, ONE_TRY_MISS, NOT_THAT, KEEP_GOING, NEXT_LINE, TRACE_HELP, WHICH_NEXT_DOOR,
-                LOOK_RECIPE, PICK_DOOR, ROLL_AGAIN, FIRST_ROLL_BETTER, HEART_POPS, TAP_TO_ROLL, SORT_YES, PIECE_FITS,
+                TRY_AGAIN, SPARKLE, GLOW, WHISPER, SLOW_DOWN, ONE_TRY_MISS, KEEP_GOING, NEXT_LINE, TRACE_HELP, WHICH_NEXT_DOOR,
+                LOOK_RECIPE, ROLL_AGAIN, FIRST_ROLL_BETTER, HEART_POPS,
                 WELCOME_NEW, WELCOME_BACK, NAME_ASK, NAME_SET,
             ),
         )
         (1..100).forEach { add(count(it)) }
-        Hue.entries.forEach { add(doorPicked(it)); add(doorName(it)) }
+        Hue.entries.forEach { add(doorName(it)) }
         choices.forEach { add(option(it, true)); add(option(it, false)); add(chosen(it)) }
         (1..12).forEach { add(stir(it)) }
         for (a in 1..6) for (b in 1..6) {

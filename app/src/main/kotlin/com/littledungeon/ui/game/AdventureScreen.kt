@@ -69,7 +69,6 @@ import com.littledungeon.engine.rpg.run.Actor
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Place
 import com.littledungeon.engine.rpg.run.Reply
-import com.littledungeon.engine.rpg.run.placeOf
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.engine.rpg.run.speech
 import com.littledungeon.ui.art.Art
@@ -142,7 +141,6 @@ fun AdventureScreen(vm: GameViewModel) {
                 is Beat.Tell -> TellBeat(beat.lines, say) { reply(Reply.Next) }
                 is Beat.Found -> FoundBeat(beat, say, celebrate) { reply(Reply.Next) }
                 is Beat.Choose -> ChooseBeat(beat, say) { reply(Reply.Picked(it)) }
-                is Beat.Doors -> DoorsBeat(beat, say) { i -> reply(Reply.Picked(i)) }
                 is Beat.Roll -> RollBeat(beat, say, celebrate) { used, tries -> reply(Reply.Rolled(used, tries)) }
                 is Beat.Ask -> AskBeat(beat, vm.state.hero.heroClass.power == Power.SPARKLE_HINT, say, celebrate) { solved -> reply(solved) }
                 is Beat.Travel -> TravelBeat(beat, adventure, say) { reply(Reply.Picked(it)) }
@@ -372,100 +370,12 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
                     },
             ) {
                 Image(painterResource(Art.choice(o)), null, Modifier.fillMaxSize())
-                if (o.picture == null) {
-                    // Badges and items are not pictures of a whole story step: say what they are too, for grown-ups reading along.
-                    Text(
-                        o.said, color = Color.White, fontWeight = FontWeight.Black, maxLines = 2, lineHeight = with(LocalDensity.current) { (card * 0.13f).toSp() },
-                        fontSize = with(LocalDensity.current) { (card * 0.12f).toSp() },
-                        modifier = Modifier.align(Alignment.BottomCenter).offset(y = card * 0.22f).background(Color(0xCC2A1C10), RoundedCornerShape(50)).padding(horizontal = 8.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ------------------------------------------------------------------ the map
-
-/**
- * Pick a door at a fork. While each door lifts, the narrator says its color and the kind of
- * puzzle behind it (the sign on the door shows it too), so the child picks the path and the
- * puzzle; whether it was the door from the clue is the engine's to say.
- */
-@Composable
-private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int) -> Unit) {
-    val narrator = LocalNarrator.current
-    val sfx = LocalSfx.current
-    val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    var pointing by remember { mutableIntStateOf(-1) }
-    var opened by remember { mutableIntStateOf(-1) }
-    // The doors come after the clue: each lifts into place as it is described, and none can be
-    // opened until everything has been said. Doors already tried (they looped back) stay, faded.
-    var shown by remember { mutableIntStateOf(0) }
-    var ready by remember { mutableStateOf(false) }
-    val doors = beat.fork.doors
-    LaunchedEffect(Unit) {
-        say(beat.prompt)
-        narrator.speak(beat.prompt)
-        doors.forEachIndexed { i, room ->
-            if (i in beat.closed) return@forEachIndexed
-            pointing = i
-            shown = i + 1
-            narrator.speak(beat.offers.getOrNull(i)?.takeIf { it.isNotEmpty() } ?: Speech.of(Say.doorName(room.hue)))
-            delay(150)
-        }
-        pointing = -1
-        narrator.speak(Say.PICK_DOOR)
-        ready = true
-    }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val h = maxHeight
-        val w = maxWidth
-        val n = doors.size
-        val doorH = h * 0.42f
-        val doorW = doorH * (200f / 280f)
-        doors.forEachIndexed { i, room ->
-            val lift by animateFloatAsState(if (pointing == i || opened == i) 1.1f else 1f, spring(dampingRatio = 0.5f), label = "lift")
-            val closed = i in beat.closed
-            val appear by animateFloatAsState(if (closed || i < shown) 1f else 0f, tween(380, easing = OutBack), label = "appear")
-            val x = w * (0.5f + 0.5f * ((i + 0.5f) / n - 0.5f))
-            Box(
-                Modifier
-                    .at(x, h * 0.75f, doorW, doorH)
-                    .graphicsLayer {
-                        scaleX = lift * appear
-                        scaleY = lift * appear
-                        alpha = (if (closed) 0.3f else if (opened >= 0 && opened != i) 0.4f else 1f) * appear.coerceIn(0f, 1f)
-                    }
-                    .clickable(NoRipple, null, enabled = ready && opened < 0 && !closed) {
-                        opened = i
-                        pointing = -1
-                        sfx.play("tap")
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        scope.launch {
-                            narrator.speak(Speech.of(Say.doorPicked(room.hue)))
-                            pick(i)
-                        }
-                    },
-            ) {
-                Image(painterResource(Art.door(room.hue)), null, Modifier.fillMaxSize())
-                // A sign on the door: what kind of puzzle waits behind it.
-                Box(
-                    Modifier.align(Alignment.TopCenter).padding(top = doorH * 0.08f).size(doorW * 0.5f)
-                        .shadow(4.dp, CircleShape).background(Palette.Paper, CircleShape).border(3.dp, Palette.PaperEdge, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(Art.sign(room.kind), fontSize = with(LocalDensity.current) { (doorW * 0.24f).toSp() }, fontWeight = FontWeight.Black, color = Palette.Ink, maxLines = 1)
-                }
-                if (beat.peek) {
-                    // Ranger power: a peek at what's behind each door.
-                    Image(
-                        painterResource(Art.place(placeOf(room.kind))), null,
-                        Modifier.align(Alignment.BottomCenter).padding(bottom = doorH * 0.1f).size(doorW * 0.45f).clip(CircleShape).border(3.dp, Palette.Gold, CircleShape),
-                        contentScale = ContentScale.Crop,
-                    )
-                }
+                // Badges and items are pictures the child learns; say what they mean too, for grown-ups reading along.
+                Text(
+                    o.said, color = Color.White, fontWeight = FontWeight.Black, maxLines = 2, lineHeight = with(LocalDensity.current) { (card * 0.13f).toSp() },
+                    fontSize = with(LocalDensity.current) { (card * 0.12f).toSp() },
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = card * 0.22f).background(Color(0xCC2A1C10), RoundedCornerShape(50)).padding(horizontal = 8.dp),
+                )
             }
         }
     }

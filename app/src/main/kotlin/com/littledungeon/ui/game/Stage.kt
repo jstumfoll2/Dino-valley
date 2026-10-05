@@ -233,14 +233,6 @@ fun HealthBar(hp: Int, maxHp: Int, height: Dp, modifier: Modifier = Modifier, la
     }
 }
 
-@Composable
-fun BossStars(lit: Int, size: Dp, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(size * 0.15f)) {
-        repeat(3) { BossStar(it < lit, Modifier.size(size)) }
-    }
-}
-
-
 /**
  * Shown while the narrator's next words are still being made: a little scroll with bouncing
  * dots, so a pause reads as "getting ready", not "stuck". After a moment it grows into a

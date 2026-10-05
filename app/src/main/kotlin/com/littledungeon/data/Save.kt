@@ -8,7 +8,6 @@ import com.littledungeon.engine.rpg.items.Slot
 import com.littledungeon.engine.rpg.learn.ChallengeRecord
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.SkillBook
-import com.littledungeon.engine.rpg.world.QuestKind
 import com.littledungeon.engine.rpg.world.WorldMemory
 import org.json.JSONArray
 import org.json.JSONObject
@@ -84,12 +83,7 @@ class Save(context: Context) {
 
     private fun world(w: WorldMemory) = JSONObject()
         .put("adventures", w.adventures)
-        .put("friends", JSONArray(w.friends.toList()))
-        .put("dragonFriend", w.dragonFriend ?: "")
         .put("endings", JSONArray(w.endings.toList()))
-        .put("treasures", JSONArray(w.treasures))
-        .put("questsDone", JSONObject().also { o -> w.questsDone.forEach { (k, v) -> o.put(k.name, v) } })
-        .put("lastQuest", w.lastQuest?.name ?: "")
         .put("flags", JSONArray(w.flags.toList()))
         .put("relations", JSONObject().also { o -> w.relations.forEach { (k, v) -> o.put(k, v) } })
         .put("pages", w.pages)
@@ -98,12 +92,7 @@ class Save(context: Context) {
 
     private fun world(o: JSONObject) = WorldMemory(
         adventures = o.optInt("adventures"),
-        friends = strings(o.optJSONArray("friends")).toSet(),
-        dragonFriend = o.optString("dragonFriend").ifEmpty { null },
         endings = strings(o.optJSONArray("endings")).toSet(),
-        treasures = strings(o.optJSONArray("treasures")),
-        questsDone = ints<QuestKind>(o.optJSONObject("questsDone")),
-        lastQuest = enumOrNull<QuestKind>(o.optString("lastQuest")),
         flags = strings(o.optJSONArray("flags")).toSet(),
         relations = o.optJSONObject("relations")?.let { x -> x.keys().asSequence().associateWith { x.getInt(it) } } ?: emptyMap(),
         pages = o.optInt("pages"),

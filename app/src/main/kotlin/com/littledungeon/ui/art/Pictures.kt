@@ -20,10 +20,8 @@ import com.littledungeon.engine.rpg.learn.PuzzlePicture
 import com.littledungeon.engine.rpg.learn.Rune
 import com.littledungeon.engine.rpg.learn.RuneShape
 import com.littledungeon.engine.rpg.learn.Thing
-import com.littledungeon.engine.rpg.run.ChoicePicture
 import com.littledungeon.engine.rpg.run.LootKind
 import com.littledungeon.engine.rpg.run.Place
-import com.littledungeon.engine.rpg.world.RoomKind
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -62,21 +60,6 @@ object Art {
         PuzzlePicture.LIBRARY -> R.drawable.art_scene_library
         PuzzlePicture.LAIR -> R.drawable.art_scene_lair
         PuzzlePicture.POND -> R.drawable.art_scene_pond
-    }
-
-    /** The sign on a door at a fork: what kind of puzzle is behind it. */
-    fun sign(kind: RoomKind): String = when (kind) {
-        RoomKind.RUNE_DOOR -> "⭐🌙"
-        RoomKind.BRIDGE -> "123"
-        RoomKind.CRYSTAL_CAVE -> "🎨"
-        RoomKind.LIBRARY -> "ABC"
-        RoomKind.TUNNEL -> "✏️"
-        RoomKind.MIRROR_HALL -> "👀"
-        RoomKind.VAULT -> "1+1"
-        RoomKind.STOREROOM -> "🧺"
-        RoomKind.POND -> "🐸"
-        RoomKind.MOSAIC_HALL -> "🧩"
-        else -> "❓"
     }
 
     @DrawableRes
@@ -133,21 +116,9 @@ object Art {
         PotionKind.FRIENDSHIP -> Color(0xFFFF8FC0)
     }
 
+    /** A choice's picture: a painted icon found by name (`art_<icon>`). */
     @DrawableRes
-    fun choice(c: ChoicePicture): Int = when (c) {
-        ChoicePicture.SHARE_SNACK -> R.drawable.art_choice_snack
-        ChoicePicture.SING_SONG -> R.drawable.art_choice_song
-        ChoicePicture.TIPTOE -> R.drawable.art_choice_tiptoe
-        ChoicePicture.MAKE_FRIENDS -> R.drawable.art_choice_friends
-        ChoicePicture.CAST_SPELL -> R.drawable.art_choice_spell
-        ChoicePicture.LIGHT_SPELL -> R.drawable.art_choice_light
-        ChoicePicture.LULLABY -> R.drawable.art_choice_lullaby
-    }
-
-    /** A choice's picture: one of the story pictures, or a painted icon found by name (`art_<icon>`). */
-    @DrawableRes
-    fun choice(c: com.littledungeon.engine.rpg.run.Choice): Int =
-        c.picture?.let { choice(it) } ?: c.icon?.let { byName("art_$it") } ?: R.drawable.art_choice_friends
+    fun choice(c: com.littledungeon.engine.rpg.run.Choice): Int = byName("art_${c.icon}") ?: R.drawable.art_talk_yes
 
     /** The icon of an item, found by name (`art_item_<id>`). */
     @DrawableRes

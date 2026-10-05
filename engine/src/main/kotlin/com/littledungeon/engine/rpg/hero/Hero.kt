@@ -61,9 +61,6 @@ data class Hero(
     val totalXp: Int get() = xp.values.sum()
     val level: Int get() = Progression.levelFor(totalXp)
 
-    /** Added to dice rolls: +1 to start, growing slowly with level, never more than +3. */
-    val diceBonus: Int get() = (1 + (level - 1) / 3).coerceAtMost(3)
-
     val unlocks: List<Unlock> get() = Progression.unlocks.filter { it.level <= level }
 
     fun gain(attribute: Attribute, amount: Int): Hero =

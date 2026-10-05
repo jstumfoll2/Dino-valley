@@ -124,7 +124,6 @@ object BalanceSim {
                     if (r.nextInt(4) == 0 && can.isNotEmpty()) Reply.Bought(can.random(r).itemId) else Reply.Next
                 }
                 is Beat.Roll -> Reply.Rolled(false, 1)
-                is Beat.Doors -> Reply.Picked(0)
                 is Beat.Finale -> Reply.Next
             }
             j.reply(reply)

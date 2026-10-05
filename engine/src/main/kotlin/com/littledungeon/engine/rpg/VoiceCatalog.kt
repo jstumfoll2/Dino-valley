@@ -17,7 +17,6 @@ import com.littledungeon.engine.rpg.run.JourneyLines
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Reply
 import com.littledungeon.engine.rpg.run.Say
-import com.littledungeon.engine.rpg.world.QuestKind
 import com.littledungeon.engine.rpg.world.WorldMemory
 import com.littledungeon.engine.util.Clock
 import java.io.File
@@ -55,12 +54,7 @@ object VoiceCatalog {
             val world = if (run % 4 == 0) {
                 WorldMemory()
             } else {
-                WorldMemory(
-                    adventures = r.nextInt(1, 20),
-                    friends = if (r.nextBoolean()) setOf(listOf("Pip", "Nib", "Tock", "Moss", "Bindle", "Wobble").random(r)) else emptySet(),
-                    dragonFriend = if (r.nextInt(3) == 0) listOf("Ember", "Cinder", "Bramble", "Smolder", "Puddle", "Glim").random(r) else null,
-                    lastQuest = QuestKind.entries.random(r),
-                )
+                WorldMemory(adventures = r.nextInt(1, 20), pages = r.nextInt(0, 5))
             }
             val a = Journey(r.nextLong(), hero, skills, world, Clock { 0L })
             var guard = 0
@@ -96,11 +90,6 @@ object VoiceCatalog {
                         hear(b.prompt)
                         b.options.forEach { choices += it.said }
                         Reply.Picked(r.nextInt(b.options.size))
-                    }
-                    is Beat.Doors -> {
-                        hear(b.prompt)
-                        b.offers.forEach { hear(it) }
-                        Reply.Picked(r.nextInt(b.fork.doors.size))
                     }
                     is Beat.Travel -> {
                         hear(b.prompt)
