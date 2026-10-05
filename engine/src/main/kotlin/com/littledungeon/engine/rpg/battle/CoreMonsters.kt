@@ -117,12 +117,12 @@ object CoreMonsters {
             coins = 8..12, drops = listOf(Drop("bubble_shield", 30)), befriendable = true, roams = false,
         ),
         Monster(
-            "mossy_golem", "Mossy Golem", Tier.ELITE, 36, 5, listOf(PATTERNS, COUNTING, ADDITION), Who.GROWLER,
+            "mossy_golem", "Mossy Golem", Tier.MINI_BOSS, 38, 6, listOf(PATTERNS, COUNTING, ADDITION), Who.GROWLER,
             "A mossy golem rumbles to life. <growler>Stone must stay still. Puzzles must be solved. That is the rule.",
             "The golem crumbles into a pile of mossy rocks. <growler>Rule solved. Thank you.",
             "The golem leans over, and everything goes dark and mossy.",
-            coins = 7..12, drops = listOf(Drop("iron_helm", 10), Drop("big_potion", 20)),
-            habitat = setOf(Terrain.MOUNTAIN, Terrain.SWAMP),
+            // The guardian of Gloomwood Mine stays in its mine.
+            coins = 7..12, drops = listOf(Drop("iron_helm", 10), Drop("big_potion", 20)), roams = false,
         ),
     )
 
