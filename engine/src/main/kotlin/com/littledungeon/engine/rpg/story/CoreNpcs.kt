@@ -34,7 +34,7 @@ object CoreNpcs {
     val hoot = Npc(
         "professor_hoot", "Professor Hoot", "Keeper of the Storybook", Who.ELDER,
         "Professor Hoot is an old owl who has kept the Great Storybook for sixty years. He never lost a single page until this year, and he feels it is all his fault.",
-        "Welcome back, little adventurer! I am Professor Hoot, keeper of the Great Storybook.",
+        "Hello, little adventurer! I am Professor Hoot, keeper of the Great Storybook.",
         listOf(Start("hub")),
         listOf(
             n(

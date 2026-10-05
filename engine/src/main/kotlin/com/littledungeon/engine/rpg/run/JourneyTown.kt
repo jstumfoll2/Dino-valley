@@ -257,10 +257,16 @@ internal fun Journey.runEffects(list: List<Effect>, npc: Npc?, back: () -> List<
 
 // ------------------------------------------------------------- shops
 
+/** What an item costs here: kindness already lowers it, and a shopkeeper who likes the hero lowers it more (5% for each point, up to 20%). */
+internal fun Journey.priceAt(npc: Npc?, item: com.littledungeon.engine.rpg.items.Item): Int {
+    val friendly = npc?.let { (relation(it.id) * 5).coerceIn(0, 20) } ?: 0
+    return (hero.priceOf(item) * (100 - friendly) / 100).coerceAtLeast(1)
+}
+
 internal fun Journey.shop(def: ShopDef, npc: Npc?, done: () -> List<JStep>): List<JStep> {
     val s = sceneAt(kingdom.location(here), npc)
     val stock = def.stock.mapNotNull { Content.item(it) }.map {
-        val price = hero.priceOf(it)
+        val price = priceAt(npc, it)
         ShopItem(it.id, it.name, price, hero.count(it.id) + if (hero.worn.values.contains(it.id)) 1 else 0, hero.coins >= price)
     }
     val prompt = Speech.of(say.shopWelcome(npc?.name ?: def.name) + " " + say.shopAsk())
@@ -269,7 +275,7 @@ internal fun Journey.shop(def: ShopDef, npc: Npc?, done: () -> List<JStep>): Lis
             val bought = (reply as? Reply.Bought)?.itemId?.let { id -> Content.item(id)?.takeIf { it.id in def.stock } }
             if (reply !is Reply.Bought) return@JStep listOf(tell(s, say.shopBye())) + done()
             if (bought == null) return@JStep shop(def, npc, done)
-            val price = hero.priceOf(bought)
+            val price = priceAt(npc, bought)
             if (hero.coins < price) return@JStep listOf(tell(s, say.cannotAfford())) + shop(def, npc, done)
             hero = hero.earn(-price).give(bought.id)
             // New gear goes straight on if that spot was empty, so the hero's look changes at once.

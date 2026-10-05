@@ -24,6 +24,9 @@ import com.littledungeon.engine.rpg.world.WorldMemory
 import com.littledungeon.engine.util.Clock
 import kotlin.random.Random
 
+/** Stars of kindness for each point of friendship earned from a person. */
+internal const val KINDNESS_PER_FRIENDSHIP = 5
+
 /** One moment lined up to show, and what to line up after the child answers it. */
 internal class JStep(val beat: Beat, val then: (Reply) -> List<JStep> = { emptyList() })
 
@@ -245,8 +248,10 @@ class Journey(
 
     internal fun relation(npcId: String): Int = world.relations[npcId] ?: 0
 
+    /** Being good to someone is kindness: every point of friendship earns stars of it. */
     internal fun befriend(npcId: String, delta: Int) {
         world = world.copy(relations = world.relations + (npcId to relation(npcId) + delta))
+        if (delta > 0) gain(Attribute.KINDNESS, delta * KINDNESS_PER_FRIENDSHIP)
     }
 
     internal fun holds(c: Cond): Boolean = when (c) {
@@ -279,7 +284,7 @@ class Journey(
         // Before each adventure: which chapter of the Storybook this is, and how many pages are home.
         steps += tell(s, say.chapter(chapter, arc.title))
         if (world.adventures > 0 && world.pages > 0) steps += tell(s, say.pagesLine(world.pages))
-        arc.setup.forEach { steps += tell(s, it) }
+        (if ((world.arcsDone[arc.id] ?: 0) > 0 && arc.returnSetup.isNotEmpty()) arc.returnSetup else arc.setup).forEach { steps += tell(s, it) }
         steps += tell(JourneyStory.mapScene(this), JourneyStory.toTheMap(this, chapter))
         return steps
     }

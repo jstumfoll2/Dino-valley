@@ -30,6 +30,7 @@ import com.littledungeon.engine.rpg.run.battleCostume
 import com.littledungeon.engine.rpg.run.costumesFor
 import com.littledungeon.engine.rpg.run.puzzleFor
 import com.littledungeon.engine.rpg.run.vaultStory
+import com.littledungeon.engine.rpg.world.Terrain
 import com.littledungeon.engine.rpg.world.WorldMemory
 import com.littledungeon.engine.util.Clock
 import java.io.File
@@ -137,8 +138,40 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         for (thing in Thing.entries) hear(Speech.of(addStory("", thing, have, more, missing)))
         hear(Speech.of(vaultStory(have, more, missing)))
     }
-    // Lines that name a person, for every person it can name.
+    // Everything the stories and people say, whether or not random play happened to reach it in this world.
+    for (arc in Content.arcs) {
+        val said = arc.setup + arc.returnSetup + listOfNotNull(arc.sealed, arc.keyFound, arc.gateOpens, arc.ask, arc.friendMeeting, arc.friendEnd, arc.rivalMeeting) +
+            (arc.peaceSteps + arc.friendSteps).flatMap { listOfNotNull(it.intro, it.yay, it.skipNote) } +
+            arc.variants.flatMap { listOf(it.meeting, it.fightEnd, it.peaceEnd) } + arc.moments.map { it.says }
+        said.forEach { hear(Speech.of(it)) }
+    }
+    for (npc in Content.npcs) {
+        hear(Speech.of("<${npc.who.tag}>${npc.intro}"))
+        for (n in npc.nodes) hear(Speech.of("<${npc.who.tag}>${n.says}"))
+    }
+    for (m in Content.monsters) for (t in listOf(m.taunt, m.beaten, m.wins)) hear(Speech.of(t))
+    // Lines that name a person, an item, a monster or a place, for every one of them.
     val lines = JourneyLines(Random(1))
+    for (item in Content.items) repeat(30) {
+        hear(Speech.of(lines.itemFound(item.name)))
+        hear(Speech.of(lines.bought(item.name, 7)))
+        hear(Speech.of(lines.foundGear(item.name)))
+    }
+    for (m in Content.monsters) repeat(30) {
+        val lower = m.name.lowercase()
+        for (line in listOf(lines.fightAsk(lower), lines.attackOops(m.name), lines.foeStunned(lower), lines.weaknessHit(lower), lines.befriended(lower), lines.victory(lower))) hear(Speech.of(line))
+    }
+    for (l in Content.locations) repeat(30) {
+        for (line in listOf(
+            lines.arriveTown(l.name), lines.arriveWild(l.name), lines.hubAsk(l.name), lines.quiet(l.name), lines.dungeonAsk(l.name), lines.dungeonEnter(l.name),
+            lines.alreadyDone(l.name), lines.dungeonDone(l.name), lines.thrownOut(l.name), lines.turnedBack(l.name), lines.blockedRoad(l.name), lines.wakeUp(l.name),
+        )) hear(Speech.of(line))
+        for (terrain in Terrain.entries) for (danger in listOf(null, 0, 1, 2)) for (visited in listOf(false, true)) for (marked in listOf(false, true)) {
+            hear(Speech.of(lines.routeSaid(l.name, terrain, danger, visited, marked)))
+        }
+    }
+    for (npc in Content.npcs) repeat(30) { hear(Speech.of(lines.shopWelcome(npc.name))) }
+    for (shop in Content.shops) repeat(30) { hear(Speech.of(lines.shopWelcome(shop.name))) }
     for (npc in Content.npcs.filter { it.passFlags.isNotEmpty() }) repeat(40) { hear(Speech.of(lines.tollBlocked(npc.name))) }
     val own = Content.npcs.flatMap { n -> n.nodes.flatMap { it.effects + it.options.flatMap { o -> o.effects } } }
         .filterIsInstance<Effect.Puzzle>().mapNotNull { e -> e.skill?.let { Costume(it, e.ask.orEmpty(), e.thing ?: Thing.STONE) } }

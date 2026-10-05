@@ -247,7 +247,10 @@ internal class JourneyLines(private val r: Random) {
 
     fun shopAsk() = pick("What would you like to buy? Tap a thing to buy it, or tap the door to leave.", "Tap something to buy it. Tap the door when you are done.")
 
-    fun bought(item: String, price: Int) = pick("You bought the $item for ${n(price)} coins. [coins]", "Sold! The $item is yours for ${n(price)} coins. [coins]")
+    /** The item's name and the price are in different sentences, so no item has to be recorded at every price. */
+    fun bought(item: String, price: Int) = pick("You bought the $item. [coins] ${priceLine(price)}", "Sold! The $item is yours. [coins] ${priceLine(price)}")
+
+    fun priceLine(price: Int) = pick("It cost ${n(price)} ${if (price == 1) "coin" else "coins"}.", "That was ${n(price)} ${if (price == 1) "coin" else "coins"}.")
 
     fun cannotAfford() = pick("You do not have enough coins for that yet.", "That costs too much for now. Keep adventuring and come back!")
 
@@ -307,7 +310,7 @@ internal class JourneyLines(private val r: Random) {
                 repeat(10) {
                     add(l.heroHits("", x)); add(l.heroHitsBig("", x)); add(l.foeHits("", x)); add(l.healed(x)); add(l.healthLine(x, x))
                     add(l.spoils(x)); add(l.faint(x)); add(l.coinsEarned(x)); add(l.killsLine(x)); add(l.finale(x))
-                    add(l.pagesLine(x)); add(l.roomsLeft(x)); add(l.levelUp(x)); add(l.rest(x)); add(l.coinsFound(x))
+                    add(l.pagesLine(x)); add(l.roomsLeft(x)); add(l.levelUp(x)); add(l.rest(x)); add(l.coinsFound(x)); add(l.priceLine(x))
                 }
             }
         }.filter { it.isNotEmpty() }

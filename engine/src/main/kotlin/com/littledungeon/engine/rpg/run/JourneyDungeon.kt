@@ -129,7 +129,13 @@ internal fun Journey.lairArrival(l: Location): List<JStep> {
         steps += tell(s, arc.gateOpens)
     }
     val bossScene = s.copy(npc = NpcView(boss.id, boss.name, boss.art, boss.who))
-    steps += tell(bossScene, variant.meeting)
+    // A boss made a friend in an earlier adventure asks for help instead of a fight; one who was beaten remembers it.
+    if (hasFlag("friend:${boss.id}") && arc.friendMeeting != null) {
+        steps += tell(bossScene, arc.friendMeeting)
+        steps += peace(l, 0, friend = true)
+        return steps
+    }
+    steps += tell(bossScene, if (hasFlag("rival:${boss.id}")) arc.rivalMeeting ?: variant.meeting else variant.meeting)
     val choices = listOf(Choice("hub_fight", arc.fightLabel), Choice("hub_peace", arc.peaceLabel))
     steps += JStep(Beat.Choose(bossScene, Speech.of(arc.ask), choices)) { reply ->
         if ((reply as? Reply.Picked)?.index == 1) {
@@ -144,17 +150,22 @@ internal fun Journey.lairArrival(l: Location): List<JStep> {
 }
 
 /** The peaceful way: the boss sets puzzles, and there is no fighting. These are forgiving, because this is talking. */
-private fun Journey.peace(l: Location, i: Int): List<JStep> {
-    if (i >= arc.peaceSteps.size) return ending(l, fought = false)
-    val step = arc.peaceSteps[i]
+private fun Journey.peace(l: Location, i: Int, friend: Boolean = false): List<JStep> {
+    val steps = if (friend && arc.friendSteps.isNotEmpty()) arc.friendSteps else arc.peaceSteps
+    if (i >= steps.size) return ending(l, fought = false, friend = friend)
+    val step = steps[i]
     val boss = Content.monster(arc.bossId)!!
     val s = sceneAt(l).copy(npc = NpcView(boss.id, boss.name, boss.art, boss.who))
+    // Something learned along the road can spare the hero a puzzle: the boss sees they already understand.
+    if (step.skippedBy != null && hasFlag(step.skippedBy)) {
+        return listOfNotNull(step.skipNote?.let { tell(s, it) }) + peace(l, i + 1, friend)
+    }
     val c = peaceChallenge(step, boss)
     return listOf(
         JStep(Beat.Ask(s, c, Speech.of(say.peaceOops()), Speech.of(step.yay))) { reply ->
             val r = reply as? Reply.Solved ?: Reply.Solved(1, 0, 0)
             record(c, r.tries, r.hints, r.millis)
-            peace(l, i + 1)
+            peace(l, i + 1, friend)
         },
     )
 }
@@ -169,7 +180,7 @@ internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge =
 }
 
 /** The story ends: a page of the Storybook comes home, and what the child chose is remembered. */
-private fun Journey.ending(l: Location, fought: Boolean): List<JStep> {
+private fun Journey.ending(l: Location, fought: Boolean, friend: Boolean = false): List<JStep> {
     val boss = Content.monster(arc.bossId)!!
     val s = sceneAt(l).copy(mood = Mood.HAPPY, cleared = true, npc = NpcView(boss.id, boss.name, boss.art, boss.who))
     val id = "${arc.id}_${variant.id}_${if (fought) "fight" else "peace"}"
@@ -180,12 +191,18 @@ private fun Journey.ending(l: Location, fought: Boolean): List<JStep> {
         lastArc = arc.id,
         pages = pagesNow,
         endings = world.endings + id,
-        flags = if (fought) world.flags else world.flags + "friend:${boss.id}",
+        // Made peace: a friend, and no longer a rival. Fought: remembered as the one who was beaten, unless already a friend.
+        flags = if (fought) world.flags + "rival:${boss.id}" else world.flags - "rival:${boss.id}" + "friend:${boss.id}",
     )
     gain(Attribute.COURAGE, 20)
     lastEnding = id
     finishing = true
-    val steps = mutableListOf(tell(s, if (fought) variant.fightEnd else variant.peaceEnd))
+    val said = when {
+        fought -> variant.fightEnd
+        friend && arc.friendEnd != null -> arc.friendEnd
+        else -> variant.peaceEnd
+    }
+    val steps = mutableListOf(tell(s, said))
     steps += item(s, "storybook_page").take(1)
     steps += tell(s, say.pageFound(), say.pagesLine(pagesNow))
     if (pagesNow % BOOK_PAGES == 0) steps += tell(s, say.bookWhole(), say.newBook())
