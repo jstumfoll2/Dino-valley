@@ -312,6 +312,15 @@ internal class JourneyLines(private val r: Random) {
 
     fun newBook() = "But a book like that never stays closed for long. A new Storybook begins, with fresh blank pages. <pet>What stories will we write next?"
 
+    fun ballIntro() = "The doors of the manor swing wide, and music floats out. The Storybook Ball is beginning, and everybody you were ever kind to has come!"
+
+    fun ballEmpty() = "The ball is small this year, but everybody there is glad to see you. Maybe next time, more friends will come."
+
+    fun ballEnd() = "<pet>This is the best night ever! The whole kingdom is dancing."
+
+    /** What a guest does at the ball: one of these, by chance. Said once for each friend, so the voice catalog lists every one. */
+    fun ballGuest(name: String) = ballGuestLines(name).random(r)
+
     fun levelUp(level: Int) = "Level up! You are now a level ${n(level)} adventurer!"
 
     fun finale(stars: Int) = pick(
@@ -352,3 +361,10 @@ internal class JourneyLines(private val r: Random) {
         }.filter { it.isNotEmpty() }
     }
 }
+
+/** What a friend may do at the Storybook Ball. */
+internal fun ballGuestLines(name: String): List<String> = listOf(
+    "$name twirls across the dance floor.",
+    "$name waves, and joins the dance.",
+    "$name has brought a big plate of treats to share.",
+)

@@ -194,6 +194,7 @@ internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge =
     "map" -> PictureFactory.map(level(Skill.MAPS), nextSeed(), step.intro)
     "bells" -> ChallengeFactory.bells(level(Skill.LISTENING), nextSeed(), step.intro)
     "trace" -> traceStep(step, "to light the lanterns.")
+    "write" -> traceStep(step, "to draw on the page.")
     else -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")
 }
 
@@ -230,6 +231,20 @@ private fun Journey.ending(l: Location, fought: Boolean, friend: Boolean = false
     steps += item(s, "storybook_page").take(1)
     steps += tell(s, say.pageFound(), say.pagesLine(pagesNow))
     if (pagesNow % BOOK_PAGES == 0) steps += tell(s, say.bookWhole(), say.newBook())
+    if (arc.finale) steps += ball()
+    return steps
+}
+
+/** The Storybook Ball, after a book's finale: up to five of the hero's friends (who the world remembers) come, one at a time, and dance. */
+private fun Journey.ball(): List<JStep> {
+    val s = scene(Place.BALLROOM).copy(mood = Mood.HAPPY)
+    val guests = world.flags.filter { it.startsWith("friend:") }.map { it.removePrefix("friend:") }.sorted().mapNotNull { id ->
+        Content.npc(id)?.let { NpcView(it.id, it.name, it.art, it.who) } ?: Content.monster(id)?.let { NpcView(it.id, it.name, it.art, it.who) }
+    }.shuffled(random).take(5)
+    val steps = mutableListOf(tell(s, say.ballIntro()))
+    if (guests.isEmpty()) steps += tell(s, say.ballEmpty())
+    for (g in guests) steps += tell(s.copy(npc = g), say.ballGuest(g.name))
+    steps += tell(s, say.ballEnd())
     return steps
 }
 

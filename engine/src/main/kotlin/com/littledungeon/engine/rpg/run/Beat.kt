@@ -29,6 +29,7 @@ data class Place(val id: String) {
         val MARKET_STALL = Place("market_stall")
         val RHYME_BRIDGE = Place("rhyme_bridge")
         val BAT_CAVE = Place("bat_cave")
+        val BALLROOM = Place("ballroom")
 
         /** Hoot's map table is the old parchment backdrop, `art_scene_map`. */
         val MAP_TABLE = Place("map")

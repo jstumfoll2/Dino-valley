@@ -284,5 +284,107 @@ object CoreArcs {
         ),
     )
 
-    val all = listOf(missingPages, lonelyDragon, lanternNight)
+    /**
+     * "The Ink Shadow", the finale of a Storybook: the last page is the one the Shadow wants for itself. It reuses the Baron's lair and key, because it
+     * escaped from the Baron's inkwell. The Baron's part in it depends on whether he was made a friend or beaten. When it ends, the Storybook Ball
+     * welcomes every friend the hero made, in this story and the others.
+     */
+    val inkShadow = Arc(
+        id = "ink_shadow",
+        title = "The Ink Shadow",
+        lairId = "lair_manor",
+        keyDungeonId = "inkwell_cellars",
+        keyItemId = "silver_quill",
+        bossId = "ink_shadow",
+        finale = true,
+        setup = listOf(
+            "Four pages of the Great Storybook are home, and there is only one left. But tonight the Storybook is shaking, and black ink is seeping out of its spine.",
+            "<hoot>Little adventurer, something has escaped from the book! A shadow made of ink. It scribbles on everything, and it will not stop until it has a page of its own.",
+            "<pet>Where did it go?",
+            "<hoot>Back to the manor, where the ink began. The gate is sealed again, and only the silver quill from Inkwell Cellars can write it open.",
+        ),
+        sealed = "The manor gate is sealed with sticky black ink! <pet>We need the silver quill. The Professor said it is in Inkwell Cellars.",
+        keyFound = "<pet>The silver quill! Now we can write the gate open. Let's go to the manor, and be gentle!",
+        gateOpens = "You write one big word with the silver quill, and the ink on the gate runs away like a scared spider. Inside, every wall is covered in scribbles, and one big shadow sits in the middle of them, drawing.",
+        ask = "What will you do about the Ink Shadow?",
+        fightLabel = "Face the shadow",
+        peaceLabel = "Give it a page",
+        peaceSteps = listOf(
+            PeaceStep(
+                "write", "<shadow>I only want to draw. Nobody ever gave me a page. Will you show me how to write?", "<shadow>Look! My very first line. It is not scribbly at all!",
+                skippedBy = "knows_shadow_lonely",
+                skipNote = "<shadow>You already know I only wanted a page? Nobody ever guessed. We can skip the writing lesson.",
+            ),
+            PeaceStep("pattern", "<shadow>Drawings repeat, like a song. Which one comes next?", "<shadow>Yes! Round and round. I love patterns."),
+            PeaceStep("colors", "<shadow>I have only ever had black. Show me a color.", "<shadow>Oh! So bright! I have never seen it before."),
+        ),
+        returnSetup = listOf(
+            "Black ink is seeping out of the Storybook again, and the scribbles are back on the walls.",
+            "<hoot>Please go and see the Ink Shadow once more.",
+        ),
+        friendMeeting = "The Ink Shadow waves a swirly hand from the corner of its own page. <shadow>You came back! I drew you a picture. Will you help me draw another? <pet>It is asking for help, not a fight!",
+        friendSteps = listOf(
+            PeaceStep("write", "<shadow>Show me how to write my name.", "<shadow>That is my name, and it is not scribbly!"),
+            PeaceStep("pattern", "<shadow>Which drawing comes next?", "<shadow>Yes! You understand patterns."),
+            PeaceStep("colors", "<shadow>I want a color for my picture.", "<shadow>Oh! The page is so bright now."),
+        ),
+        friendEnd = "The shadow fills its page with a picture of everyone it knows, and you are in the middle. A page of the Storybook turns gold at the edges. <shadow>Thank you for being my friend. <pet>It is not a shadow anymore. It is an artist!",
+        rivalMeeting = "The Ink Shadow rises up to the ceiling. <shadow>You are the one who rubbed me out. I came back darker.",
+        moments = listOf(
+            Moment("mossbrook", "Scribbles cover every window in the village, black and swirly, as if somebody was drawing very fast. <pet>Somebody is lonely, and drawing about it."),
+            Moment(
+                "hermit_hill",
+                "Hazel holds up a page covered in scribbles. <hazel>These are not angry. Look, they are all circles, like somebody trying to draw a face. <pet>It wants a friend.",
+                effects = listOf(Effect.SetFlag("knows_shadow_lonely")),
+            ),
+            Moment(
+                "fishers_dock",
+                "A bottle bobs against the dock with a scribbly note inside. It says, Please, may I have a page of my own? From S. <pet>The shadow wrote it!",
+                effects = listOf(Effect.SetFlag("knows_shadow_lonely")),
+            ),
+            Moment(
+                "pennywhistle",
+                "A big gold dragon flies in slow circles over the market with a banner in its claws. The banner says, ALL ARE WELCOME. <pet>Our dragon friend is spreading the word!",
+                needs = listOf(Cond.Flag("friend:big_dragon")),
+            ),
+            Moment(
+                "lantern_hollow",
+                "Rows of bats hang on every roof, each with a tiny lantern, keeping the scribbles away. <pet>Our bat friends are on guard!",
+                needs = listOf(Cond.Flag("friend:bat_king")),
+            ),
+            Moment("inkwell_cellars", "Every ink barrel is empty, and the floor is covered in scribbled pictures of one little face. <pet>It was drawing and drawing, all alone."),
+            Moment(
+                "lair_manor",
+                "The Baron meets you at the gate with a lantern, and his hands are shaking. <baron>It came out of my inkwell. I am so sorry. Please be gentle with it. It is as lonely as I used to be.",
+                needs = listOf(Cond.Flag("friend:baron_grumblewick")),
+            ),
+            Moment(
+                "lair_manor",
+                "The Baron stands in an upstairs window with ink up to his elbows. <baron>You beat me once, and I let the ink in. Now it has made my house its own. I cannot help you.",
+                needs = listOf(Cond.Flag("rival:baron_grumblewick")),
+            ),
+        ),
+        variants = listOf(
+            Variant(
+                "blank_page",
+                "A huge shadow made of ink sits among its scribbles, drawing a face over and over, and rubbing it out. <shadow>It never looks right. Nobody ever showed me how. <pet>It is not scary. It is trying to draw!",
+                "The shadow shrinks into a tiny blot, and the scribbles fade from the walls. <shadow>I only wanted to draw. <narrator>A last page of the Storybook lies on the desk, perfectly blank, with one small inky fingerprint in the corner. <pet>It was only lonely.",
+                "You give the shadow a page of its own, and it draws a tiny, smiling face. <shadow>Is it me? <narrator>It is. The ink settles into a neat little drawing, and the last page of the Storybook turns gold at the edges. <pet>We made a friend!",
+            ),
+            Variant(
+                "lost_shadow",
+                "The shadow drifts across the ceiling, scribbling as it goes. <shadow>Where is my page? Where is my page? <pet>It sounds lost.",
+                "The shadow scatters into a hundred little blots, and they all run back into the Storybook. <shadow>I am sorry. I did not know where else to go. <narrator>The last page of the Storybook lands in your hands, still warm. <pet>Poor shadow. Maybe it can come out again, when it is ready.",
+                "You show the shadow where its page is, right in the middle of the book. <shadow>It was mine all along? <narrator>The shadow slips into its page, and the last page of the Storybook glows softly from inside. <pet>It found its way home!",
+            ),
+            Variant(
+                "jealous_shadow",
+                "The shadow rises to the ceiling in a swirl of black ink. <shadow>Everybody has a story but me! Everybody! <pet>It is jealous of the Storybook!",
+                "The shadow shakes, and the ink drips down like rain. <shadow>It is not fair. It is just not fair. <narrator>It sinks into a puddle, and the last page of the Storybook floats up out of it, clean and white. <pet>I think it just wanted to be in a story too.",
+                "You tell the shadow that every story has room for one more. <shadow>Even me? <narrator>You write its name on the last page, and the shadow sits down inside the letters, quiet and glad. <pet>Now it has a story of its own!",
+            ),
+        ),
+    )
+
+    val all = listOf(missingPages, lonelyDragon, lanternNight, inkShadow)
 }

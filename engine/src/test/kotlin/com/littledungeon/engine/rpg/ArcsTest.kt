@@ -31,13 +31,22 @@ class ArcsTest {
 
     private fun said(b: Beat) = (b as? Beat.Tell)?.let { Voice.caption(it.lines) }.orEmpty()
 
+    /** What the world remembers when [arcId] is told: the first story opens a book, the finale closes it (four pages home), the others come between. */
+    private fun worldFor(arcId: String, flags: Set<String> = emptySet()): WorldMemory {
+        val first = Content.arcs.first().id
+        val arc = Content.arc(arcId)!!
+        return when {
+            arcId == first -> WorldMemory(flags = flags)
+            arc.finale -> WorldMemory(adventures = 4, pages = 4, arcsDone = Content.arcs.associate { it.id to 1 }, lastArc = "lantern_night", flags = flags)
+            else -> WorldMemory(adventures = 1, pages = 1, arcsDone = mapOf(first to 1), lastArc = first, flags = flags)
+        }
+    }
+
+    private fun pagesBefore(arcId: String) = worldFor(arcId).pages
+
     /** A journey that plays [arcId]: the story is picked by chance after the first adventure, so find a seed that picks it. */
     private fun journeyFor(arcId: String, flags: Set<String> = emptySet(), hero: Hero = strong): Journey {
-        val world = if (arcId == Content.arcs.first().id) {
-            WorldMemory(flags = flags)
-        } else {
-            WorldMemory(adventures = 1, pages = 1, arcsDone = mapOf(Content.arcs.first().id to 1), lastArc = Content.arcs.first().id, flags = flags)
-        }
+        val world = worldFor(arcId, flags)
         for (seed in 1L..500L) {
             val j = Journey(seed, hero, SkillBook(), world, Clock { 0L })
             if (j.arc.id == arcId) return j
@@ -80,9 +89,11 @@ class ArcsTest {
     @Test
     fun `there are several stories, and each one is wired to places and things that exist`() {
         assertTrue(Content.arcs.size >= 3)
-        assertEquals(Content.arcs.size, Content.arcs.map { it.lairId }.toSet().size, "each story has its own lair")
-        assertEquals(Content.arcs.size, Content.arcs.map { it.keyItemId }.toSet().size, "and its own key")
-        val kinds = setOf("letters", "pattern", "colors", "numbers", "count", "rhyme", "money", "share", "bats", "map", "bells", "trace")
+        val stories = Content.arcs.filter { !it.finale }
+        assertEquals(stories.size, stories.map { it.lairId }.toSet().size, "each story has its own lair")
+        assertEquals(stories.size, stories.map { it.keyItemId }.toSet().size, "and its own key (the finale is told at the first story's lair, with its key)")
+        assertEquals(1, Content.arcs.count { it.finale }, "one finale closes the book")
+        val kinds = setOf("letters", "pattern", "colors", "numbers", "count", "rhyme", "money", "share", "bats", "map", "bells", "trace", "write")
         for (arc in Content.arcs) {
             assertEquals(LocationKind.LAIR, Content.kingdom.location(arc.lairId).kind, arc.id)
             assertEquals(LocationKind.DUNGEON, Content.kingdom.location(arc.keyDungeonId).kind, arc.id)
@@ -104,7 +115,7 @@ class ArcsTest {
             val j = journeyFor(arc.id)
             val beats = play(j, peace)
             val boss = arc.bossId
-            assertEquals(1 + if (arc === Content.arcs.first()) 0 else 1, j.world.pages, "${arc.id}: a page came home")
+            assertEquals(pagesBefore(arc.id) + 1, j.world.pages, "${arc.id}: a page came home")
             assertTrue(if (peace) "friend:$boss" in j.world.flags else "rival:$boss" in j.world.flags, "${arc.id}: the boss is remembered")
             assertTrue(j.hero.has(arc.keyItemId) || beats.any { it is Beat.Found }, "${arc.id}: the key was found on the way")
             assertTrue(beats.any { arc.title in said(it) }, "${arc.id}: the chapter names the story")
@@ -123,7 +134,7 @@ class ArcsTest {
 
     private fun lairAsks(arcId: String, flags: Set<String>): Pair<Int, List<String>> {
         val j0 = journeyFor(arcId, flags)
-        val j = Journey(j0.seed, strong.give(j0.arc.keyItemId), SkillBook(), WorldMemory(adventures = 1, pages = 1, arcsDone = mapOf(Content.arcs.first().id to 1), lastArc = Content.arcs.first().id, flags = flags), Clock { 0L })
+        val j = Journey(j0.seed, strong.give(j0.arc.keyItemId), SkillBook(), worldFor(arcId, flags), Clock { 0L })
         j.load(j.lairArrival(Content.kingdom.location(j.arc.lairId)))
         var asks = 0
         val heard = mutableListOf<String>()
@@ -159,6 +170,42 @@ class ArcsTest {
         assertEquals(3, bats)
         assertEquals(2, batsKnown)
         assertTrue(heardBats.any { "You may skip the bells" in it })
+        val (shadow, _) = lairAsks("ink_shadow", emptySet())
+        val (shadowKnown, heardShadow) = lairAsks("ink_shadow", setOf("knows_shadow_lonely"))
+        assertEquals(3, shadow)
+        assertEquals(2, shadowKnown)
+        assertTrue(heardShadow.any { "We can skip the writing lesson" in it })
+    }
+
+    @Test
+    fun `the finale is told when four pages are home and never before, and the others fill the pages between`() {
+        val finale = Content.arcs.single { it.finale }
+        for (pages in 0..9) {
+            val picked = (1L..120L).map { com.littledungeon.engine.rpg.story.ArcPicker.pick(WorldMemory(adventures = pages + 1, pages = pages, lastArc = "lonely_dragon"), Random(it)) }
+            if (pages % 5 == 4) {
+                assertTrue(picked.all { it === finale }, "pages $pages: the book is closed by its finale")
+            } else {
+                assertTrue(picked.none { it.finale }, "pages $pages: the finale waits")
+                assertTrue(picked.map { it.id }.toSet().size >= 2, "pages $pages: the other stories take turns")
+            }
+        }
+        assertTrue(com.littledungeon.engine.rpg.story.ArcPicker.pick(WorldMemory(), Random(1)) === Content.arcs.first(), "the first adventure is always the first story")
+    }
+
+    @Test
+    fun `the Storybook Ball welcomes the friends the hero made, and says so when there are none`() {
+        val finale = Content.arcs.single { it.finale }
+        val friends = setOf("friend:big_dragon", "friend:bat_king", "friend:baron_grumblewick", "friend:grumble_troll")
+        val beats = play(journeyFor(finale.id, flags = friends), peace = true)
+        val ball = beats.map { said(it) }
+        assertTrue(ball.any { "The Storybook Ball is beginning" in it })
+        val guests = beats.filterIsInstance<Beat.Tell>().filter { it.scene.npc != null && it.scene.place.id == "ballroom" }
+        assertTrue(guests.size in 1..5 && guests.all { g -> g.scene.npc!!.name in said(g) }, "each guest is on stage and named: ${guests.map { it.scene.npc?.name }}")
+        assertTrue(guests.any { it.scene.npc!!.id == "ink_shadow" } || guests.size == 5, "the friend made in this story is there, when there is room")
+        val alone = play(journeyFor(finale.id), peace = false).map { said(it) }
+        assertTrue(alone.any { "The ball is small this year" in it })
+        // Only a finale throws a ball.
+        assertTrue(play(journeyFor("lonely_dragon", flags = friends), peace = true).none { said(it).contains("Storybook Ball") })
     }
 
     @Test

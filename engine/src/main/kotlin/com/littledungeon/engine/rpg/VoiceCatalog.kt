@@ -30,6 +30,7 @@ import com.littledungeon.engine.rpg.run.BATTLE_SKILLS
 import com.littledungeon.engine.rpg.run.PICK_ONE_SKILLS
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.engine.rpg.run.addStory
+import com.littledungeon.engine.rpg.run.ballGuestLines
 import com.littledungeon.engine.rpg.run.peaceChallenge
 import com.littledungeon.engine.rpg.run.battleCostume
 import com.littledungeon.engine.rpg.run.costumesFor
@@ -205,6 +206,8 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     // Lines that name a person, an item, a monster or a place, for every one of them.
     val lines = JourneyLines(Random(1))
     for (arc in Content.arcs) for (chapter in 1..5) hear(Speech.of(lines.chapter(chapter, arc.title)))
+    // Every friend who can come to the Storybook Ball, with everything they can do there.
+    for (name in Content.npcs.map { it.name } + Content.monsters.map { it.name }) ballGuestLines(name).forEach { hear(Speech.of(it)) }
     for (item in Content.items) repeat(30) {
         hear(Speech.of(lines.itemFound(item.name)))
         hear(Speech.of(lines.bought(item.name, 7)))

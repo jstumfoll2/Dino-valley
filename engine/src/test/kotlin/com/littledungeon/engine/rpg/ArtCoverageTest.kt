@@ -43,7 +43,7 @@ class ArtCoverageTest {
     fun placesAndIconsHavePictures() {
         if (res == null) return
         val places = Content.locations.map { "scene_${it.theme}" } + RoomKind.entries.map { "scene_${placeOf(it).id}" } +
-            listOf("scene_world_map", "scene_camp")
+            listOf("scene_world_map", "scene_camp", "scene_${com.littledungeon.engine.rpg.run.Place.BALLROOM.id}")
         val gone = missing(places) + missing(Icons.all)
         assertTrue(gone.isEmpty(), "missing pictures: $gone")
     }
