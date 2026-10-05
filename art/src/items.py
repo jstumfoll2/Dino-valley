@@ -231,13 +231,25 @@ def glow_silk():
     ))
 
 
+def golden_knob():
+    """A golden doorknob with a short stem and a rose plate, shining: it opens any door."""
+    return icon(rg("g", [(0, "#fff3b0"), (0.45, "#f0c44a"), (1, "#a8741a")], cx=0.35, cy=0.3, r=0.85) + G("p", "#c98a3a"), (
+        '<circle cx="80" cy="84" r="62" fill="#ffe27a" opacity="0.22"/>'
+        f'<path d="M80 128 m-44 14 C40 116 120 116 124 142 Z" fill="url(#p)" {S()}/><ellipse cx="80" cy="142" rx="46" ry="12" fill="url(#p)" {S()}/>'
+        f'<path d="M66 110 L94 110 L100 134 L60 134 Z" fill="url(#p)" {S()}/>'
+        f'<circle cx="80" cy="76" r="40" fill="url(#g)" {S("#7a4a0a")}/>'
+        f'<path d="M80 40 C60 40 44 56 42 78" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity="0.6"/>'
+        + sparkle(122, 40, 11, "#fff") + sparkle(34, 56, 8, "#fff3b0") + sparkle(124, 118, 7, "#fff")
+    ))
+
+
 ITEMS = {
     "berry": berry, "honey_cake": honey_cake, "big_potion": big_potion, "sleep_dust": sleep_dust, "spark_bomb": spark_bomb,
     "smoke_pearl": smoke_pearl, "friendship_cookie": friendship_cookie, "bubble_shield": bubble_shield, "rope": rope,
     "lantern": lantern, "rusty_key": rusty_key, "silver_key": silver_key, "lucky_clover": lucky_clover,
     "owl_feather": owl_feather, "hint_scroll": hint_scroll, "storybook_page": storybook_page, "silver_quill": silver_quill,
     "ink_cleaner": ink_cleaner, "recipe_page": recipe_page, "magic_beans": magic_beans,
-    "mountain_key": mountain_key, "glow_silk": glow_silk,
+    "mountain_key": mountain_key, "glow_silk": glow_silk, "golden_knob": golden_knob,
 }
 
 

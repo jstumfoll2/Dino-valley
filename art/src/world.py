@@ -128,6 +128,20 @@ def belfry_tower(d, x, base, w=62, h=150):
         d.add(f'<path d="M{bx2 - 12} {by2} q6 -10 12 0 q6 -10 12 0 q-6 4 -12 10 q-6 -6 -12 -10 Z" fill="#3a2e4e"/>')
 
 
+def door_arch(d, x, base, w=70, h=110):
+    """A stone archway standing alone, with a pair of wooden doors that do not open: the Hall of Doors on the map."""
+    stone = d.lin([(0, "#c4bacb"), (1, "#8a8098")], 0, 0, 1, 0)
+    d.add(f'<ellipse cx="{x + w / 2}" cy="{base + 4}" rx="{w * 0.8}" ry="12" fill="#2f4a22" opacity="0.28"/>')
+    d.add(f'<path d="M{x - 10} {base} L{x - 10} {base - h + 30} A{w / 2 + 10} {w / 2 + 10} 0 0 1 {x + w + 10} {base - h + 30} L{x + w + 10} {base} Z" fill="{stone}" stroke="{INK}" stroke-width="4" stroke-opacity="0.55" stroke-linejoin="round"/>')
+    d.add(f'<path d="{arch_path(x + 4, x + w - 4, base - h + 40, base)}" fill="#7a4e2e" stroke="{INK}" stroke-width="3" stroke-opacity="0.7"/>')
+    d.add(f'<path d="M{x + w / 2} {base - h + 24} L{x + w / 2} {base}" stroke="{INK}" stroke-width="3" stroke-opacity="0.7"/>')
+    d.add(f'<circle cx="{x + w / 2 - 9}" cy="{base - h * 0.34}" r="5" fill="#f0c44a" stroke="{INK}" stroke-width="2"/><circle cx="{x + w / 2 + 9}" cy="{base - h * 0.34}" r="5" fill="#f0c44a" stroke="{INK}" stroke-width="2"/>')
+    d.add(f'<path d="M{x + w / 2 - 12} {base - h - 6} L{x + w / 2} {base - h - 22} L{x + w / 2 + 12} {base - h - 6} Z" fill="#6a5a8a" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>')
+    # a few loose doors lying about in the grass
+    for dx, dy, rot in ((-70, 6, -14), (w + 54, 10, 10)):
+        d.add(f'<g transform="rotate({rot} {x + dx} {base + dy})"><rect x="{x + dx - 14}" y="{base + dy - 30}" width="28" height="46" rx="12" fill="#a8693c" stroke="{INK}" stroke-width="3" stroke-opacity="0.7"/><circle cx="{x + dx + 6}" cy="{base + dy - 6}" r="3" fill="#f0c44a"/></g>')
+
+
 # ------------------------------------------------------------------------------ world map
 def scene_world_map():
     d = Doc(900)
@@ -182,6 +196,9 @@ def scene_world_map():
     # an old bell tower on a windy ridge, between the northern mountains: the Bat King's belfry
     d.add(f'<path d="M1256 256 Q1344 196 1432 256 Z" fill="#7f9a5a"/>')
     belfry_tower(d, 1314, 250)
+    # a stone archway of doors in the field south of the river: the Door Warden's hall
+    d.add(f'<path d="M1030 790 Q1094 730 1160 790 Z" fill="#7f9a5a"/>')
+    door_arch(d, 1060, 780)
     # compass
     cx, cy = 150, 910
     d.add(f'<circle cx="{cx}" cy="{cy}" r="70" fill="#f6ead0" stroke="{INK}" stroke-width="5" opacity="0.92"/>')
