@@ -2,6 +2,9 @@
 
 Date: 2026-10-04. Scope: `main` at `880bbfe` (PR #15, the story engine, merged).
 
+> **Update, 2026-10-05:** the findings in this review are tracked, with what has been done about each, in
+> [`improvement-plan.md`](improvement-plan.md). The text below is the review as written and describes `main` as it was on 2026-10-04.
+
 This review is deliberately critical. The project has real strengths: a clean engine/app split, a
 seeded and testable engine, a voice pipeline that records every line ahead of time, a regenerable art
 pipeline, and a content model that already treats people, places and stories as data. The problems below

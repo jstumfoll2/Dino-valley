@@ -30,8 +30,30 @@ finding from the review, the step that fixes it, and where it stands. Statuses:
 | T6 | Half of the brief's learning is absent | 2.3, then 6.x | **Partly**: the skills that exist are balanced; maps and recipes still need their minigames (Phase 6) |
 | T7 | Class powers and unlocks do nothing | 3.5, 3.6 | **Done** |
 | T8 | Two game engines in one codebase | 0.2 | **Done** |
-| T9 | Layering bugs on every screen type | 4.1 to 4.4 | See Phase 4 |
+| T9 | Layering bugs on every screen type | 4.1 to 4.4 | **Partly**: gear order, the dialog tray, the foe portrait and the shop counter are fixed in code; backdrops, ground line and a true map need new art (Phase 4) |
 | T10 | Docs describe three different games | 0.1 | **Done** |
+
+## What changed in the numbers
+
+From `./gradlew :engine:balanceReport` (ten simulated children, ten journeys each, at 60%, 75% and 90% of puzzles right). "Before" is the review's
+Appendix A, measured on `main` with the original harness; the harness was refined when it moved into the repository (it now uses the engine's own
+time estimate), so the minutes are close but not exact comparisons. Everything in the "After" column is held by a test unless noted.
+
+| Measure | Before (60% / 75% / 90%) | After (60% / 75% / 90%) |
+|---|---|---|
+| Median minutes in one sitting | 28.3 / 24.7 / 23.7 (the whole journey; no way to stop) | **10.1 / 10.2 / 10.0** (90th percentile 13.3 / 12.9 / 13.6) |
+| Median minutes in a whole journey | 28.3 / 24.7 / 23.7 | 20.8 / 23.2 / 21.8, in two or three days |
+| Mean level of counting, numbers, adding, colors, patterns and letters after ten journeys | 4.9 / n.a. / 5.0 | **1.2 / 2.1 / 3.1** |
+| Counting level reached by a child who only guesses (40 one-try puzzles) | 3 | **1** |
+| How often the right card is in the best-guess position (counting, level 4) | 100% (fair is 20%) | **21%** (fair is 20%) |
+| Forced-fight menus per 100 journeys | 18 / 22 / 20 | **0** |
+| Named characters met as random monsters per 100 journeys | 92 / 83 / 88 | **0** |
+| Faints per journey | 0.91 / 0.42 / 0.13 | 0.22 / 0.08 / 0.03 |
+| One-try misses that say "try again" | (not measured) | **0 of 924 / 454 / 183** |
+| Share of puzzles: patterns, the biggest skill | 19% | 16% (every everyday skill is 11% to 16%) |
+
+Not changed: tracing, memory, sorting and jigsaws are still 1% to 2% of puzzles each, and maps and recipes are 0%, because they need their minigames
+(roadmap Phase 6). A journey is still about 20 minutes; what changed is that it comes in sittings of about ten.
 
 ## Phase 0: clean foundation
 
@@ -61,7 +83,7 @@ finding from the review, the step that fixes it, and where it stands. Statuses:
 | 2.4 | Teach after a miss; one-try miss lines; skip-count wording | **Done** (`LearningFixesTest`) |
 | 2.5 | Phonics: stop sounds without the vowel, short a, lowercase track, name letters first | **Done** (`PhonicsTest`); the new sounds need a person to listen |
 | 2.6 | NPC puzzles that fit their story | **Done** |
-| 2.7 | Color-blind support: a shape or mark with every hue | Planned: app drawing, with Phase 4 |
+| 2.7 | Color-blind support: a shape or mark with every hue | **Done in code** (a mark for each color on gems, doors and color-only patterns); needs a look on a phone |
 | 2.8 | Judging moves into the engine (`ChallengeSession`) | Planned (later phase) |
 
 ## Phase 3: story and world continuity
@@ -81,13 +103,16 @@ Also fixed under Phase 3: the Mossy Golem was an ordinary roaming monster as wel
 
 ## Phase 4: presentation and art fixes
 
+These are app drawing changes. The Android SDK is not available where this was written, so the `Build` workflow compiles them, and how they
+look is for a playtest (or the screenshot tests of 4.6). Each fix was worked out from the screen's own numbers (the review measured where things sit).
+
 | Step | What | Status |
 |---|---|---|
-| 4.1 | Gear z-order per slot, one weapon per hand | Planned |
-| 4.2 | Stage layout: choice tray, battle portrait during puzzles, shop keeper visible, feet anchored | Planned |
-| 4.3 | Backdrop stage contract, floors out of the water, landmarks out of the puzzle zone | Planned (art redraw) |
-| 4.4 | World map from data, aspect kept, fog for later places | Planned |
-| 4.5 | Painted icons replace emoji | Planned |
+| 4.1 | Gear z-order per slot, one weapon per hand | **Done in code**: a fixed order by body part; head gear and a held item replace the class hat and weapon; body armor breathes. Not yet seen on a phone |
+| 4.2 | Stage layout: choice tray, battle portrait during puzzles, shop keeper visible, feet anchored | **Partly**: choices in a bottom tray clear of the face, the foe a portrait during puzzles with both health bars in fixed HUD rows, a narrower shop counter with the keeper at the edge. Feet on a common ground line need per-picture foot positions (4.3) |
+| 4.3 | Backdrop stage contract, floors out of the water, landmarks out of the puzzle zone | Planned (art redraw: a floor band, a landmark box and a 20:9 safe area for every scene, then metadata the app reads) |
+| 4.4 | World map from data, aspect kept, fog for later places | **Partly**: stretched at most a quarter instead of 1.55 times. A true-shaped map overlaps nine pairs of places at the current marker size, so it needs the places moved and the painting redone, with roads painted from the same data |
+| 4.5 | Painted icons replace emoji | **Partly**: the feedback bubble, loading book, stars-earned and gift icons are drawn in code. The magic bunny and frog (and the dice screen's broken heart) still need art |
 | 4.6 | Screenshot tests at 16:9 and 20:9 | Planned (needs the Android SDK) |
 
 ## Later phases (not started on this branch)
