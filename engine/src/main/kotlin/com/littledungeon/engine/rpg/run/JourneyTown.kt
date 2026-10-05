@@ -104,9 +104,10 @@ internal fun Journey.wildEvent(l: Location, s: Scene): List<JStep> = when (rando
 
 /** Something found along a road that is walked for the first time and has no monster: a chest, a shrine, a traveler, a hidden room. */
 internal fun Journey.roadEvent(s: Scene): List<JStep> = when (random.nextInt(100)) {
-    in 0 until 25 -> chestEvent(s)
-    in 25 until 40 -> shrineEvent(s)
-    in 40 until 60 -> wandererEvent(s)
+    in 0 until 20 -> chestEvent(s)
+    in 20 until 35 -> shrineEvent(s)
+    in 35 until 50 -> wandererEvent(s)
+    in 50 until 70 -> luckyRoll(s)
     else -> hiddenRoom(s)
 }
 
@@ -286,3 +287,27 @@ internal fun Journey.shop(def: ShopDef, npc: Npc?, done: () -> List<JStep>): Lis
     )
 }
 
+
+/**
+ * Lucky dice on the road: roll two, add them up (adding, and seeing a die's dots at a glance), and the coins are the total. A low
+ * total (four or less) is silly rather than bad: a gnome says sorry with a coin.
+ */
+internal fun Journey.luckyRoll(s: Scene): List<JStep> {
+    val dice = listOf(random.nextInt(1, 7), random.nextInt(1, 7))
+    val total = dice.sum()
+    return listOf(
+        JStep(Beat.Roll(s, Speech.of(say.luckyRollAsk()), dice, null)) { reply ->
+            val r = reply as? Reply.Rolled
+            // Adding them up is practice for addition: a first-time answer counts as a first try.
+            skills = skills.record(
+                com.littledungeon.engine.rpg.learn.ChallengeRecord(
+                    com.littledungeon.engine.rpg.learn.Skill.ADDITION, "dice", level(com.littledungeon.engine.rpg.learn.Skill.ADDITION),
+                    (r?.sumTries ?: 1).coerceAtLeast(1), 0, 0, now, nextSeed(), false,
+                ),
+            )
+            val silly = total <= 4
+            val found = if (silly) 1 else total
+            listOf(tell(s.copy(mood = if (silly) Mood.SILLY else Mood.HAPPY), if (silly) say.luckyRollSilly() else say.luckyRollBig())) + coins(s, found)
+        },
+    )
+}

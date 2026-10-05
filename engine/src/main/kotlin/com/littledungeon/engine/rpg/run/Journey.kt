@@ -49,6 +49,7 @@ class Journey(
     startSkills: SkillBook,
     startWorld: WorldMemory,
     internal val clock: Clock = Clock.System,
+    val settings: Settings = Settings(),
 ) {
     internal val random = Random(seed)
     internal val say = JourneyLines(Random(random.nextLong()))
@@ -137,9 +138,9 @@ class Journey(
     private val log = mutableListOf<Command>()
 
     /** The time of the command being run, so everything that notes a time notes the same one however many times it is replayed. */
-    private var now = 0L
+    internal var now = 0L
 
-    /** Seconds of play so far in the day that is running, by [effortSeconds]; at [DAY_SECONDS] the party camps for the night. */
+    /** Seconds of play so far in the day that is running, by [effortSeconds]; at [Settings.dayMinutes] the party camps for the night. */
     internal var dayEffort = 0.0
 
     /** Which day of the journey it is, from 1. */
@@ -222,7 +223,8 @@ class Journey(
      */
     internal fun level(skill: Skill): Int {
         val reached = skills.level(skill)
-        return if (skill in warmedUp) reached else (reached - 1).coerceAtLeast(1)
+        val level = if (skill in warmedUp) reached else (reached - 1).coerceAtLeast(1)
+        return level.coerceIn(settings.levelFloor, settings.levelCeiling)
     }
 
     internal fun nextSeed() = random.nextLong()
@@ -318,20 +320,17 @@ class Journey(
 
     private fun nextAction(): List<JStep> = when {
         finishing -> finale()
-        dayEffort >= DAY_SECONDS -> night()
+        dayEffort >= settings.dayMinutes * 60.0 -> night()
         else -> travel()
     }
 
     companion object {
-        /** A day of play, in seconds by [effortSeconds]: after this the party camps, a good place to put the game down. */
-        const val DAY_SECONDS = 540.0
-
         /**
          * The journey that [commands] lead to, from the same start: the same beat, hero, skills and world as when they were
          * first played. What the child does next is stamped by [clock].
          */
-        fun replay(seed: Long, hero: Hero, skills: SkillBook, world: WorldMemory, commands: List<Command>, clock: Clock = Clock.System): Journey {
-            val j = Journey(seed, hero, skills, world, clock)
+        fun replay(seed: Long, hero: Hero, skills: SkillBook, world: WorldMemory, commands: List<Command>, clock: Clock = Clock.System, settings: Settings = Settings()): Journey {
+            val j = Journey(seed, hero, skills, world, clock, settings)
             commands.forEach { j.play(it) }
             return j
         }
