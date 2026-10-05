@@ -28,7 +28,7 @@ class CommandLogTest {
 
     /** A pretend child: gets most puzzles right, mostly follows the marked road, buys now and then. */
     private fun answer(b: Beat, r: Random): Reply = when (b) {
-        is Beat.Tell, is Beat.Found, is Beat.Finale -> Reply.Next
+        is Beat.Tell, is Beat.Found, is Beat.Night, is Beat.Finale -> Reply.Next
         is Beat.Ask -> if (b.oneTry && r.nextInt(5) == 0) Reply.Solved(1, 0, 4000, failed = true, wrong = listOf(0, 2)) else Reply.Solved(r.nextInt(1, 3), r.nextInt(2), 4000)
         is Beat.Choose -> Reply.Picked(r.nextInt(b.options.size))
         // Follows the baby dragon's marked road most of the time, like a child does; a pure random walk can take forever.
@@ -85,6 +85,7 @@ class CommandLogTest {
             assertEquals(live.world, again.world)
             assertEquals(live.records, again.records)
             assertEquals(live.hp, again.hp)
+            assertEquals(live.day, again.day)
         }
     }
 
@@ -106,5 +107,46 @@ class CommandLogTest {
         assertEquals(whole.world, resumed.world)
         assertEquals(whole.hero, resumed.hero)
         assertEquals(whole.skills, resumed.skills)
+    }
+
+    @Test
+    fun `the party camps for the night, rested, and a journey takes more than one day`() {
+        var nights = 0
+        for (seed in 1L..8L) {
+            val j = fresh(seed)
+            val r = Random(seed)
+            var lastDay = j.day
+            var guard = 0
+            while (!j.finished && guard++ < 5000) {
+                val b = j.beat
+                if (b is Beat.Night) {
+                    nights++
+                    assertEquals(lastDay, b.day, "the night names the day that is ending")
+                    j.reply(Reply.Next)
+                    assertEquals(j.hero.maxHp, j.hp, "a night's rest heals")
+                    assertEquals(lastDay + 1, j.day)
+                    lastDay = j.day
+                } else {
+                    j.reply(answer(b, r))
+                }
+            }
+            assertTrue(j.finished)
+        }
+        assertTrue(nights >= 8, "a journey of ordinary length has at least a night in it ($nights over 8 journeys)")
+    }
+
+    @Test
+    fun `night never falls on the way into the last fight`() {
+        for (seed in 1L..8L) {
+            val j = fresh(seed)
+            val r = Random(seed)
+            var previous: Beat? = null
+            while (!j.finished) {
+                val b = j.beat
+                if (previous is Beat.Night) assertTrue(b !is Beat.Finale, "the finale does not follow a night")
+                previous = b
+                j.reply(answer(b, r))
+            }
+        }
     }
 }

@@ -87,6 +87,7 @@ object FeedbackLog {
         is Beat.Choose -> "Choice at ${beat.scene.place}: ${beat.options.map { it.said }}"
         is Beat.Travel -> "Map at ${beat.here}: ${beat.routes.map { "${it.name} (${it.terrain.word})" }}"
         is Beat.Shop -> "Shop ${beat.shopName}, ${beat.coins} coins: ${beat.stock.map { it.name }}"
+        is Beat.Night -> "Night falls at the end of day ${beat.day}: ${Voice.caption(beat.lines)}"
         is Beat.Finale -> "Finale"
     }
 }

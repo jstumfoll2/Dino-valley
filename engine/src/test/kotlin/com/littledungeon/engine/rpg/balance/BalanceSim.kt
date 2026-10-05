@@ -11,6 +11,7 @@ import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Journey
 import com.littledungeon.engine.rpg.run.Reply
+import com.littledungeon.engine.rpg.run.effortSeconds
 import com.littledungeon.engine.rpg.run.speech
 import com.littledungeon.engine.rpg.world.WorldMemory
 import com.littledungeon.engine.util.Clock
@@ -41,6 +42,10 @@ object BalanceSim {
         var tellsWithRetryWords = 0
         val beats = mutableListOf<Int>()
         val minutes = mutableListOf<Double>()
+
+        /** Minutes of each sitting: a journey is played in days, and the child can stop at every night. */
+        val sessionMinutes = mutableListOf<Double>()
+        var nights = 0
         val skills: MutableMap<Skill, Int> = sortedMapOf()
         val monsters: MutableMap<String, Int> = sortedMapOf()
         val finalLevels = mutableListOf<Map<Skill, Int>>()
@@ -53,6 +58,7 @@ object BalanceSim {
         fun median(xs: List<Double>) = xs.sorted()[(xs.size - 1) / 2]
         fun percentile(xs: List<Double>, q: Double) = xs.sorted()[((xs.size - 1) * q).toInt()]
         val medianMinutes get() = median(minutes)
+        val medianSession get() = median(sessionMinutes)
         val medianBeats get() = median(beats.map { it.toDouble() })
         val puzzlesPerJourney get() = asks.toDouble() / journeys
         fun share(skill: Skill) = (skills[skill] ?: 0).toDouble() / asks.coerceAtLeast(1)
@@ -62,21 +68,19 @@ object BalanceSim {
     /** Monsters that are also people with their own story: they should never turn up as a random encounter. */
     val NAMED_FOES = setOf("bandit_bess", "sneaky_fox", "grumble_troll")
 
-    private fun words(speech: List<com.littledungeon.engine.model.Speech>) =
-        Voice.caption(speech).split(Regex("\\s+")).count { it.isNotBlank() }
-
+    /** The time model is the engine's own ([effortSeconds]), which is also what decides when the party camps. */
     /**
      * One simulated journey. [accuracy] is the chance of getting a puzzle right; the child follows
      * the baby dragon's marked road 60% of the time and otherwise picks any open road; dialog
      * choices are random.
      */
     fun playJourney(accuracy: Double, seed: Long, hero: Hero, skills: SkillBook, world: WorldMemory, batch: Batch, r: Random): Journey {
-        // A clock that moves 20 seconds per puzzle, so "practiced longest ago" means something.
+        // A clock that moves with the child's time, so "practiced longest ago" means something.
         var now = batch.clockStart
-        val j = Journey(seed, hero, skills, world, Clock { now += 20_000; now })
+        val j = Journey(seed, hero, skills, world, Clock { now })
         var guard = 0
         var seconds = 0.0
-        var spokenWords = 0
+        var sitting = 0.0
         var foe: String? = null
         var ambush = false
         while (!j.finished && guard++ < 4000) {
@@ -84,9 +88,10 @@ object BalanceSim {
             // An encounter is announced ("A fox blocks the way!") and the fight starts on the very next beat.
             val ambushNow = ambush
             ambush = false
-            val before = seconds
-            val speechSeconds = b.speech().firstOrNull()?.let { words(it) / 2.3 } ?: 0.0
-            b.speech().firstOrNull()?.let { spokenWords += words(it) }
+            val effort = b.effortSeconds()
+            seconds += effort
+            sitting += effort
+            now += (effort * 1000).toLong()
             val battle = b.scene.battle
             if (battle == null) foe = null
             else if (battle.foe.id != foe) {
@@ -98,13 +103,11 @@ object BalanceSim {
             }
             val reply: Reply = when (b) {
                 is Beat.Tell, is Beat.Found -> {
-                    seconds += 1.5
                     if (b is Beat.Tell && Voice.caption(b.lines).let { "blocks the way" in it || "Here comes a" in it }) ambush = true
                     Reply.Next
                 }
                 is Beat.Ask -> {
                     batch.asks++
-                    seconds += 10
                     batch.skills.merge(b.challenge.skill, 1, Int::plus)
                     val ok = r.nextDouble() < accuracy
                     if (b.oneTry && !ok) {
@@ -118,33 +121,37 @@ object BalanceSim {
                 }
                 is Beat.Choose -> {
                     batch.menus++
-                    seconds += 4
                     if (b.options.isNotEmpty() && b.options.all { it.icon == "talk_fight" }) batch.forcedFights++
                     Reply.Picked(r.nextInt(b.options.size))
                 }
                 is Beat.Travel -> {
                     batch.travels++
-                    seconds += 6
                     val open = b.routes.indices.filter { !b.routes[it].blocked }
                     val marked = b.routes.indexOfFirst { it.marked }
                     Reply.Picked(if (marked >= 0 && r.nextDouble() < 0.6) marked else open.random(r))
                 }
                 is Beat.Shop -> {
-                    seconds += 5
                     val can = b.stock.filter { it.canAfford }
                     if (r.nextInt(4) == 0 && can.isNotEmpty()) Reply.Bought(can.random(r).itemId) else Reply.Next
                 }
                 is Beat.Roll -> Reply.Rolled(false, 1)
+                is Beat.Night -> {
+                    // Stopping at the fire: the sitting ends here and the next begins in the morning.
+                    batch.nights++
+                    batch.sessionMinutes += sitting / 60.0
+                    sitting = 0.0
+                    Reply.Next
+                }
                 is Beat.Finale -> Reply.Next
             }
             val kind = b::class.simpleName.orEmpty()
-            batch.secondsByKind.merge(kind, (seconds - before) + speechSeconds, Double::plus)
+            batch.secondsByKind.merge(kind, effort, Double::plus)
             batch.beatsByKind.merge(kind, 1, Int::plus)
             j.reply(reply)
         }
         batch.faints += j.faints
         batch.clockStart += 600_000L
-        seconds += spokenWords / 2.3 // narration at about 140 words a minute
+        batch.sessionMinutes += sitting / 60.0
         batch.journeys++
         if (j.finished) batch.finished++
         batch.beats += guard
@@ -206,11 +213,12 @@ object BalanceSim {
         val batches = accuracies.map { run(it, children, journeysEach) }
         val sb = StringBuilder()
         sb.appendLine("## Balance report ($children children x $journeysEach journeys per accuracy)\n")
-        sb.appendLine("| Accuracy | Median beats | Minutes p10 / median / p90 | Puzzles | Menus | Battles | Faints | Forced-fight menus | Named characters ambushing | One-try misses saying try again |")
-        sb.appendLine("|---|---|---|---|---|---|---|---|---|---|")
+        sb.appendLine("| Accuracy | Median beats | Journey minutes p10 / median / p90 | Sitting minutes p10 / median / p90 | Nights | Puzzles | Menus | Battles | Faints | Forced-fight menus | Named characters ambushing | One-try misses saying try again |")
+        sb.appendLine("|---|---|---|---|---|---|---|---|---|---|---|---|")
         for (b in batches) {
             sb.appendLine(
                 "| ${pct(b.accuracy)} | ${f1(b.medianBeats)} | ${f1(b.percentile(b.minutes, 0.1))} / ${f1(b.medianMinutes)} / ${f1(b.percentile(b.minutes, 0.9))} | " +
+                    "${f1(b.percentile(b.sessionMinutes, 0.1))} / ${f1(b.medianSession)} / ${f1(b.percentile(b.sessionMinutes, 0.9))} | ${f1(b.nights.toDouble() / b.journeys)} | " +
                     "${f1(b.puzzlesPerJourney)} | ${f1(b.menus.toDouble() / b.journeys)} | ${f1(b.battles.toDouble() / b.journeys)} | " +
                     "${"%.2f".format(b.faints.toDouble() / b.journeys)} | ${b.forcedFights} | ${b.namedAmbushes} | ${b.tellsWithRetryWords} of ${b.asksFailed} |",
             )

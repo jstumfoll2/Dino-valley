@@ -116,6 +116,10 @@ object VoiceCatalog {
                         hear(b.prompt)
                         if (b.stock.isNotEmpty() && r.nextInt(3) > 0) Reply.Bought(b.stock.random(r).itemId) else Reply.Next
                     }
+                    is Beat.Night -> {
+                        hear(b.lines)
+                        Reply.Next
+                    }
                     is Beat.Finale -> Reply.Next
                 }
                 a.reply(reply)

@@ -65,6 +65,18 @@ internal class JourneyLines(private val r: Random) {
         "$name still blocks the way. <pet>We can pay, make friends, or go around.",
     )
 
+    fun nightfall() = pick(
+        "The sun is going down. It is time to camp for the night. <pet>I am sleepy. Yawn!",
+        "Stars come out, one by one. You make a little fire and curl up. <pet>Good night!",
+        "It is getting dark. You find a cozy spot to rest. <pet>Sweet dreams, everyone!",
+    )
+
+    fun morning() = pick(
+        "Good morning! The sun is up, and you feel rested and brave. <pet>Let's go!",
+        "A new day begins. The birds are singing. <pet>I slept so well!",
+        "Wake up, sleepyhead! A new day of adventure is here. <pet>Where will we go today?",
+    )
+
     fun backAtCamp() = pick("Back at camp! Everyone is happy to see you. <pet>Home sweet home!", "Camp at last. The fire crackles, and you rest your feet.")
 
     // ------------------------------------------------------------- obstacles

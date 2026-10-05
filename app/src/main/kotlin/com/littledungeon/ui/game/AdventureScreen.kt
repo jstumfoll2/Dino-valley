@@ -45,8 +45,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -96,7 +99,7 @@ fun AdventureScreen(vm: GameViewModel) {
     val speakingAs by narrator.speakingAs.collectAsState()
     var caption by remember { mutableStateOf<List<Speech>>(emptyList()) }
     var heroMood by remember { mutableStateOf(Mood.CALM) }
-    val interactive = beat !is Beat.Tell && beat !is Beat.Found && beat.scene.battle == null
+    val interactive = beat !is Beat.Tell && beat !is Beat.Found && beat !is Beat.Night && beat.scene.battle == null
     // How far the visitors have stepped back to leave room for a challenge.
     val back by animateFloatAsState(if (interactive) 1f else 0f, tween(500), label = "back")
 
@@ -145,6 +148,7 @@ fun AdventureScreen(vm: GameViewModel) {
                 is Beat.Ask -> AskBeat(beat, vm.state.hero.heroClass.power == Power.SPARKLE_HINT, say, celebrate) { solved -> reply(solved) }
                 is Beat.Travel -> TravelBeat(beat, adventure, say) { reply(Reply.Picked(it)) }
                 is Beat.Shop -> ShopBeat(beat, say, { reply(Reply.Bought(it)) }) { reply(Reply.Next) }
+                is Beat.Night -> NightBeat(beat, say, { reply(Reply.Next) }) { vm.home() }
                 is Beat.Finale -> Unit
             }
         }
@@ -265,6 +269,56 @@ private fun TellBeat(lines: List<Speech>, say: (List<Speech>) -> Unit, next: () 
         next()
     }
 }
+
+/**
+ * Night falls at the camp. The scene darkens, the stars come out and the narrator says good night. Then the child can keep
+ * going (the big arrow) or put the game down at the fire (the house): the adventure is saved either way.
+ */
+@Composable
+private fun NightBeat(beat: Beat.Night, say: (List<Speech>) -> Unit, goOn: () -> Unit, stop: () -> Unit) {
+    val narrator = LocalNarrator.current
+    val dark = remember { Animatable(0f) }
+    var resting by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        say(beat.lines)
+        dark.animateTo(1f, tween(1800))
+        narrator.speak(beat.lines)
+        delay(400)
+        resting = true
+    }
+    val t = rememberInfiniteTransition(label = "stars")
+    val twinkle by t.animateFloat(0.35f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label = "twinkle")
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val h = maxHeight
+        val w = maxWidth
+        Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = dark.value }) {
+            drawRect(Color(0xB30B1236))
+            for ((i, star) in NIGHT_STARS.withIndex()) {
+                val bright = if (i % 2 == 0) twinkle else 1.35f - twinkle
+                drawCircle(Color.White.copy(alpha = bright.coerceIn(0.2f, 1f)), size.height * (0.006f + 0.004f * (i % 3)), Offset(size.width * star.first, size.height * star.second))
+            }
+            // The moon: a full circle with a bite taken out of it.
+            val r = size.height * 0.1f
+            val centre = Offset(size.width * 0.84f, size.height * 0.24f)
+            val moon = Path.combine(
+                PathOperation.Difference,
+                Path().apply { addOval(Rect(centre, r)) },
+                Path().apply { addOval(Rect(centre + Offset(r * 0.55f, -r * 0.2f), r * 0.9f)) },
+            )
+            drawPath(moon, Color(0xFFFFF1B8))
+        }
+        if (resting) {
+            RoundButton(Picto.NEXT, Palette.Go, h * 0.24f, Modifier.align(Alignment.BottomEnd).padding(end = w * 0.03f, bottom = h * 0.05f), pulse = true) { goOn() }
+            RoundButton(Picto.HOME, Palette.Berry, h * 0.15f, Modifier.align(Alignment.BottomStart).padding(start = w * 0.03f, bottom = h * 0.05f)) { stop() }
+        }
+    }
+}
+
+/** Where the stars are, as shares of the screen. */
+private val NIGHT_STARS = listOf(
+    0.08f to 0.12f, 0.17f to 0.3f, 0.26f to 0.1f, 0.35f to 0.22f, 0.44f to 0.08f, 0.52f to 0.28f, 0.6f to 0.14f, 0.68f to 0.06f,
+    0.74f to 0.32f, 0.93f to 0.1f, 0.12f to 0.46f, 0.3f to 0.42f, 0.57f to 0.44f, 0.8f to 0.5f, 0.96f to 0.38f, 0.04f to 0.3f,
+)
 
 @Composable
 private fun FoundBeat(beat: Beat.Found, say: (List<Speech>) -> Unit, celebrate: () -> Unit, next: () -> Unit) {

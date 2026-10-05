@@ -52,6 +52,17 @@ class BalanceTest {
     }
 
     @Test
+    fun aSittingIsShortAndAJourneyIsMoreThanOne() {
+        for (accuracy in listOf(0.6, 0.9)) {
+            val batch = BalanceSim.run(accuracy, children = 5, journeysEach = 6)
+            // Before: one unbroken sitting of about 25 minutes, with no way to put the game down.
+            assertTrue(batch.medianSession <= 12.0, "at $accuracy the median sitting is ${"%.1f".format(batch.medianSession)} minutes")
+            assertTrue(batch.percentile(batch.sessionMinutes, 0.9) <= 17.0, "at $accuracy a long sitting is ${"%.1f".format(batch.percentile(batch.sessionMinutes, 0.9))} minutes")
+            assertTrue(batch.nights >= batch.journeys, "at $accuracy a journey has ${"%.1f".format(batch.nights.toDouble() / batch.journeys)} nights; every one should have at least one")
+        }
+    }
+
+    @Test
     fun nobodyIsForcedToFightOrAmbushedByAFriend() {
         for (accuracy in listOf(0.6, 0.9)) {
             val batch = BalanceSim.run(accuracy, children = 5, journeysEach = 6)

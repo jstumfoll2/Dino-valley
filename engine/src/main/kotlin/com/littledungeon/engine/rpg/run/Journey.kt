@@ -139,6 +139,13 @@ class Journey(
     /** The time of the command being run, so everything that notes a time notes the same one however many times it is replayed. */
     private var now = 0L
 
+    /** Seconds of play so far in the day that is running, by [effortSeconds]; at [DAY_SECONDS] the party camps for the night. */
+    internal var dayEffort = 0.0
+
+    /** Which day of the journey it is, from 1. */
+    var day = 1
+        internal set
+
     fun reply(reply: Reply) = play(Command(reply, clock.nowMillis()))
 
     /** Runs one thing the child did. Every journey, live or replayed, goes through here. */
@@ -147,6 +154,7 @@ class Journey(
         log += command
         now = command.at
         val step = queue.removeFirst()
+        dayEffort += step.beat.effortSeconds()
         val follow = step.then(command.reply)
         for (s in follow.asReversed()) queue.addFirst(s)
         if (queue.isEmpty()) queue += nextAction()
@@ -308,9 +316,16 @@ class Journey(
         return steps
     }
 
-    private fun nextAction(): List<JStep> = if (finishing) finale() else travel()
+    private fun nextAction(): List<JStep> = when {
+        finishing -> finale()
+        dayEffort >= DAY_SECONDS -> night()
+        else -> travel()
+    }
 
     companion object {
+        /** A day of play, in seconds by [effortSeconds]: after this the party camps, a good place to put the game down. */
+        const val DAY_SECONDS = 540.0
+
         /**
          * The journey that [commands] lead to, from the same start: the same beat, hero, skills and world as when they were
          * first played. What the child does next is stamped by [clock].
@@ -338,6 +353,19 @@ internal fun List<JStep>.andThen(next: () -> List<JStep>): List<JStep> {
     if (isEmpty()) return next()
     val last = last()
     return dropLast(1) + JStep(last.beat) { reply -> last.then(reply) + next() }
+}
+
+/** Night falls: everyone is rested, then a new day starts at the map. */
+internal fun Journey.night(): List<JStep> {
+    val ending = day
+    dayEffort = 0.0
+    day++
+    hp = hero.maxHp
+    val s = scene(Place.CAMP)
+    return listOf(
+        JStep(Beat.Night(s, Speech.of(say.nightfall()), ending)),
+        tell(s.copy(mood = Mood.HAPPY), say.morning()),
+    )
 }
 
 /** The XP and level bookkeeping used when an adventure ends. */

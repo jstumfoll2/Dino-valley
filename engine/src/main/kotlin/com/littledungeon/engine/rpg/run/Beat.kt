@@ -86,7 +86,8 @@ data class Loot(val kind: LootKind, val count: Int, val words: String, val hue: 
 
 /**
  * One moment of the adventure. The app shows the beat, the child does something, and the app
- * sends back a [Reply]. Beats never end in failure: every challenge is eventually solved.
+ * sends back a [Reply]. A beat never leaves the child stuck: a miss is met with a hint, a joke or the right answer, and
+ * the story goes on.
  */
 sealed interface Beat {
     val scene: Scene
@@ -149,6 +150,12 @@ sealed interface Beat {
 
     /** Something found. Reply [Reply.Next]. */
     data class Found(override val scene: Scene, val loot: Loot, val lines: List<Speech>) : Beat
+
+    /**
+     * Night falls and the party camps. The hero is rested (health full) and the child can stop here: the journey is saved
+     * either way, so putting the game down at the fire loses nothing. [day] is the day that is ending. Reply [Reply.Next].
+     */
+    data class Night(override val scene: Scene, val lines: List<Speech>, val day: Int) : Beat
 
     /** The end of the adventure: stars earned, levels gained, what was unlocked. */
     data class Finale(override val scene: Scene, val summary: Summary) : Beat
@@ -224,5 +231,27 @@ fun Beat.speech(): List<List<Speech>> = when (this) {
     is Beat.Choose -> listOf(prompt)
     is Beat.Travel -> listOf(prompt) + routes.map { it.said }
     is Beat.Shop -> listOf(prompt)
+    is Beat.Night -> listOf(lines)
     is Beat.Finale -> listOf(summary.lines)
+}
+
+/** Narration runs at about 140 words a minute. */
+private const val WORDS_PER_SECOND = 2.3
+
+/**
+ * How long a child takes over this beat, in seconds: the words said, plus time to look, think and tap. The same
+ * figure measures a day's play (so the party camps for the night) and the balance report's session lengths.
+ */
+fun Beat.effortSeconds(): Double {
+    val words = speech().firstOrNull()?.let { com.littledungeon.engine.model.Voice.caption(it).split(Regex("\\s+")).count { w -> w.isNotBlank() } } ?: 0
+    val doing = when (this) {
+        is Beat.Tell, is Beat.Found -> 1.5
+        is Beat.Ask -> 10.0
+        is Beat.Roll -> 3.0
+        is Beat.Choose -> 4.0
+        is Beat.Travel -> 6.0
+        is Beat.Shop -> 5.0
+        is Beat.Night, is Beat.Finale -> 0.0
+    }
+    return doing + words / WORDS_PER_SECOND
 }
