@@ -84,6 +84,7 @@ class Journey(
     internal var moves = 0
     internal val done = mutableSetOf<String>()
     internal val dungeonRooms = mutableMapOf<String, Int>()
+    internal val dungeonPlans = mutableMapOf<String, List<com.littledungeon.engine.rpg.world.RoomKind>>()
     internal var monstersBeaten = 0
     internal var faints = 0
     internal var slips = 0

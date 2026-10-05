@@ -28,21 +28,17 @@ internal fun Journey.dungeon(l: Location, first: Boolean): List<JStep> {
     return steps
 }
 
-private val dealt = HashMap<Pair<Journey, String>, List<RoomKind>>()
-
-/** The rooms of a dungeon: the kinds of puzzle the hero has practised least come up most. */
-private fun Journey.plan(l: Location): List<RoomKind> = synchronized(dealt) {
-    dealt.getOrPut(this to l.id) {
-        RoomKind.learningRooms.sortedBy { kind ->
-            val skill = kind.skill!!
-            (skills.lastPracticed[skill] ?: 0L) / 60_000.0 + skills.level(skill) * 30.0 + random.nextDouble() * 120.0
-        }.take(l.rooms)
-    }
+/** The rooms of a dungeon: the kinds of puzzle the hero has practised least come up most. Dealt once per journey. */
+internal fun Journey.planOf(l: Location): List<RoomKind> = dungeonPlans.getOrPut(l.id) {
+    RoomKind.learningRooms.sortedBy { kind ->
+        val skill = kind.skill!!
+        (skills.lastPracticed[skill] ?: 0L) / 60_000.0 + skills.level(skill) * 30.0 + random.nextDouble() * 120.0
+    }.take(l.rooms)
 }
 
 private fun Journey.enterDungeon(l: Location): List<JStep> {
     val s = sceneAt(l)
-    return listOf(tell(s, say.dungeonEnter(l.name))) + rooms(l, plan(l), dungeonRooms[l.id] ?: 0)
+    return listOf(tell(s, say.dungeonEnter(l.name))) + rooms(l, planOf(l), dungeonRooms[l.id] ?: 0)
 }
 
 private fun Journey.rooms(l: Location, plan: List<RoomKind>, i: Int): List<JStep> {

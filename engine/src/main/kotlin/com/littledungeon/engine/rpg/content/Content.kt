@@ -11,6 +11,7 @@ import com.littledungeon.engine.rpg.story.CoreShops
 import com.littledungeon.engine.rpg.story.Npc
 import com.littledungeon.engine.rpg.story.ShopDef
 import com.littledungeon.engine.rpg.world.CoreKingdom
+import com.littledungeon.engine.rpg.world.Kingdom
 import com.littledungeon.engine.rpg.world.Location
 import com.littledungeon.engine.rpg.world.Road
 
@@ -46,27 +47,69 @@ object CorePack : ContentPack {
     override val flagRoads = CoreKingdom.flagRoads
 }
 
-/** Everything the game knows about, from every pack. */
+/**
+ * Everything the game knows about, from every pack, put together once: lists for tests and tools to
+ * walk, maps by id for the game to look things up (which it does constantly, for every item a hero
+ * wears), and the map of the kingdom. A duplicate id in any list is a mistake and fails right here.
+ */
+class Registry(val packs: List<ContentPack>) {
+    val items: List<Item> = packs.flatMap { it.items }
+    val monsters: List<Monster> = packs.flatMap { it.monsters }
+    val locations: List<Location> = packs.flatMap { it.locations }
+    val roads: List<Road> = packs.flatMap { it.roads }
+    val arcs: List<Arc> = packs.flatMap { it.arcs }
+    val npcs: List<Npc> = packs.flatMap { it.npcs }
+    val shops: List<ShopDef> = packs.flatMap { it.shops }
+    val flagRoads: Map<String, List<String>> =
+        packs.flatMap { it.flagRoads.entries }.groupBy({ it.key }, { it.value }).mapValues { (_, v) -> v.flatten() }
+
+    val kingdom: Kingdom = Kingdom("Whisperwood", locations, roads)
+
+    private val itemById = unique("item", items) { it.id }
+    private val monsterById = unique("monster", monsters) { it.id }
+    private val npcById = unique("person", npcs) { it.id }
+    private val shopById = unique("shop", shops) { it.id }
+    private val arcById = unique("story", arcs) { it.id }
+
+    fun item(id: String): Item? = itemById[id]
+    fun monster(id: String): Monster? = monsterById[id]
+    fun npc(id: String): Npc? = npcById[id]
+    fun shop(id: String): ShopDef? = shopById[id]
+    fun arc(id: String): Arc? = arcById[id]
+
+    private fun <T> unique(what: String, list: List<T>, id: (T) -> String): Map<String, T> {
+        val map = LinkedHashMap<String, T>()
+        for (x in list) require(map.put(id(x), x) == null) { "two ${what}s share the id ${id(x)}" }
+        return map
+    }
+}
+
+/** The game's content. Swapping [packs] (tests, tools) rebuilds the registry. */
 object Content {
-    var packs: List<ContentPack> = listOf(CorePack)
+    @Volatile
+    private var registry = Registry(listOf(CorePack))
 
-    val items: List<Item> get() = packs.flatMap { it.items }
-    val monsters: List<Monster> get() = packs.flatMap { it.monsters }
+    var packs: List<ContentPack>
+        get() = registry.packs
+        set(value) {
+            registry = Registry(value)
+        }
 
-    val locations: List<Location> get() = packs.flatMap { it.locations }
-    val roads: List<Road> get() = packs.flatMap { it.roads }
-    val arcs: List<Arc> get() = packs.flatMap { it.arcs }
-    val npcs: List<Npc> get() = packs.flatMap { it.npcs }
-    val shops: List<ShopDef> get() = packs.flatMap { it.shops }
-    val flagRoads: Map<String, List<String>> get() = packs.flatMap { it.flagRoads.entries }.groupBy({ it.key }, { it.value }).mapValues { (_, v) -> v.flatten() }
+    val items: List<Item> get() = registry.items
+    val monsters: List<Monster> get() = registry.monsters
+    val locations: List<Location> get() = registry.locations
+    val roads: List<Road> get() = registry.roads
+    val arcs: List<Arc> get() = registry.arcs
+    val npcs: List<Npc> get() = registry.npcs
+    val shops: List<ShopDef> get() = registry.shops
+    val flagRoads: Map<String, List<String>> get() = registry.flagRoads
 
-    /** The map, put together from every pack's places and roads. */
-    val kingdom: com.littledungeon.engine.rpg.world.Kingdom get() = com.littledungeon.engine.rpg.world.Kingdom("Whisperwood", locations, roads)
+    /** The map of Whisperwood, put together from every pack's places and roads. */
+    val kingdom: Kingdom get() = registry.kingdom
 
-    fun npc(id: String): Npc? = npcs.firstOrNull { it.id == id }
-    fun shop(id: String): ShopDef? = shops.firstOrNull { it.id == id }
-    fun arc(id: String): Arc? = arcs.firstOrNull { it.id == id }
-
-    fun item(id: String): Item? = items.firstOrNull { it.id == id }
-    fun monster(id: String): Monster? = monsters.firstOrNull { it.id == id }
+    fun npc(id: String): Npc? = registry.npc(id)
+    fun shop(id: String): ShopDef? = registry.shop(id)
+    fun arc(id: String): Arc? = registry.arc(id)
+    fun item(id: String): Item? = registry.item(id)
+    fun monster(id: String): Monster? = registry.monster(id)
 }
