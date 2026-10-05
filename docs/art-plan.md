@@ -92,6 +92,14 @@ What was drawn on this branch, and what was found when it was looked at. Everyth
 | `scene_ballroom` (the Storybook Ball) | Nothing that needed changing for a scene with no answers on it. The right window sits where answers would be, but the Ball is only people on stage; the curtains are a little swollen | None |
 | `scene_map` (reused for Hoot's map table) | Already drawn; it is the parchment table, calm everywhere, and the screen draws its own grid on it | None |
 
+### Knocker, the doorknob and the Hall of Doors
+
+| Piece | Found on the first look | Fixed |
+|---|---|---|
+| `monster_knocker` (a talking door on boots, a knocker ring for a nose, a mail slot for a mouth) | The eyebrows slanted down towards the nose, which made a friendly door look angry | Raised the inner ends, so he looks worried and fussy, which is who he is |
+| `item_golden_knob` | A curve of shading under the knob read as a smile | Removed |
+| World map: a stone archway with doors, loose doors in the grass | Nothing that needed changing; the pin stands on its foot, like the belfry's and the manor's | None |
+
 ### Keys for the stories
 
 - **Mountain key** (`item_mountain_key`): first a plain triangle cut in the bow, which read as a "play" button; redrawn as a two-peaked mountain with snow, scaled to sit inside the
@@ -108,8 +116,8 @@ Counts are files in `app/src/main/res/drawable-nodpi` (each layered character is
 |---|---|---|
 | Backdrops (places, rooms, roads, map) | 43 | Complete for the current content; the belfry, the market stall, the rhyme bridge, the bat cave and the ballroom are new. The floor-line, landmark-box and 20:9 safe-area contract (plan step 4.3) is not applied to the older backdrops |
 | People | 108 files (18 people) | Complete |
-| Monsters | 114 files | Complete (the Bat King and the Dragon now have a story) |
-| Items | 42 | Complete; the two story keys are new |
+| Monsters | 120 files | Complete (the Bat King and the Dragon now have a story; Knocker is new) |
+| Items | 43 | Complete; the three story keys are new |
 | Gear overlays | 20 | Complete |
 | Minigame pictures | 34 | Complete for the minigames built so far |
 | Dialog and menu icons | 23 | Complete |
@@ -125,7 +133,6 @@ In the order the plan needs them.
 | Painted bunny and frog icons, the dice screen's broken heart | Step 4.5 (painted icons replace the last emoji) | Small; same module as the other icons |
 | Backdrops redrawn with a floor line, a landmark box and a 20:9 safe area | Steps 4.2 and 4.3 (feet on a common ground, nothing in the answer zone) | A pass over every `scene_*`; needs per-picture foot positions the app can read |
 | A map painted from the same data as the roads | Step 4.4 | Needs the places moved first (nine pairs overlap at the current marker size) |
-| Princess Ruby's story: a second companion on screen, the mine's doors | Roadmap story 3, "Ruby's Quest" | Her rig exists; the mine scene does not |
 | The Lakeside Isles | "Grumble's Raft" | A new map region; the largest single piece of art left |
 
 Not planned: a different art style. The review judged the house style consistent and kind; what needed work was layering and overlap, not look.

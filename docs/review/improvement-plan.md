@@ -25,7 +25,7 @@ finding from the review, the step that fixes it, and where it stands. Statuses:
 | T1 | A journey takes about 25 minutes and can't be saved | 1.1 to 1.4 | **Done**: saved after every tap; sittings of about 10 minutes (see "What changed in the numbers") |
 | T2 | Difficulty only ever goes up | 2.1 | **Done** |
 | T3 | The right answer is usually the middle card | 2.2 | **Done** |
-| T4 | There is one story | 7.1 and up | **Partly**: four stories (the Baron, the dragon, the lanterns and the Ink Shadow finale with the Storybook Ball); five more in the roadmap need people or places that do not exist yet |
+| T4 | There is one story | 7.1 and up | **Partly**: five stories (the Baron, the dragon, the lanterns, Ruby and the doors, and the Ink Shadow finale with the Storybook Ball); four more in the roadmap need things that do not exist yet |
 | T5 | The world's memory is mostly write-only | 3.1, 3.2 | **Done** |
 | T6 | Half of the brief's learning is absent | 2.3, then 6.x | **Mostly done**: maps, recipes, rhymes, money, sharing, listening and story all have puzzles and rooms (Phase 6); a few ladders stop short (see the table) |
 | T7 | Class powers and unlocks do nothing | 3.5, 3.6 | **Done** |
@@ -146,7 +146,7 @@ Each needs a generator, a judge, a screen, a place in the world, tests, voice li
 | 6.1 | Lucky Roll (dice) | **Done**: a road event (decision #63) |
 | 6.2 | The Potion Workshop | **Done as a dungeon room**. The roadmap's potions that change the world (a glow potion lighting a swamp road) are not built |
 | 6.3 | Hoot's Treasure Map | **Done**: a route on a grid, "go right two steps", north and south at the hard levels (`GridChallenge`, `TreasureMap` screen); an obstacle costume and a room at Hoot's map table (the old parchment backdrop). The seven-step ladder stops at following a route: "plan around an obstacle" is not built |
-| 6.4 | Lumi's Lanterns (the writing ladder) | **Partly**: tracing now climbs lines, curves, zigzags, loops and shapes before letters (decision #66), in the tunnel room and as the Bat King's glowing path. The screen where the child draws a wire from lamp to lamp is not built (the lamp pictures are drawn and unused) |
+| 6.4 | Lumi's Lanterns (the writing ladder) | **Done**: tracing climbs lines, curves, zigzags, loops and shapes before letters (decision #66); a wire from lamp to lamp (two to four lamps, each lighting as the wire reaches it) in the tunnel room and as the Bat King's glowing path |
 | 6.5 | The Pennywhistle Market Stall | **Partly**: money puzzles (exact coins, coins left, the price of both) as obstacle costumes, a step on the dragon's peaceful way, and a market stall room with its own backdrop. A stall where several customers are served in a row is not built |
 | 6.6 | Grumble's Rhyme Bridge | **Done as rhyme puzzles** (which picture rhymes; the odd one out; which starts like) at the river crossing and in a rope-bridge room with its own backdrop. Clapping syllables is not built |
 | 6.7 | Sir Ribbit's Bell Song | **Done**: a listening skill, three bells, songs of two to five bells, judged in the engine; a bell-tower room (decision #67). Sir Ribbit himself does not appear in it |
@@ -159,7 +159,7 @@ Each needs a generator, a judge, a screen, a place in the world, tests, voice li
 |---|---|---|
 | 7.1 | The Night of a Thousand Lanterns | **Done as data** (decision #68): glow-silk from the Spider Caves, the Bat Belfry (a new lair, drawn on the map and as a backdrop), three ways to tell it, the Bell Song, a glowing path and shared berries on the peaceful way. The roadmap's lit-lantern map state is not built |
 | 7.2 | The Dragon Who Didn't Want to Fight | **Done as data**: the stone key from Gloomwood Mine, Dragon's Peak, three ways to tell it, rhymes, sharing and money on the peaceful way, Brogan's courage. The roadmap's "sorting the hoard" is not built |
-| 7.3 | Ruby's Quest | Not started: needs a second companion on stage and the mine's doors |
+| 7.3 | Ruby's Quest | **Done as data** (decision #70): Ruby goes with the hero and is on stage in every scene (`Arc.companion`); the golden doorknob from Gloomwood Mine opens the Hall of Doors, a new lair; the boss is Knocker the Door Warden (new monster art); the memory doors, the treasure map and a pattern are the peaceful way. The roadmap's "old door forks return as the mine's dungeon type" is not built |
 | 7.4 | Sparky Is Missing! | Not started: needs the engine to run a journey without the companion |
 | 7.5 | The Ink Shadow and the Storybook Ball | **Done**: the finale (told when four pages are home, `Arc.finale`), reusing the Baron's lair and quill, three ways to tell it, a Baron who is a friend or a rival; the Ball brings up to five friends the world remembers on stage in a ballroom backdrop. The peaceful ending gives the shadow a page of its own; the fight rubs it back into the book |
 | 7.6 | Grumble's Raft | Not started: needs a lake map |

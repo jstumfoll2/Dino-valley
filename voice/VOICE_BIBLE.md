@@ -50,6 +50,8 @@ their own and every person in the kingdom on a named voice. Named voices are nev
 | Skeletons, ghosts | bf_lily (23), pitch 0.9 | spooky |
 | Small creatures | af_sarah (9), pitch 1.1 | squeaky |
 | The Bat King | af_sarah (9), pitch 1.3 | tiny, regal, squeaky |
+| Knocker the Door Warden | am_fenrir (14), pitch 0.75, slow | creaky, low, a little fussy |
+| Princess Ruby | speaker 8 | bold, young; shares the speaker with the old sneak voice (nobody speaks as Sneak now but the Inky Imp) |
 | Trolls, wolves, golems | am_fenrir (14), pitch 0.85 | growly |
 
 Speaker choices were made by measuring each speaker's pitch on a test sentence and spreading the characters across the range; **nobody has listened to them yet**, so

@@ -1392,3 +1392,13 @@ has a clue that spares a puzzle when it was found on the way. A boss made a frie
 look found is kept in that document's log.
 
 **Why we made it:** Several of the review's layering faults were pictures that were fine alone and wrong on stage. **What might cause us to change it:** Screenshot tests (plan step 4.6) doing the checking.
+
+### 70. A story can bring a companion, and one more lair
+
+**Status:** Accepted · 2026-10-05 · extends #68
+
+**Decision:** An `Arc` can name a `companion` ("ruby"): she is on stage in every scene of that story, next to the hero and the baby dragon, and speaks with her own tag. The fifth story,
+Princess Ruby and the Wandering Doors, uses it. It has a new lair (the Hall of Doors, drawn on the map and shown on the old rune-hall backdrop), a new key (the golden doorknob) and a new boss
+(Knocker the Door Warden, whose picture and creaky voice are new). Ruby's picture and voice existed from the first game; the stage already knew how to draw her.
+
+**Why we made it:** The review's third story, and the cheapest way to show a second companion without a new screen. **What might cause us to change it:** A second companion crowding the stage on a small phone (the answers' zone starts at 40% of the width).

@@ -7,12 +7,14 @@ through, not one story with different names. This file tracks what exists and wh
 - Arc 1, "The Missing Pages" (Baron Grumblewick, the Storybook): the first, fully fleshed-out story. It is told three ways (the lonely Baron, the jealous Baron, the Baron under the ink's spell), with clues along the roads, and it can end by fighting or by listening.
 - Arc 2, "The Dragon Who Did Not Want to Fight" (Dragon's Peak; the stone key from Gloomwood Mine; Brogan finds his courage): told three ways (the dragon who collects lost things, the one who cannot sleep, the shy one). The peaceful way is rhymes, sharing and money. What the hero learned on the road (Hazel hears a lullaby in the rumble; a bottle with a note about pies; Grumble's message) spares a rhyme or a sharing puzzle.
 - Arc 3, "The Night of a Thousand Lanterns" (the Bat Belfry; glow-silk from the Spider Caves; Lumi): told three ways (the bats are scared of the dark, they were not invited, they think it is a game). The peaceful way is the Bell Song, a glowing path to trace, and sharing berries.
-- The old stories (the dragon's prisoner, Ruby's quest) are not yet in the new kingdom. Ruby, the goblin and the shadow keep their art and `Who` entries for them.
+- Arc 4, "Princess Ruby and the Wandering Doors" (the Hall of Doors; the golden doorknob from Gloomwood Mine; Ruby on stage for the whole story): told three ways (the warden lost his keys, he is lonely, a page of the Storybook is rewriting his doors). The peaceful way is the memory doors, Hoot's map and a pattern; knowing why the doors wander spares the memory doors.
+- Arc 5, "The Ink Shadow", the finale of a Storybook: told when four pages are home, never before, and followed by the Storybook Ball for the friends the hero made.
+- The old story of the dragon's prisoner is not in the new kingdom. The goblin keeps its art and `Who` entry for it.
 
 ## Wanted (each is a data entry in the arc library, plus new people, places and art)
 - A story where the villain is a friend in disguise and the hero must discover it.
 - A story with no boss fight: a festival, a race or a rescue solved by choices and puzzles. (The lantern story is a festival, but still has a boss to talk to.)
-- A story where the baby dragon is the one who is lost.
+- A story where the baby dragon is the one who is lost (needs a journey without the companion).
 - A story set mostly underground, or on the water, using a different kind of map.
 - Seasonal stories (winter market, harvest). The night of lanterns is built.
 - Stories driven by an NPC's personal problem that grows into the main plot.
