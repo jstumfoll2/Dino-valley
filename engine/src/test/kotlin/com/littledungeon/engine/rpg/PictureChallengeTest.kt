@@ -94,4 +94,46 @@ class PictureChallengeTest {
             assertEquals(c.level >= 4, c.compass)
         }
     }
+
+    @Test
+    fun `tell it back asks for the real order of the trip`() {
+        val all = com.littledungeon.engine.rpg.content.Content.locations.map { PictureFactory.Spot(it.name, it.theme) }
+        for (level in 1..5) for (s in 0L until 200L) {
+            val trail = all.shuffled(kotlin.random.Random(s)).take(6)
+            val c = PictureFactory.recall(level, s, trail, all)!!
+            val picked = c.options[c.answer].label
+            val spots = trail.map { it.name }
+            val anchor = c.scene.firstOrNull()?.art?.removePrefix("scene_")?.let { art -> trail.first { it.art == art }.name }
+            when {
+                anchor == null -> assertEquals(spots[1], picked)
+                Voice.caption(c.prompt).startsWith("Where did you go before") -> assertEquals(spots[spots.indexOf(anchor) - 1], picked)
+                else -> assertEquals(spots[spots.indexOf(anchor) + 1], picked)
+            }
+            assertEquals(c.options.size, c.options.map { it.label }.toSet().size)
+        }
+        assertTrue(PictureFactory.recall(1, 1, all.take(2), all) == null, "a trip of two places is too short to ask about")
+    }
+
+    @Test
+    fun `a journey ends with remembering the trip, once`() {
+        val j = com.littledungeon.engine.rpg.run.Journey(5, com.littledungeon.engine.rpg.hero.Hero(), com.littledungeon.engine.rpg.learn.SkillBook(), com.littledungeon.engine.rpg.world.WorldMemory(), com.littledungeon.engine.util.Clock { 0L })
+        val r = kotlin.random.Random(5)
+        var recaps = 0
+        var guard = 0
+        while (!j.finished && guard++ < 5000) {
+            val b = j.beat
+            if (b is com.littledungeon.engine.rpg.run.Beat.Ask && (b.challenge as? PictureChallenge)?.kind == "recall") recaps++
+            j.reply(
+                when (b) {
+                    is com.littledungeon.engine.rpg.run.Beat.Ask -> com.littledungeon.engine.rpg.run.Reply.Solved(1, 0, 1)
+                    is com.littledungeon.engine.rpg.run.Beat.Choose -> com.littledungeon.engine.rpg.run.Reply.Picked(r.nextInt(b.options.size))
+                    is com.littledungeon.engine.rpg.run.Beat.Travel -> com.littledungeon.engine.rpg.run.Reply.Picked(b.routes.indexOfFirst { it.marked }.coerceAtLeast(0))
+                    is com.littledungeon.engine.rpg.run.Beat.Roll -> com.littledungeon.engine.rpg.run.Reply.Rolled(false, 1)
+                    else -> com.littledungeon.engine.rpg.run.Reply.Next
+                },
+            )
+        }
+        assertTrue(j.finished)
+        assertEquals(1, recaps)
+    }
 }

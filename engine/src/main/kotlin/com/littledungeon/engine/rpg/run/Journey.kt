@@ -98,6 +98,7 @@ class Journey(
     internal var faints = 0
     internal var slips = 0
     internal var finishing = false
+    internal var recapped = false
     internal var lastEnding = ""
 
     /** What the hero is carrying and how they are doing, for the corner of the screen. */
@@ -369,6 +370,10 @@ internal fun Journey.night(): List<JStep> {
 
 /** The XP and level bookkeeping used when an adventure ends. */
 internal fun Journey.finale(): List<JStep> {
+    if (!recapped) {
+        recapped = true
+        recap()?.let { return it }
+    }
     val earned = stars.values.sum()
     val levelAfter = hero.level
     val unlocked = Progression.unlocksBetween(levelBefore, levelAfter)

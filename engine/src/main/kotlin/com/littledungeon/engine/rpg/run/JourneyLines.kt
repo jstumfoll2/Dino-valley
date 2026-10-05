@@ -77,6 +77,12 @@ internal class JourneyLines(private val r: Random) {
         "Wake up, sleepyhead! A new day of adventure is here. <pet>Where will we go today?",
     )
 
+    fun recapIntro() = pick("What a trip! <pet>Let's remember it together.", "Everyone sits by the fire. <pet>Do you remember where we went?")
+
+    fun recapOops() = pick("Hmm, not that one. <pet>Think about our trip!", "Not quite. <pet>Where did we go?")
+
+    fun recapYay() = pick("Yes, you remember! <pet>What a great trip it was!", "That's right! <pet>You have a wonderful memory.")
+
     fun backAtCamp() = pick("Back at camp! Everyone is happy to see you. <pet>Home sweet home!", "Camp at last. The fire crackles, and you rest your feet.")
 
     // ------------------------------------------------------------- obstacles

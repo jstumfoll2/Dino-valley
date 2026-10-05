@@ -261,3 +261,22 @@ internal fun Journey.obstacle(
         askOnce(scene, c, say.obstacleOops(o), say.obstacleYay(o), o, onWin = { next() }, onFail = { listOf(tell(scene, say.failedFor(o))) + turnBack() }),
     )
 }
+
+/**
+ * Back at camp, before the Storybook page and the stars: remember the trip (where did you go after the market?). It is the child's
+ * own journey, in order, so it asks for recall and sequence, and it is a gentle puzzle (a hint ladder, no turning back).
+ */
+internal fun Journey.recap(): List<JStep>? {
+    val spot = { l: com.littledungeon.engine.rpg.world.Location -> PictureFactory.Spot(l.name, l.theme) }
+    val trail = visited.map { spot(kingdom.location(it)) }
+    val c = PictureFactory.recall(level(Skill.STORY), nextSeed(), trail, kingdom.locations.map(spot)) ?: return null
+    val s = scene(Place.CAMP)
+    return listOf(
+        tell(s, say.recapIntro()),
+        JStep(Beat.Ask(s, c, Speech.of(say.recapOops()), Speech.of(say.recapYay()), explain = Coach.explain(c))) { reply ->
+            val r = reply as? Reply.Solved ?: Reply.Solved(1, 0, 0)
+            record(c, r.tries, r.hints, r.millis)
+            emptyList()
+        },
+    )
+}

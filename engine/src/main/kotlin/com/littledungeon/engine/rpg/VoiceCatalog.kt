@@ -21,6 +21,7 @@ import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.run.Costume
 import com.littledungeon.engine.rpg.run.Journey
 import com.littledungeon.engine.rpg.run.JourneyLines
+import com.littledungeon.engine.rpg.run.tunnelTrace
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Reply
 import com.littledungeon.engine.rpg.run.RoomLines
@@ -145,6 +146,20 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         for (thing in Thing.entries) hear(Speech.of(addStory("", thing, have, more, missing)))
         hear(Speech.of(vaultStory(have, more, missing)))
     }
+    // Tell it back: every place, and every pair of places one after the other.
+    for (a in Content.locations) {
+        hear(Speech.of("After ${a.name}, where did you go next?"))
+        hear(Speech.of("Where did you go before ${a.name}?"))
+        hear(Speech.of("${a.name} was the first place you went to."))
+        for (b in Content.locations) {
+            hear(Speech.of("You went from ${a.name} to ${b.name}."))
+            hear(Speech.of("You went to ${a.name}, and then to ${b.name}."))
+        }
+    }
+    // The pre-writing shapes and letters of the tunnel, with each of its purposes.
+    for (level in 1..5) for (seed in 0L until 40L) for (purpose in listOf("Let's light the tunnel!", "Draw with your magic finger!", "Make the wall glow!")) {
+        hear(tunnelTrace(level, seed, purpose).prompt)
+    }
     // Every picture puzzle, at every level: small sets of words, foods and numbers, so a few hundred seeds reach them all.
     for (level in 1..5) for (seed in 0L until 600L) {
         for (c in listOf(PictureFactory.rhyme(level, seed), PictureFactory.money(level, seed), PictureFactory.share(level, seed))) {
@@ -152,6 +167,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
             hear(c.because)
         }
         PictureFactory.map(level, seed).let { hear(it.prompt); hear(it.because) }
+
     }
     // Every recipe a workshop can ask for: each step is its own sentence, so a few hundred recipes reach them all.
     for (level in 1..5) for (potion in com.littledungeon.engine.rpg.learn.PotionKind.entries) for (seed in 0L until 150L) {

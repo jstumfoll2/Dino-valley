@@ -182,4 +182,39 @@ object PictureFactory {
             )
         }
     }
+
+    /** A place for the recap: its name and the name of its picture (`art_scene_<art>`). */
+    data class Spot(val name: String, val art: String)
+
+    /**
+     * Tell it back: remembering the trip, in order. [trail] is the places the hero went to, in the order they got there (camp first);
+     * [all] is every place, for wrong answers. Level 1 asks for the first place after camp; 2 and 3 for the one after a place, 4 for the
+     * one before a place, 5 either.
+     */
+    fun recall(level: Int, seed: Long, trail: List<Spot>, all: List<Spot>): PictureChallenge? {
+        if (trail.size < 3) return null
+        val r = Random(seed)
+        val count = when (level) { 1, 2 -> 3; 3, 4 -> 4; else -> 5 }
+        fun card(p: Spot) = Card(listOf(Shown("scene_${p.art}")), p.name)
+        fun build(prompt: String, anchor: Spot?, answer: Spot, because: String): PictureChallenge {
+            val others = (all - trail.toSet() + trail.filter { it != answer && it != anchor }).filter { it != answer && it != anchor }.shuffled(r).take(count - 1)
+            val options = (listOf(answer) + others).shuffled(r)
+            return PictureChallenge(
+                Skill.STORY, level, seed, Speech.of(prompt), "recall", listOfNotNull(anchor?.let { Shown("scene_${it.art}") }),
+                options.map(::card), options.indexOf(answer), Speech.of(because),
+            )
+        }
+        if (level == 1) {
+            val first = trail[1]
+            return build("Do you remember your trip? Where did you go first, after the camp?", null, first, "${first.name} was the first place you went to.")
+        }
+        val before = level == 4 || (level == 5 && r.nextBoolean())
+        return if (before) {
+            val i = r.nextInt(2, trail.size)
+            build("Where did you go before ${trail[i].name}?", trail[i], trail[i - 1], "You went to ${trail[i - 1].name}, and then to ${trail[i].name}.")
+        } else {
+            val i = r.nextInt(1, trail.size - 1)
+            build("After ${trail[i].name}, where did you go next?", trail[i], trail[i + 1], "You went from ${trail[i].name} to ${trail[i + 1].name}.")
+        }
+    }
 }

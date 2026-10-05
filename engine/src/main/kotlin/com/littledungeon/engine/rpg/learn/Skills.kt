@@ -20,6 +20,7 @@ enum class Skill(val attribute: Attribute) {
     RHYMES(Attribute.WISDOM),
     MONEY(Attribute.CLEVERNESS),
     SHARING(Attribute.CLEVERNESS),
+    STORY(Attribute.WISDOM),
 }
 
 /**
