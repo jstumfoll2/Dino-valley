@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      record_voice:
+        description: "Record the narrator's sentences (slow the first time after the voice changes). Turn off to only test and build the app."
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -55,6 +60,7 @@ jobs:
           restore-keys: voice-clips-
 
       - name: Record the narrator's sentences
+        if: github.event_name != 'workflow_dispatch' || inputs.record_voice
         run: python3 scripts/render-voice.py engine/build/voice/lines.txt app/src/main/assets/kokoro voice-cache app/src/main/assets/voice
 
       - name: Test the engine and build the app
