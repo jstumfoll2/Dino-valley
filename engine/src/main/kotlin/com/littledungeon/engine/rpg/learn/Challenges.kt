@@ -34,7 +34,12 @@ data class Rune(val shape: RuneShape, val hue: Hue)
 enum class LetterMode { NAME, MATCH_CASE, SOUND, FIRST_SOUND }
 
 /** Paths to trace with a finger, from a straight line up to shapes (brief: pre-writing stages). */
-enum class TraceShape { LINE, CURVE, ZIGZAG, LOOP, CIRCLE, TRIANGLE, LETTER, NUMBER }
+enum class TraceShape {
+    LINE, CURVE, ZIGZAG, LOOP, CIRCLE, TRIANGLE, LETTER, NUMBER,
+
+    /** Lumi's lamps: a glowing wire from lamp to lamp, one stroke between each pair. A lamp lights when the wire reaches it. */
+    WIRE,
+}
 
 /** A point on the tracing card, 0..1 across and down. */
 data class Point(val x: Float, val y: Float)
@@ -191,6 +196,9 @@ data class TraceChallenge(
 ) : Challenge {
     override val skill get() = Skill.TRACING
     val path: List<Point> get() = strokes.flatten()
+
+    /** Where the lamps are (a [TraceShape.WIRE] only): the start of the first wire and the end of each one. */
+    val lamps: List<Point> get() = if (shape == TraceShape.WIRE) listOf(strokes.first().first()) + strokes.map { it.last() } else emptyList()
 }
 
 /** Look at the doors, then they hide; tap the doors in [sequence] order (indices into [doors]). */

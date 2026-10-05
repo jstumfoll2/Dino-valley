@@ -36,6 +36,26 @@ class TunnelTest {
     }
 }
 
+class LampWireTest {
+    @Test
+    fun `a wire joins lamp to lamp, longer with the level, and the tunnel deals it only at the first two levels`() {
+        val strokesByLevel = listOf(1, 2, 2, 3, 3)
+        for (level in 1..5) for (seed in 1L..100L) {
+            val c = com.littledungeon.engine.rpg.learn.ChallengeFactory.wire(level, seed)
+            assertTrue(c.shape == com.littledungeon.engine.rpg.learn.TraceShape.WIRE)
+            assertTrue(c.strokes.size == strokesByLevel[level - 1], "level $level has ${c.strokes.size} wires")
+            assertTrue(c.lamps.size == c.strokes.size + 1, "a lamp at every end")
+            c.strokes.zipWithNext().forEach { (a, b) -> assertTrue(a.last() == b.first(), "each wire starts where the last one ended") }
+            assertTrue(c.strokes.flatten().all { it.x in 0f..1f && it.y in 0f..1f })
+            assertTrue(c.lamps.zipWithNext().all { (a, b) -> kotlin.math.hypot(a.x - b.x, a.y - b.y) > 0.2f }, "the lamps are well apart")
+            assertTrue(c.glyph == null)
+        }
+        val tunnel = { level: Int -> (1L..60L).map { com.littledungeon.engine.rpg.run.tunnelTrace(level, it, "x").shape } }
+        assertTrue(com.littledungeon.engine.rpg.learn.TraceShape.WIRE in tunnel(1) && com.littledungeon.engine.rpg.learn.TraceShape.WIRE in tunnel(2))
+        assertTrue(listOf(3, 4, 5).all { com.littledungeon.engine.rpg.learn.TraceShape.WIRE !in tunnel(it) })
+    }
+}
+
 class BellSongTest {
     @Test
     fun `dungeons can deal a bell tower, and it asks for a song`() {

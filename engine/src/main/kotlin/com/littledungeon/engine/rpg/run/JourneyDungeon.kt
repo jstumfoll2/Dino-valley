@@ -193,7 +193,7 @@ internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge =
     "bats" -> PictureFactory.share(level(Skill.SHARING), nextSeed(), step.intro, PictureFactory.ShareTheme.BATS)
     "map" -> PictureFactory.map(level(Skill.MAPS), nextSeed(), step.intro)
     "bells" -> ChallengeFactory.bells(level(Skill.LISTENING), nextSeed(), step.intro)
-    "trace" -> traceStep(step, "to light the lanterns.")
+    "trace" -> if (level(Skill.TRACING) <= 2) ChallengeFactory.wire(level(Skill.TRACING), nextSeed(), step.intro) else traceStep(step, "to light the lanterns.")
     "write" -> traceStep(step, "to draw on the page.")
     else -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")
 }
@@ -253,8 +253,8 @@ private fun Journey.ball(): List<JStep> {
  * straight ones to twisty ones (levels 3 to 5). Writing letters from the first level skipped the strokes they are made of.
  */
 internal fun tunnelTrace(level: Int, seed: Long, purpose: String, goal: String = "to light up the tunnel.") = when (level) {
-    1 -> ChallengeFactory.trace(1 + (seed and 1L).toInt(), seed, goal)
-    2 -> ChallengeFactory.trace(3 + ((seed and 0xffffL) % 3).toInt(), seed, goal)
+    1 -> if (seed % 4L == 1L) ChallengeFactory.wire(1, seed) else ChallengeFactory.trace(1 + (seed and 1L).toInt(), seed, goal)
+    2 -> if (seed % 4L == 1L) ChallengeFactory.wire(2, seed) else ChallengeFactory.trace(3 + ((seed and 0xffffL) % 3).toInt(), seed, goal)
     3 -> ChallengeFactory.write(1, seed, purpose)
     4 -> ChallengeFactory.write(2 + (seed and 1L).toInt(), seed, purpose)
     else -> ChallengeFactory.write(4 + (seed and 1L).toInt(), seed, purpose)

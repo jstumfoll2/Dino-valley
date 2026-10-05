@@ -185,6 +185,40 @@ object ChallengeFactory {
     }
 
     /**
+     * Lumi's lamps: join the lamps with a glowing wire, one stroke from each lamp to the next, and each lamp lights as the wire reaches it. Two lamps at the
+     * first level (one straight wire), three at the second and third, four after that; the wires bend from level 3. The strokes join end to start,
+     * so the lamps are the starts and ends of the strokes ([TraceChallenge.lamps]).
+     */
+    fun wire(level: Int, seed: Long, intro: String = ""): TraceChallenge {
+        fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
+        val r = Random(seed)
+        val lamps = when (level) { 1 -> 2; 2, 3 -> 3; else -> 4 }
+        val bend = level >= 3
+        // Left to right, with each lamp higher or lower than the one before so the wire is never a straight line across (except the first level).
+        var up = r.nextBoolean()
+        val nodes = List(lamps) { i ->
+            val y = if (level == 1) 0.5f else if (i % 2 == 0) (if (up) 0.3f else 0.7f) + r.nextFloat() * 0.08f else (if (up) 0.7f else 0.3f) - r.nextFloat() * 0.08f
+            Point(0.14f + 0.72f * i / (lamps - 1), y)
+        }
+        val points = 14
+        val strokes = nodes.zipWithNext().map { (a, b) ->
+            val wobble = if (bend) (if (r.nextBoolean()) 0.12f else -0.12f) else 0f
+            List(points) { k ->
+                val t = k / (points - 1f)
+                // A bend is a quadratic curve: the straight line pushed sideways in the middle. The ends are the lamps exactly.
+                val push = 4f * t * (1f - t) * wobble
+                when (k) {
+                    0 -> a
+                    points - 1 -> b
+                    else -> Point(lerp(a.x, b.x, t), (lerp(a.y, b.y, t) + push).coerceIn(0.08f, 0.92f))
+                }
+            }
+        }
+        val lead = if (intro.isBlank()) "" else "$intro "
+        return TraceChallenge(level, seed, Speech.of("${lead}Draw the glowing wire from lamp to lamp."), TraceShape.WIRE, strokes, 0.14f - 0.012f * level)
+    }
+
+    /**
      * Write a capital letter (or a number, with [number]) by tracing it stroke by stroke:
      * straight letters first, then slants, curves and the twisty ones.
      */
@@ -309,7 +343,7 @@ object ChallengeFactory {
                 Point(0.5f + 0.3f * cos(a).toFloat(), 0.5f + 0.32f * sin(a).toFloat())
             }
             TraceShape.TRIANGLE -> along(listOf(Point(0.5f, 0.15f), Point(0.85f, 0.85f), Point(0.15f, 0.85f), Point(0.5f, 0.15f)), n)
-            TraceShape.LETTER, TraceShape.NUMBER -> Glyphs.strokes('L').flatten()
+            TraceShape.LETTER, TraceShape.NUMBER, TraceShape.WIRE -> Glyphs.strokes('L').flatten()
         }
     }
 

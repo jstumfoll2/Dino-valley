@@ -94,6 +94,7 @@ import com.littledungeon.engine.rpg.learn.RecipeChallenge
 import com.littledungeon.engine.rpg.learn.RecipeStep
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.TraceChallenge
+import com.littledungeon.engine.rpg.learn.TraceShape
 import com.littledungeon.engine.rpg.learn.SortChallenge
 import com.littledungeon.engine.rpg.learn.SkipCountChallenge
 import com.littledungeon.engine.rpg.learn.PuzzleChallenge
@@ -868,7 +869,17 @@ private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
         for (i in 1 until trail.size) drawLine(Color(0x88FFFFFF), trail[i - 1], trail[i], stroke * 0.4f, StrokeCap.Round)
         if (glowDone > 0f) drawRoundRect(Color(0xFFFFE680).copy(alpha = 0.18f * glowDone), cornerRadius = CornerRadius(28.dp.toPx()))
     }
-    if (c.glyph == null) {
+    if (c.shape == TraceShape.WIRE) {
+        // Lumi's lamps: the first is lit, and each of the others lights when the wire reaches it. A lamp stands on its dot, so the dot still shows where to start.
+        val lamp = z.h * 0.17f
+        c.lamps.forEachIndexed { i, p ->
+            val lit = i == 0 || covered[i - 1].all { it }
+            Image(
+                painterResource(Art.byName(if (lit) "art_mini_lamp_on" else "art_mini_lamp_off") ?: R.drawable.art_lantern), null,
+                Modifier.at(z.left + cardW * p.x, cardTop + cardH * p.y - lamp * 0.38f, lamp, lamp),
+            )
+        }
+    } else if (c.glyph == null) {
         // A path or shape leads to a glowing crystal.
         val end = c.path.last()
         val gem = z.h * 0.12f
