@@ -120,6 +120,15 @@ internal class RoomLines(private val r: Random) {
 
     fun workshopYay() = pick("The potion glows and bubbles. You are a real potion maker!", "Perfect! The cauldron sparkles, and the door opens.")
 
+    fun belfry() = pick(
+        "A bell tower! Three bells hang here, one low, one in the middle and one high. <pet>Ding, dong!",
+        "Up in the old bell tower, three bells wait in a row. <pet>They want to sing a song with you.",
+    )
+
+    fun belfryOops() = pick("Clang! That was not the song. Listen to the bells again!", "Dong, dong, oops! The bells shake their heads. Listen again!")
+
+    fun belfryYay() = pick("The bells ring out in a happy song! <pet>You have good ears!", "You played the song! All the bells ring together, and the door swings open.")
+
     fun vault() = pick("A treasure vault! A big chest with a magic lock sits in the middle.", "Gold glitters everywhere! This is a treasure vault.")
 
     fun vaultOops() = pick("[coins] The coins jump back out of your bag.", "The chest burps! [burp]")

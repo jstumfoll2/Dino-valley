@@ -10,6 +10,7 @@ import com.littledungeon.engine.rpg.hero.Progression
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
 import com.littledungeon.engine.rpg.learn.PictureFactory
 import com.littledungeon.engine.rpg.learn.Coach
+import com.littledungeon.engine.rpg.learn.BellChallenge
 import com.littledungeon.engine.rpg.learn.MemoryChallenge
 import com.littledungeon.engine.rpg.learn.RecipeChallenge
 import com.littledungeon.engine.rpg.learn.Skill
@@ -94,6 +95,7 @@ object VoiceCatalog {
                         hear(b.explain)
                         when (val c = b.challenge) {
                             is MemoryChallenge -> hear(c.remember)
+                            is BellChallenge -> hear(c.listen)
                             is RecipeChallenge -> c.riddle?.let { hear(it) }
                             else -> Unit
                         }
@@ -247,6 +249,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
             hear(ChallengeFactory.write(level, seed, "", number = true).prompt)
             hear(ChallengeFactory.memory(level, seed).prompt)
             hear(ChallengeFactory.memory(level, seed).remember)
+            ChallengeFactory.bells(level, seed).let { hear(it.prompt); hear(it.listen) }
             hear(ChallengeFactory.sort(level, seed).prompt)
             hear(ChallengeFactory.skipCount(level, seed).prompt)
             hear(ChallengeFactory.puzzle(level, seed).prompt)

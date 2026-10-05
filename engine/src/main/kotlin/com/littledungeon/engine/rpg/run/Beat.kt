@@ -25,6 +25,7 @@ data class Place(val id: String) {
         val POND = Place("pond")
         val MOSAIC_HALL = Place("mosaic_hall")
         val WORKSHOP = Place("workshop")
+        val BELFRY = Place("belfry")
         val WORLD_MAP = Place("world_map")
     }
 }
@@ -42,6 +43,7 @@ fun placeOf(kind: RoomKind): Place = when (kind) {
     RoomKind.POND -> Place.POND
     RoomKind.MOSAIC_HALL -> Place.MOSAIC_HALL
     RoomKind.WORKSHOP -> Place.WORKSHOP
+    RoomKind.BELFRY -> Place.BELFRY
 }
 
 /** Who can be on screen. COMPANION is the child's baby dragon. */
@@ -222,6 +224,7 @@ fun Beat.speech(): List<List<Speech>> = when (this) {
     is Beat.Found -> listOf(lines)
     is Beat.Ask -> buildList {
         (challenge as? com.littledungeon.engine.rpg.learn.MemoryChallenge)?.let { add(it.remember) }
+        (challenge as? com.littledungeon.engine.rpg.learn.BellChallenge)?.let { add(it.listen) }
         add(challenge.prompt)
         add(yay)
         add(oops)

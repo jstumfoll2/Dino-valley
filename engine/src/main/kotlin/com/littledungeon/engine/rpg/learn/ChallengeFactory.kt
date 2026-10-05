@@ -351,6 +351,31 @@ object ChallengeFactory {
         return MemoryChallenge(level, seed, Speech.of(ask), doors, sequence, show, Speech.of(remember))
     }
 
+    /** A short song on three bells: longer and quicker with level, and from level 3 a bell can ring twice in a row. */
+    fun bells(level: Int, seed: Long): BellChallenge {
+        val r = Random(seed)
+        val (length, gap) = when (level) {
+            1 -> 2 to 900L
+            2 -> 3 to 800L
+            3 -> 3 to 760L
+            4 -> 4 to 700L
+            else -> 5 to 640L
+        }
+        val song = mutableListOf<Int>()
+        while (song.size < length) {
+            val next = r.nextInt(BELLS)
+            if (level < 3 && song.lastOrNull() == next) continue
+            song += next
+            // A song of one bell, rung over and over, is not a song.
+            if (song.size == length && song.toSet().size < 2) song.clear()
+        }
+        return BellChallenge(level, seed, Speech.of(BELL_ASK), BELLS, song, gap, Speech.of(BELL_LISTEN))
+    }
+
+    const val BELLS = 3
+    const val BELL_LISTEN = "Listen to the bell song."
+    const val BELL_ASK = "Now you play it! Tap the bells in the same order."
+
     fun recipe(level: Int, seed: Long, potion: PotionKind): RecipeChallenge {
         val r = Random(seed)
         val stepCount = if (level <= 2) 2 else 3

@@ -35,3 +35,39 @@ class TunnelTest {
         assertTrue((1L..30L).all { com.littledungeon.engine.rpg.run.tunnelTrace(3, it, "x").glyph.let { g -> g != null && g in "LTIHEF147" } })
     }
 }
+
+class BellSongTest {
+    @Test
+    fun `dungeons can deal a bell tower, and it asks for a song`() {
+        assertTrue(RoomKind.BELFRY in RoomKind.learningRooms)
+        val j = Journey(5, Hero(), SkillBook(), WorldMemory(), Clock { 0L })
+        val steps = j.roomPuzzle(RoomKind.BELFRY, j.roomScene(RoomKind.BELFRY), solved = { emptyList() }, failed = { emptyList() })
+        val ask = steps.map { it.beat }.filterIsInstance<Beat.Ask>().single()
+        assertTrue(ask.challenge is com.littledungeon.engine.rpg.learn.BellChallenge)
+        assertTrue(ask.oneTry)
+    }
+
+    @Test
+    fun `songs grow with the level, always use at least two bells, and are judged tap by tap`() {
+        val lengths = (1..5).map { level -> level to (1L..200L).map { com.littledungeon.engine.rpg.learn.ChallengeFactory.bells(level, it) } }
+        for ((level, songs) in lengths) {
+            for (c in songs) {
+                assertTrue(c.song.toSet().size >= 2, "level $level: $c")
+                assertTrue(c.song.all { it in 0 until c.bells })
+                // The song is right as it is played, and a wrong bell is wrong wherever it comes.
+                c.song.forEachIndexed { i, bell ->
+                    assertTrue(c.expects(i, bell))
+                    assertTrue(!c.expects(i, (bell + 1) % c.bells))
+                }
+                assertTrue(!c.expects(c.song.size, 0), "nothing is expected after the last bell")
+                if (level < 3) assertTrue(c.song.zipWithNext().none { (a, b) -> a == b }, "no bell twice in a row before level 3: ${c.song}")
+            }
+        }
+        assertTrue(lengths.map { (_, s) -> s.first().song.size } == listOf(2, 3, 3, 4, 5))
+        assertTrue(lengths.map { (_, s) -> s.first().gapMillis }.zipWithNext().all { (a, b) -> b <= a }, "songs never slow down as the level rises")
+        // A song is not always the same: every bell is used somewhere in a level.
+        assertTrue((0 until 3).all { b -> lengths[0].second.any { b in it.song } })
+        // Level 3 and up does repeat a bell sometimes.
+        assertTrue(lengths[2].second.any { c -> c.song.zipWithNext().any { (a, b) -> a == b } })
+    }
+}

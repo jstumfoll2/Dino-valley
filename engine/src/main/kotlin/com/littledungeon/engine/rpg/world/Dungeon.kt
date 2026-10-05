@@ -20,10 +20,13 @@ enum class RoomKind(val skill: Skill?) {
 
     /** A potion workshop: read a recipe, then brew it (see `ChallengeFactory.recipe`). */
     WORKSHOP(Skill.RECIPES),
+
+    /** A bell tower: listen to a song on three bells, then play it back (see `ChallengeFactory.bells`). */
+    BELFRY(Skill.LISTENING),
     ;
 
     companion object {
         /** The rooms a dungeon deals from. */
-        val learningRooms = listOf(RUNE_DOOR, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, STOREROOM, POND, MOSAIC_HALL, WORKSHOP)
+        val learningRooms = listOf(RUNE_DOOR, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, STOREROOM, POND, MOSAIC_HALL, WORKSHOP, BELFRY)
     }
 }

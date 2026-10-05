@@ -1411,7 +1411,6 @@ def scene_belfry():
             tx += w + r.uniform(8, 22)
         return out
     d.add(opening(80, 400, 90, 560))
-    d.add(opening(1730, 1890, 170, 640, moon=(1812, 300)))
     # the great bell hangs in the big opening
     d.add(big_bell(d, 240, 170, 0.78))
     # moonlight spill from the big opening
@@ -1423,10 +1422,10 @@ def scene_belfry():
     d.add(f'<rect x="0" y="20" width="{W}" height="40" fill="#5a3e2c" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
     for bx, dx in ((470, 150), (1640, -150)):
         d.add(f'<path d="M{bx} 400 L{bx + dx} 60 L{bx + dx * 0.78:.0f} 60 L{bx} 330 Z" fill="#6a4a34" stroke="{INK}" stroke-width="4" stroke-opacity="0.5"/>')
-    # a sleepy pigeon pair on the small window's sill, and two hanging lanterns
-    for px in (1790, 1850):
-        d.add(f'<ellipse cx="{px}" cy="618" rx="26" ry="20" fill="#a7a6b4" stroke="{INK}" stroke-width="3"/><circle cx="{px + 18}" cy="604" r="11" fill="#b8b7c4" stroke="{INK}" stroke-width="3"/>'
-              f'<path d="M{px + 28} 604 l10 4 l-10 3 Z" fill="#e8a45a"/><circle cx="{px + 21}" cy="602" r="2.2" fill="{INK}"/>')
+    # a sleepy pigeon pair on the yoke of the great bell, and two hanging lanterns
+    for px in (160, 318):
+        d.add(f'<ellipse cx="{px}" cy="142" rx="24" ry="18" fill="#a7a6b4" stroke="{INK}" stroke-width="3"/><circle cx="{px + 17}" cy="129" r="10" fill="#b8b7c4" stroke="{INK}" stroke-width="3"/>'
+              f'<path d="M{px + 26} 129 l9 3 l-9 3 Z" fill="#e8a45a"/><circle cx="{px + 20}" cy="127" r="2" fill="{INK}"/>')
     d.add(lantern(d, 590, 60, 190, 0.9))
     d.add(lantern(d, 1530, 60, 220, 0.9))
     # a stout rope coil and a little bell-ringer's stool on the floor, out of the stand-up zone

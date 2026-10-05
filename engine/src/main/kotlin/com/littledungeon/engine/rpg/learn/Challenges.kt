@@ -207,6 +207,26 @@ data class MemoryChallenge(
     override val skill get() = Skill.MEMORY
 }
 
+/**
+ * The Bell Song: three bells of different pitch (0 is the lowest, [bells] - 1 the highest) ring a short [song], and the child plays it
+ * back on the same bells. [listen] is said while the bells ring, then [prompt]. Judged tap by tap with [expects]; a bell rings its note
+ * whether or not it was the right one, so the child hears what they played. Rung every [gapMillis].
+ */
+data class BellChallenge(
+    override val level: Int,
+    override val seed: Long,
+    override val prompt: List<Speech>,
+    val bells: Int,
+    val song: List<Int>,
+    val gapMillis: Long,
+    val listen: List<Speech>,
+) : Challenge {
+    override val skill get() = Skill.LISTENING
+
+    /** Whether [bell] is the right one to ring after [done] right taps. */
+    fun expects(done: Int, bell: Int): Boolean = song.getOrNull(done) == bell
+}
+
 enum class PotionKind(val title: String) {
     GIANT_STRENGTH("Potion of Giant Strength"),
     GLOW("Potion of Glowing"),
