@@ -161,6 +161,10 @@ fun AdventureScreen(vm: GameViewModel) {
         if (caption.isNotEmpty()) {
             Caption(
                 caption,
+                names = buildMap {
+                    beat.scene.npc?.let { put(it.who, it.name) }
+                    beat.scene.battle?.let { put(it.foe.who, it.foe.name) }
+                },
                 fontSize = with(LocalDensity.current) { (h * 0.048f).toSp() },
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = h * 0.02f).fillMaxWidth(0.6f),
                 onClick = { scope.launch { narrator.speak(caption) } },

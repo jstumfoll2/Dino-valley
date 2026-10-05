@@ -101,9 +101,12 @@ fun Backdrop(place: Place) {
 fun Modifier.at(centerX: Dp, centerY: Dp, width: Dp, height: Dp): Modifier =
     this.offset(centerX - width / 2, centerY - height / 2).size(width, height)
 
-/** The narrator's words, printed on parchment for grown-ups reading along. The dragon's name is in orange. */
+/**
+ * The narrator's words, printed on parchment for grown-ups reading along. The dragon's name is in orange. [names] says who each
+ * voice is in this scene (a person's or a foe's name), so the label reads "Professor Hoot:" and not "Elder:".
+ */
 @Composable
-fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modifier, names: Map<Who, String> = emptyMap(), onClick: () -> Unit) {
     val name = LocalDragonName.current.name
     val text = buildAnnotatedString {
         // Characters' words are labelled with who says them; the narrator's are plain.
@@ -128,7 +131,8 @@ fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modif
                     who = part.who
                     if (who != Who.NARRATOR) {
                         space(null)
-                        val label = if (who == Who.PET) name else who.tag.replaceFirstChar { it.uppercase() }
+                        // Who is speaking, by name when the scene knows them (Professor Hoot), otherwise by kind of voice (Critter).
+                        val label = if (who == Who.PET) name else names[who] ?: who.tag.replaceFirstChar { it.uppercase() }
                         withStyle(SpanStyle(color = speakerColor(who), fontWeight = FontWeight.Black)) { append("$label:") }
                     }
                 }
