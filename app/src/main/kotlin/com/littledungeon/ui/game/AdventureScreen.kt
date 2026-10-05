@@ -172,7 +172,10 @@ fun AdventureScreen(vm: GameViewModel) {
         VoiceLoading()
         Column(Modifier.align(Alignment.TopEnd).padding(10.dp), horizontalAlignment = Alignment.End) {
             BagBar(adventure.bag, h * 0.07f)
-            beat.scene.battle?.let { b -> HealthBar(b.heroHp, b.heroMaxHp, h * 0.07f, Modifier.padding(top = 6.dp), label = "You") }
+            beat.scene.battle?.let { b ->
+                HealthBar(b.heroHp, b.heroMaxHp, h * 0.07f, Modifier.padding(top = 6.dp), label = "You")
+                HealthBar(b.foe.hp, b.foe.maxHp, h * 0.07f, Modifier.padding(top = 6.dp), label = "Foe")
+            }
         }
     }
 }
@@ -251,9 +254,10 @@ private fun Cast(beat: Beat, interactive: Boolean, who: Who?, heroMood: Mood, ba
     }
     // People and monsters of the kingdom. They step back while a puzzle needs the room.
     scene.npc?.let { npc ->
-        if (beat !is Beat.Ask) NpcStand(npc, who == npc.who, w, h, voice(npc.who))
+        if (beat !is Beat.Ask) NpcStand(npc, who == npc.who, w, h, voice(npc.who), behindCounter = beat is Beat.Shop)
     }
-    scene.battle?.let { b -> BattleStage(b, who == b.foe.who, w, h, voice(b.foe.who)) }
+    // While a puzzle needs the room, the foe shrinks to a portrait beside the hero instead of standing behind the answers.
+    scene.battle?.let { b -> BattleStage(b, who == b.foe.who, w, h, voice(b.foe.who), portrait = beat is Beat.Ask) }
 }
 
 // ------------------------------------------------------------------ narration
@@ -400,14 +404,15 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
         val h = maxHeight
         val w = maxWidth
         val n = beat.options.size
-        // Up to six answers fit across: the pictures shrink to make room.
-        val card = minOf(h * 0.3f, w * 0.44f / (n * 1.1f) * 1.8f)
+        // The choices sit in a tray along the bottom, between the hero and the edge: the person talking stands above it, so
+        // their face and moving mouth stay clear. Up to six fit across; the pictures shrink to make room.
+        val card = minOf(h * 0.24f, w * 0.5f / (n * 1.1f) * 1.8f)
         beat.options.forEachIndexed { i, o ->
             val lift by animateFloatAsState(if (pointing == i || chosen == i) 1.12f else 1f, spring(dampingRatio = 0.5f), label = "lift")
             val appear by animateFloatAsState(if (i < shown) 1f else 0f, tween(380, easing = OutBack), label = "appear")
             Box(
                 Modifier
-                    .at(w * (0.5f + 0.44f * (i + 0.5f) / n), h * 0.62f, card, card)
+                    .at(w * (0.42f + 0.54f * (i + 0.5f) / n), h * 0.78f, card, card)
                     .graphicsLayer {
                         scaleX = lift * appear
                         scaleY = lift * appear

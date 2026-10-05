@@ -101,7 +101,12 @@ fun TravelBeat(beat: Beat.Travel, journey: Journey, say: (List<Speech>) -> Unit,
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val w = maxWidth
         val h = maxHeight
-        val box = MapBox(w * 0.03f, h * 0.2f, w * 0.94f, h * 0.76f)
+        // The painting is 16:9. It is no longer stretched to fill a long phone: at most a quarter wider than drawn, centred, with the
+        // sea around it. (Places are sized to be read, so a map shown at its true shape needs the places moved: roadmap 4.4.)
+        val areaW = w * 0.94f
+        val areaH = h * 0.76f
+        val mapW = minOf(areaW, areaH * (16f / 9f) * 1.25f)
+        val box = MapBox(w * 0.03f + (areaW - mapW) / 2f, h * 0.2f, mapW, areaH)
         Image(
             painterResource(Art.place(com.littledungeon.engine.rpg.run.Place.WORLD_MAP)), null,
             Modifier.at(box.x(0.5f), box.y(0.5f), box.width, box.height).shadow(8.dp, RoundedCornerShape(24.dp)).clip(RoundedCornerShape(24.dp))
@@ -211,10 +216,11 @@ fun ShopBeat(beat: Beat.Shop, say: (List<Speech>) -> Unit, buy: (String) -> Unit
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val w = maxWidth
         val h = maxHeight
-        val panelW = w * 0.56f
+        // The counter sits between the hero and the shopkeeper (who stands at the far edge), not over them.
+        val panelW = w * 0.4f
         val panelH = h * 0.7f
         Column(
-            Modifier.at(w * 0.7f, h * 0.58f, panelW, panelH).shadow(8.dp, RoundedCornerShape(24.dp))
+            Modifier.at(w * 0.6f, h * 0.58f, panelW, panelH).shadow(8.dp, RoundedCornerShape(24.dp))
                 .background(Palette.Paper, RoundedCornerShape(24.dp)).border(4.dp, Palette.PaperEdge, RoundedCornerShape(24.dp)).padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -265,36 +271,45 @@ fun ShopBeat(beat: Beat.Shop, say: (List<Speech>) -> Unit, buy: (String) -> Unit
 
 // ------------------------------------------------------------------ people and monsters
 
-/** A person (or a monster) from the kingdom, standing in the scene and moving their mouth while they speak. */
+/**
+ * A person (or a monster) from the kingdom, standing in the scene and moving their mouth while they speak. At a shop they
+ * stand at the far edge, smaller, so the counter does not hide them.
+ */
 @Composable
-fun NpcStand(npc: NpcView, speaking: Boolean, w: Dp, h: Dp, voice: (() -> Float)?) {
+fun NpcStand(npc: NpcView, speaking: Boolean, w: Dp, h: Dp, voice: (() -> Float)?, behindCounter: Boolean = false) {
     Character(
         Rigs.byArt(npc.art), if (speaking) Mood.TALKING else Mood.CALM,
-        Modifier.at(w * 0.78f, h * 0.7f, h * 0.55f, h * 0.55f), facingLeft = true, voice = voice,
+        if (behindCounter) Modifier.at(w * 0.91f, h * 0.76f, h * 0.44f, h * 0.44f) else Modifier.at(w * 0.78f, h * 0.7f, h * 0.55f, h * 0.55f),
+        facingLeft = true, voice = voice,
     )
 }
 
 /**
- * A fight: the foe, with its name and health, and the hero's health in the same bar style, so the
- * child can see how the rounds are going.
+ * A fight: the foe with its name above it. Both health bars (the hero's and the foe's) are in the corner HUD, so the child
+ * can see how the rounds are going without the plate crowding the top of the stage. While a puzzle is up ([portrait]) the foe
+ * shrinks to a portrait between the hero and the answers, so it is never behind the answer tiles.
  */
 @Composable
-fun BattleStage(battle: BattleView, speaking: Boolean, w: Dp, h: Dp, voice: (() -> Float)?) {
+fun BattleStage(battle: BattleView, speaking: Boolean, w: Dp, h: Dp, voice: (() -> Float)?, portrait: Boolean = false) {
     val foe = battle.foe
+    if (portrait) {
+        Character(
+            Rigs.byArt(foe.art), if (speaking) Mood.TALKING else Mood.CALM,
+            Modifier.at(w * 0.31f, h * 0.4f, h * 0.2f, h * 0.2f), facingLeft = true, voice = voice,
+        )
+        return
+    }
     val size = h * if (foe.boss) 0.7f else 0.5f
     Character(
         Rigs.byArt(foe.art), if (speaking) Mood.TALKING else Mood.CALM,
         Modifier.at(w * 0.76f, h * 0.68f, size, size), facingLeft = true, voice = voice,
     )
-    Column(
-        Modifier.at(w * 0.76f, h * 0.2f, w * 0.34f, h * 0.2f),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
+    // The name plate sits just above the foe's head.
+    Box(Modifier.at(w * 0.76f, h * (0.68f - size.value / h.value / 2f - 0.04f), w * 0.34f, h * 0.07f), contentAlignment = Alignment.Center) {
         Text(
             foe.name, color = Color.White, fontWeight = FontWeight.Black, maxLines = 1,
             fontSize = with(LocalDensity.current) { (h * 0.05f).toSp() },
             modifier = Modifier.background(Color(0xCC2A1C10), RoundedCornerShape(50)).padding(horizontal = 12.dp),
         )
-        HealthBar(foe.hp, foe.maxHp, h * 0.075f, label = "Foe")
     }
 }
