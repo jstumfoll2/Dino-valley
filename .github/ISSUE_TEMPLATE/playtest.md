@@ -13,14 +13,28 @@ labels: playtest
 <!-- His reaction is often the most useful part. -->
 
 **Screenshot / voice note**
-<!-- Drag in screenshot.png; attach voice-note.m4a or summarize it. -->
+<!-- Drag in a screenshot, or summarize what he said. -->
 
-**From report.json**
-- Screen / state:
-- Template id and level:
-- Seed:
-- App version / content version:
-- Device / Android version / volume:
+**The note from the game**
+<!--
+The feedback button (the small speech bubble: top left under the speaker in an adventure, bottom left at camp) writes a text note and puts the whole of
+it on the clipboard. Paste it here. It has, in order:
+
+- "Where it happened": the beat on screen (story, challenge with its level and seed, map, shop, night, ...).
+- "Adventure (replayable)": the seed, hero class and level, and skill levels. Every reply so far.
+- "Replay data": journey.json and journey.log exactly as saved. Together they rebuild the adventure beat for
+  beat (see below). Only there while an adventure is under way.
+- "Last things heard and done": the last 60 sentences said and taps made.
+- "Phone": app version, phone and Android version.
+-->
 
 **Crash?**
-<!-- Paste crash.txt if there was one. -->
+<!-- If the game closed by itself, say when. The adventure is saved after every tap, so Continue on the camp screen brings it back. -->
+
+<!--
+For whoever picks this up: to see exactly what he saw, put the "Replay data" into a test.
+journey.json is { seed, hero, skills, world }; journey.log is one line per tap (`CommandCodec`).
+
+    val commands = CommandCodec.decodeAll(logText)
+    val journey = Journey.replay(seed, hero, skills, world, commands)   // journey.beat is what was on screen
+-->

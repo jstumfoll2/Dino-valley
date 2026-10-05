@@ -43,6 +43,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     /** How many of the journey's answered puzzles are already in the challenge log. */
     private var recordsLogged = 0
 
+    init {
+        FeedbackLog.replayData = { save.replayText() }
+    }
+
     val unlocked: Set<String> get() = state.hero.unlocks.map { it.id }.toSet()
 
     fun availableClasses(): List<HeroClass> = HeroClass.entries.filter { it.unlockLevel <= state.hero.level }

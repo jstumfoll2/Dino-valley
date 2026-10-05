@@ -67,6 +67,10 @@ class Save(context: Context) {
         }.getOrNull()
     }
 
+    /** The adventure in progress as it is saved, for a playtest note: with it the adventure can be replayed exactly. */
+    fun replayText(): String =
+        if (!journeyFile.exists()) "" else runCatching { journeyFile.readText() + "\n" + (if (commandFile.exists()) commandFile.readText() else "") }.getOrDefault("")
+
     /** The adventure is over (or let go): there is nothing to carry on from. */
     fun end() {
         journeyFile.delete()
