@@ -131,10 +131,23 @@ class Journey(
         beat = queue.first().beat
     }
 
-    fun reply(reply: Reply) {
+    /** What the child has done so far, in order. With the seed and the starting hero, skills and world it rebuilds this journey: see [replay]. */
+    val commands: List<Command> get() = log
+
+    private val log = mutableListOf<Command>()
+
+    /** The time of the command being run, so everything that notes a time notes the same one however many times it is replayed. */
+    private var now = 0L
+
+    fun reply(reply: Reply) = play(Command(reply, clock.nowMillis()))
+
+    /** Runs one thing the child did. Every journey, live or replayed, goes through here. */
+    fun play(command: Command) {
         if (finished) return
+        log += command
+        now = command.at
         val step = queue.removeFirst()
-        val follow = step.then(reply)
+        val follow = step.then(command.reply)
         for (s in follow.asReversed()) queue.addFirst(s)
         if (queue.isEmpty()) queue += nextAction()
         beat = queue.first().beat
@@ -208,7 +221,7 @@ class Journey(
 
     /** Notes a finished puzzle. A failed one counts as a miss, never as a drop in level. */
     internal fun record(c: Challenge, tries: Int, hints: Int, millis: Long, failed: Boolean = false) {
-        val r = ChallengeRecord(c.skill, c.kind, c.level, tries.coerceAtLeast(1), hints, millis, clock.nowMillis(), c.seed, failed)
+        val r = ChallengeRecord(c.skill, c.kind, c.level, tries.coerceAtLeast(1), hints, millis, now, c.seed, failed)
         warmedUp += c.skill
         skillUse.merge(c.skill, 1, Int::plus)
         records += r
@@ -296,6 +309,18 @@ class Journey(
     }
 
     private fun nextAction(): List<JStep> = if (finishing) finale() else travel()
+
+    companion object {
+        /**
+         * The journey that [commands] lead to, from the same start: the same beat, hero, skills and world as when they were
+         * first played. What the child does next is stamped by [clock].
+         */
+        fun replay(seed: Long, hero: Hero, skills: SkillBook, world: WorldMemory, commands: List<Command>, clock: Clock = Clock.System): Journey {
+            val j = Journey(seed, hero, skills, world, clock)
+            commands.forEach { j.play(it) }
+            return j
+        }
+    }
 }
 
 internal object JourneyStory {
