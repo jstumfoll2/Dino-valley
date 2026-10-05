@@ -39,6 +39,7 @@ enum class Who(val tag: String, val sid: Int, val speed: Float, val pitch: Float
     SHADOW("shadow", 22, 0.85f, 0.8f, v(22, 0.85f, 0.8f)),
     SPOOK("spook", 23, 0.85f, 0.9f, v(23, 0.85f, 0.9f)),
     CRITTER("critter", 9, 1.0f, 1.1f, v(9, 1.0f, 1.1f)),
+    BATKING("batking", 9, 1.05f, 1.3f, v(9, 1.05f, 1.3f)),
     GROWLER("growler", 14, 0.9f, 0.85f, v(14, 0.9f, 0.85f)),
 
     // Kept for stories to come and the first dungeon's cast; nobody in a journey speaks with these yet.

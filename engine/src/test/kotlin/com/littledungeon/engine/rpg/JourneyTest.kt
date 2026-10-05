@@ -107,7 +107,8 @@ class JourneyTest {
             assertTrue(npc.starts.isNotEmpty() && npc.starts.last().needs.isEmpty(), "${npc.id}: needs a start that always works")
             for (st in npc.starts) assertTrue(st.node in ids, "${npc.id}: start ${st.node}")
             for (n in npc.nodes) {
-                assertTrue(n.options.size <= 4, "${npc.id}/${n.id}: too many replies")
+                // Two options may share a label when their conditions exclude each other (the same question goes to a different answer in a different story).
+                assertTrue(n.options.map { it.said }.toSet().size <= 4, "${npc.id}/${n.id}: too many replies")
                 assertTrue(n.says.isNotBlank())
                 val effects = n.effects + n.options.flatMap { it.effects }
                 for (o in n.options) {
@@ -146,7 +147,8 @@ class JourneyTest {
             .filterIsInstance<Effect.Give>().map { it.itemId }.toSet()
         val sold = Content.shops.flatMap { it.stock }.toSet()
         val dropped = Content.monsters.flatMap { it.drops }.map { it.itemId }.toSet()
-        for (a in Content.arcs) assertTrue(a.keyItemId in given + sold + dropped, "${a.keyItemId} can never be found")
+        // A story's key is handed over by its dungeon (`finishDungeon`) whoever the guardian is, so what matters is that the dungeon has a guardian to beat.
+        for (a in Content.arcs) assertTrue(a.keyItemId in given + sold + dropped || Content.kingdom.location(a.keyDungeonId).guardian != null, "${a.keyItemId} can never be found")
         assertTrue("ink_cleaner" in given && "recipe_page" in given && "magic_beans" in given)
     }
 

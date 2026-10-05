@@ -352,7 +352,7 @@ object ChallengeFactory {
     }
 
     /** A short song on three bells: longer and quicker with level, and from level 3 a bell can ring twice in a row. */
-    fun bells(level: Int, seed: Long): BellChallenge {
+    fun bells(level: Int, seed: Long, intro: String = ""): BellChallenge {
         val r = Random(seed)
         val (length, gap) = when (level) {
             1 -> 2 to 900L
@@ -369,7 +369,8 @@ object ChallengeFactory {
             // A song of one bell, rung over and over, is not a song.
             if (song.size == length && song.toSet().size < 2) song.clear()
         }
-        return BellChallenge(level, seed, Speech.of(BELL_ASK), BELLS, song, gap, Speech.of(BELL_LISTEN))
+        val lead = if (intro.isBlank()) "" else "$intro "
+        return BellChallenge(level, seed, Speech.of(BELL_ASK), BELLS, song, gap, Speech.of("$lead$BELL_LISTEN"))
     }
 
     const val BELLS = 3

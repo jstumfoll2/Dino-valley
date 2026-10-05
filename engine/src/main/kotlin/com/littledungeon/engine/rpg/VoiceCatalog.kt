@@ -133,6 +133,9 @@ object VoiceCatalog {
         }
         enumerateDomains(::hear)
         JourneyLines.numbered().forEach { hear(Speech.of(it)) }
+        // What every choice says, whether or not a random adventure met the person who offers it.
+        for (npc in Content.npcs) for (n in npc.nodes) for (o in n.options) choices += o.said
+        for (arc in Content.arcs) choices += listOf(arc.fightLabel, arc.peaceLabel)
         Say.all(choices.toList()).forEach { hear(Speech.of(it)) }
         return sentences.sortedWith(compareBy({ it.who }, { it.text })).toCollection(linkedSetOf()) to sounds
     }
@@ -164,7 +167,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     }
     // Every picture puzzle, at every level: small sets of words, foods and numbers, so a few hundred seeds reach them all.
     for (level in 1..5) for (seed in 0L until 600L) {
-        for (c in listOf(PictureFactory.rhyme(level, seed), PictureFactory.money(level, seed), PictureFactory.share(level, seed))) {
+        for (c in listOf(PictureFactory.rhyme(level, seed), PictureFactory.money(level, seed)) + PictureFactory.ShareTheme.entries.map { PictureFactory.share(level, seed, theme = it) }) {
             hear(c.prompt)
             hear(c.because)
         }
@@ -201,6 +204,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     everyPlainLine(RoomLines(Random(3)))
     // Lines that name a person, an item, a monster or a place, for every one of them.
     val lines = JourneyLines(Random(1))
+    for (arc in Content.arcs) for (chapter in 1..5) hear(Speech.of(lines.chapter(chapter, arc.title)))
     for (item in Content.items) repeat(30) {
         hear(Speech.of(lines.itemFound(item.name)))
         hear(Speech.of(lines.bought(item.name, 7)))
@@ -238,7 +242,11 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         // The puzzles a boss sets on the peaceful way, in the boss's voice.
         for (arc in Content.arcs) {
             val boss = Content.monster(arc.bossId) ?: continue
-            for (step in arc.peaceSteps) repeat(60) { hear(j.peaceChallenge(step, boss).prompt) }
+            for (step in arc.peaceSteps + arc.friendSteps) repeat(60) {
+                val c = j.peaceChallenge(step, boss)
+                hear(c.prompt)
+                (c as? BellChallenge)?.let { b -> hear(b.listen) }
+            }
         }
         // The puzzle rooms of a dungeon, as the journey sets them up.
         for (seed in 1L..200L) {

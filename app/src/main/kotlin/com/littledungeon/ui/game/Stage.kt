@@ -211,7 +211,7 @@ fun BagBar(bag: Journey.Bag, height: Dp, modifier: Modifier = Modifier) {
         HealthBar(bag.hp, bag.maxHp, height)
         Image(painterResource(R.drawable.art_coin), null, Modifier.size(height))
         Text("${bag.coins}", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
-        if (bag.hasKey) Image(painterResource(R.drawable.art_key), null, Modifier.size(height))
+        if (bag.hasKey) Image(painterResource(Art.byName("art_item_${bag.keyItemId}") ?: R.drawable.art_key), null, Modifier.size(height))
         if (bag.pages > 0) Text("Pages ${bag.pages}", color = Color(0xFFFFE9B0), fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }

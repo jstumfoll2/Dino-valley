@@ -171,18 +171,27 @@ object CoreNpcs {
         "smith_brogan", "Brogan the Smith", "Blacksmith of Pennywhistle", Who.BROGAN,
         "Brogan was a knight until a dragon scare made him hang up his sword and open a smithy. He still makes the best armor in the kingdom, and he still wonders if he was brave enough.",
         "Welcome to my forge! I am Brogan. If it is made of metal, I can make it better.",
-        listOf(Start("hub")),
+        listOf(Start("dragon_friend", Flag("friend:big_dragon"), NoFlag("brogan_dragon_thanked")), Start("hub")),
         listOf(
             n(
                 "hub", "What do you need?",
                 listOf(
                     o("Look at his wares", "talk_buy", null, listOf(Shop("smithy"))),
-                    o("Ask about the dragon", "talk_ask", "dragon"),
+                    o("Ask about the dragon", "talk_ask", "dragon", needs = listOf(Not(ArcIs("lonely_dragon")))),
+                    o("Ask about the dragon", "talk_ask", "dragon_now", needs = listOf(ArcIs("lonely_dragon"), NoFlag("brogan_braver"))),
                     o("Prove your skill", "talk_puzzle", null, listOf(Puzzle("LOCK", "proof", "proof_fail", Skill.NUMBERS, "Brogan hammers a number into a bar of iron.")), needs = listOf(NoFlag("brogan_helm"), NoFlag("run:brogan_tried"))),
                     bye(),
                 ),
             ),
             n("dragon", "I was a knight when the dragon came down from the peak. I did not fight it. I ran. Do you think that makes me a coward? <narrator>{name} shakes its head. <pet>Running is smart sometimes!", listOf(o("You are not a coward", "talk_yes", "hub", listOf(Relation("smith_brogan", 1))))),
+            n(
+                "dragon_now", "You are going up to the dragon? Then listen. I was a knight when it came down from the peak, and I did not fight. I ran. I have wondered for years whether it only wanted to say hello. Take this shield. Its front shines like a mirror, so the dragon can see its own kind face. And tell it I am sorry I ran.",
+                listOf(o("I will tell it", "talk_yes", "hub")), listOf(Give("bubble_shield"), SetFlag("brogan_braver"), Relation("smith_brogan", 2)),
+            ),
+            n(
+                "dragon_friend", "You made friends with the dragon? <narrator>Brogan sits down on his anvil, and he laughs until he cries. <brogan>All those years I thought I was a coward, and it was only a lonely dragon. Take this shield for the road, with my thanks.",
+                listOf(bye()), listOf(Give("bubble_shield"), SetFlag("brogan_dragon_thanked"), Relation("smith_brogan", 3)),
+            ),
             n("proof", "Sharp mind, steady hand. You have earned something. This helmet was meant for a knight, and I think you are one.", listOf(bye()), listOf(Give("iron_helm"), SetFlag("brogan_helm"), Relation("smith_brogan", 2))),
             n("proof_fail", "Not quite. Come back with a clearer head, and we will try again.", listOf(bye()), listOf(SetFlag("run:brogan_tried"))),
         ),
@@ -240,18 +249,27 @@ object CoreNpcs {
         "lumi_lamp", "Lumi", "Lantern-keeper of Lantern Hollow", Who.LUMI,
         "Lumi lights every lantern in Lantern Hollow at dusk, all thousand of them, all by herself. She dreams of lighting the whole kingdom, and she is a little scared of the dark herself.",
         "Hello! I am Lumi. I keep the lanterns. All of them. It takes a while.",
-        listOf(Start("hub")),
+        listOf(Start("bat_friends", Flag("friend:bat_king")), Start("hub")),
         listOf(
             n(
                 "hub", "Would you like something to light your way?",
                 listOf(
                     o("Look at the lamps", "talk_buy", null, listOf(Shop("lampwright"))),
-                    o("Ask about the lanterns", "talk_ask", "lanterns"),
+                    o("Ask about the lanterns", "talk_ask", "lanterns", needs = listOf(Not(ArcIs("lantern_night")))),
+                    o("Ask about the lanterns", "talk_ask", "missing", needs = listOf(ArcIs("lantern_night"))),
                     o("Be her friend", "talk_give", "gift", listOf(SetFlag("lumi_gift"), Relation("lumi_lamp", 2)), needs = listOf(Stat(Attribute.KINDNESS, 2), NoFlag("lumi_gift"))),
                     bye(),
                 ),
             ),
             n("lanterns", "Every dusk I climb every ladder in town. The bats keep stealing the little ones, so the Bat King must have a very bright cave. Do not tell the bats I am scared of the dark.", listOf(o("Your secret is safe", "talk_yes", "hub"))),
+            n(
+                "missing", "The bats took them, every one. But the strange thing is that they do not hurt anybody. I followed them once, all the way to the old belfry. They just sit there, holding the lanterns tight, and shaking. I think they are as scared of the dark as I am.",
+                listOf(o("They are scared too", "talk_think", "hub")), listOf(SetFlag("knows_bats_afraid")),
+            ),
+            n(
+                "bat_friends", "The bats come every dusk now, and they bring their own lanterns to the party. I am not scared of the dark anymore. Not with so many friends. Would you like to look at the lamps?",
+                listOf(o("Look at the lamps", "talk_buy", null, listOf(Shop("lampwright"))), bye()),
+            ),
             n("gift", "You do not think I am silly? Then here, take my best lantern. Now you will never be in the dark alone, and I will not be either.", listOf(o("Thank you, Lumi", "talk_yes", "hub")), listOf(Give("lantern"))),
         ),
         shop = "lampwright",

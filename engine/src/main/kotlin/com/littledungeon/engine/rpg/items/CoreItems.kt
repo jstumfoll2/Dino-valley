@@ -69,6 +69,8 @@ object CoreItems {
         Item("recipe_page", "Recipe Page", QUEST, "Baker Bun's lost recipe page, a little bit sticky."),
         Item("magic_beans", "Magic Beans", QUEST, "They are only beans. But somebody might love them."),
         Item("ink_cleaner", "Ink Cleaner", QUEST, "A bottle that washes away the Baron's sticky ink."),
+        Item("mountain_key", "Mountain Key", QUEST, "A heavy stone key with a glowing amber stone. It opens the gate on Dragon's Peak."),
+        Item("glow_silk", "Glow-silk", QUEST, "A spool of spider silk that shines like a tiny star. It lights the way up the belfry stairs."),
     )
 
     val all: List<Item> = food + fighting + tools + charms + gear + story

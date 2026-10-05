@@ -32,9 +32,15 @@ class StoryMemoryTest {
 
     private fun said(b: Beat) = (b as? Beat.Tell)?.let { Voice.caption(it.lines) }.orEmpty()
 
+    /** After the first adventure the story is picked by chance; these tests are about the Baron's, so the others have been told many times. */
+    private fun onlyThe(first: WorldMemory): WorldMemory = if (first.adventures == 0) first else first.copy(
+        arcsDone = Content.arcs.associate { it.id to if (it.id == "missing_pages") first.arcsDone["missing_pages"] ?: 0 else 9 },
+        lastArc = Content.arcs.first { it.id != "missing_pages" }.id,
+    )
+
     /** Plays a whole journey; at the lair, makes peace or fights as asked. */
     private fun play(world: WorldMemory, peace: Boolean, seed: Long = 5): Pair<Journey, List<Beat>> {
-        val j = Journey(seed, strong, SkillBook(), world, Clock { 0L })
+        val j = Journey(seed, strong, SkillBook(), onlyThe(world), Clock { 0L })
         val r = Random(seed)
         val seen = mutableListOf<Beat>()
         var guard = 0

@@ -102,9 +102,9 @@ class Journey(
     internal var lastEnding = ""
 
     /** What the hero is carrying and how they are doing, for the corner of the screen. */
-    data class Bag(val hp: Int, val maxHp: Int, val coins: Int, val hasKey: Boolean, val pages: Int)
+    data class Bag(val hp: Int, val maxHp: Int, val coins: Int, val hasKey: Boolean, val pages: Int, val keyItemId: String = "")
 
-    val bag: Bag get() = Bag(hp, hero.maxHp, hero.coins, hero.has(arc.keyItemId), world.pages)
+    val bag: Bag get() = Bag(hp, hero.maxHp, hero.coins, hero.has(arc.keyItemId), world.pages, arc.keyItemId)
 
     /** The shape of the Storybook so far: how many pages are home. */
     val pages: Int get() = world.pages

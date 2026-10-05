@@ -6,6 +6,7 @@ import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.hero.Attribute
 import com.littledungeon.engine.rpg.items.Obstacle
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
+import com.littledungeon.engine.rpg.learn.PictureFactory
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.Words
@@ -182,6 +183,16 @@ internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge =
     "pattern" -> ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed(), step.intro)
     "colors" -> ChallengeFactory.color(level(Skill.COLORS), nextSeed(), step.intro, "gem", speaker = boss.who)
     "numbers" -> ChallengeFactory.numeral(level(Skill.NUMBERS), nextSeed(), step.intro)
+    "rhyme" -> PictureFactory.rhyme(level(Skill.RHYMES), nextSeed(), step.intro)
+    "money" -> PictureFactory.money(level(Skill.MONEY), nextSeed(), step.intro)
+    "share" -> PictureFactory.share(level(Skill.SHARING), nextSeed(), step.intro, PictureFactory.ShareTheme.PLATES)
+    "bats" -> PictureFactory.share(level(Skill.SHARING), nextSeed(), step.intro, PictureFactory.ShareTheme.BATS)
+    "map" -> PictureFactory.map(level(Skill.MAPS), nextSeed(), step.intro)
+    "bells" -> ChallengeFactory.bells(level(Skill.LISTENING), nextSeed(), step.intro)
+    "trace" -> tunnelTrace(level(Skill.TRACING), nextSeed(), step.intro, "to light the lanterns.").let { c ->
+        // The words of a line or a shape have no room for the boss's own, so theirs go first; a letter's already begin with them.
+        if (c.glyph == null) c.copy(prompt = Speech.of("${step.intro} ${com.littledungeon.engine.model.Voice.caption(c.prompt)}")) else c
+    }
     else -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")
 }
 
@@ -219,9 +230,9 @@ private fun Journey.ending(l: Location, fought: Boolean, friend: Boolean = false
  * Learning to write starts before letters: a line, a curve, a zigzag, a loop, a circle and a triangle (levels 1 and 2), then letters from
  * straight ones to twisty ones (levels 3 to 5). Writing letters from the first level skipped the strokes they are made of.
  */
-internal fun tunnelTrace(level: Int, seed: Long, purpose: String) = when (level) {
-    1 -> ChallengeFactory.trace(1 + (seed and 1L).toInt(), seed, "to light up the tunnel.")
-    2 -> ChallengeFactory.trace(3 + ((seed and 0xffffL) % 3).toInt(), seed, "to light up the tunnel.")
+internal fun tunnelTrace(level: Int, seed: Long, purpose: String, goal: String = "to light up the tunnel.") = when (level) {
+    1 -> ChallengeFactory.trace(1 + (seed and 1L).toInt(), seed, goal)
+    2 -> ChallengeFactory.trace(3 + ((seed and 0xffffL) % 3).toInt(), seed, goal)
     3 -> ChallengeFactory.write(1, seed, purpose)
     4 -> ChallengeFactory.write(2 + (seed and 1L).toInt(), seed, purpose)
     else -> ChallengeFactory.write(4 + (seed and 1L).toInt(), seed, purpose)

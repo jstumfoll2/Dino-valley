@@ -131,19 +131,25 @@ object PictureFactory {
         )
     }
 
-    fun share(level: Int, seed: Long, intro: String = ""): PictureChallenge {
+    /** What is shared with whom: the words, and the pictures (`art_<name>`). */
+    enum class ShareTheme(val many: String, val one: String, val sharerArt: String, val what: String, val whatArt: String) {
+        BATS("hungry bats", "bat", "mini_bat_small", "berries", "item_berry"),
+        PLATES("plates", "plate", "mini_plate", "pies", "mini_pie"),
+    }
+
+    fun share(level: Int, seed: Long, intro: String = "", theme: ShareTheme = ShareTheme.BATS): PictureChallenge {
         val r = Random(seed)
         val lead = if (intro.isBlank()) "" else "$intro "
-        val bats = when (level) { 1, 2 -> 2; 3 -> 3; else -> r.nextInt(2, 5) }
-        val each = when (level) { 1 -> r.nextInt(1, 3); 2 -> r.nextInt(2, 4); 3 -> r.nextInt(1, 4); else -> r.nextInt(2, 5) }.coerceAtMost(12 / bats)
-        val total = bats * each
+        val sharers = when (level) { 1, 2 -> 2; 3 -> 3; else -> r.nextInt(2, 5) }
+        val each = when (level) { 1 -> r.nextInt(1, 3); 2 -> r.nextInt(2, 4); 3 -> r.nextInt(1, 4); else -> r.nextInt(2, 5) }.coerceAtMost(12 / sharers)
+        val total = sharers * each
         val near = (1..6).filter { it != each }.sortedBy { Math.abs(it - each) * 10 + r.nextInt(10) }
         val options = (listOf(each) + near.take(if (level <= 2) 2 else 3)).shuffled(r)
         return PictureChallenge(
             Skill.SHARING, level, seed,
-            Speech.of("${lead}${Words.capital(bats)} hungry bats share ${Words.number(total)} berries fairly. How many berries does each bat get?"), "share",
-            listOf(Shown("mini_bat_small", bats), Shown("item_berry", total)), options.map(::numeral), options.indexOf(each),
-            Speech.of("${Words.capital(total)} berries shared by ${Words.number(bats)} bats is ${Words.number(each)} each."),
+            Speech.of("${lead}${Words.capital(sharers)} ${theme.many} share ${Words.number(total)} ${theme.what} fairly. How many ${theme.what} does each ${theme.one} get?"), "share",
+            listOf(Shown(theme.sharerArt, sharers), Shown(theme.whatArt, total)), options.map(::numeral), options.indexOf(each),
+            Speech.of("${Words.capital(total)} ${theme.what} shared by ${Words.number(sharers)} ${theme.one}s is ${Words.number(each)} each."),
         )
     }
 
