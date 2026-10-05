@@ -35,6 +35,8 @@ class KokoroVoice(private val context: Context) {
                         model = "$DIR/$MODEL",
                         voices = "$DIR/voices.bin",
                         tokens = "$DIR/tokens.txt",
+                        // Kokoro v1.0 is multi-lingual: English is found by its lexicon (unknown words fall back to espeak-ng).
+                        lexicon = "$DIR/lexicon-us-en.txt",
                         dataDir = copyEspeakData(),
                     ),
                     numThreads = 2,

@@ -32,7 +32,7 @@ private fun bye(said: String = "Say goodbye") = o(said, "talk_leave")
  */
 object CoreNpcs {
     val hoot = Npc(
-        "professor_hoot", "Professor Hoot", "Keeper of the Storybook", Who.ELDER,
+        "professor_hoot", "Professor Hoot", "Keeper of the Storybook", Who.HOOT,
         "Professor Hoot is an old owl who has kept the Great Storybook for sixty years. He never lost a single page until this year, and he feels it is all his fault.",
         "Hello, little adventurer! I am Professor Hoot, keeper of the Great Storybook.",
         listOf(Start("hub")),
@@ -59,7 +59,7 @@ object CoreNpcs {
     )
 
     val tilly = Npc(
-        "mayor_tilly", "Mayor Tilly", "Mayor of Mossbrook", Who.TOWNSWOMAN,
+        "mayor_tilly", "Mayor Tilly", "Mayor of Mossbrook", Who.TILLY,
         "Tilly has been mayor of Mossbrook for forty years. She knows everyone's name and everyone's troubles, and she worries most about the baker, who has not smiled since the sticky bun recipe went missing.",
         "Oh, hello, dear! I am Tilly, the mayor of Mossbrook. Every traveler is welcome here.",
         listOf(Start("thanks", Flag("bun_recipe_returned"), NoFlag("tilly_thanked")), Start("hub")),
@@ -87,7 +87,7 @@ object CoreNpcs {
     )
 
     val bun = Npc(
-        "baker_bun", "Baker Bun", "Baker of Mossbrook", Who.MERCHANT,
+        "baker_bun", "Baker Bun", "Baker of Mossbrook", Who.BUN,
         "Bun has baked sticky buns since she was small, from a recipe her grandmother wrote on a single page. When the page vanished, so did her smile.",
         "Hello, hello! I am Bun, and this is the best bakery in Whisperwood. Well, it was. Well, it still is, mostly.",
         listOf(Start("return", HasItem("recipe_page"), Flag("quest_recipe"), NoFlag("bun_recipe_returned")), Start("happy", Flag("bun_recipe_returned")), Start("hub")),
@@ -117,7 +117,7 @@ object CoreNpcs {
     )
 
     val willow = Npc(
-        "healer_willow", "Healer Willow", "Healer of Mossbrook", Who.GRANNY,
+        "healer_willow", "Healer Willow", "Healer of Mossbrook", Who.WILLOW,
         "Willow grows every herb in Whisperwood in a garden behind her cottage. Lately the swamp frogs keep hopping in, and she is too kind to shoo them out.",
         "Come in, come in, little one. I am Willow. Do you need patching up?",
         listOf(Start("hub")),
@@ -141,7 +141,7 @@ object CoreNpcs {
     )
 
     val hazel = Npc(
-        "hazel_hermit", "Hermit Hazel", "Hermit of the Hill", Who.ELDER,
+        "hazel_hermit", "Hermit Hazel", "Hermit of the Hill", Who.HAZEL,
         "Hazel moved to the hill years ago because people kept saying they were too clever to talk to. They love riddles and never get visitors, and secretly they would love a friend.",
         "Well, well. A visitor. I do not get many. I am Hazel, and this is my hill.",
         listOf(Start("friend", Flag("hazel_friend")), Start("hub")),
@@ -168,7 +168,7 @@ object CoreNpcs {
     )
 
     val brogan = Npc(
-        "smith_brogan", "Brogan the Smith", "Blacksmith of Pennywhistle", Who.TOWNSMAN,
+        "smith_brogan", "Brogan the Smith", "Blacksmith of Pennywhistle", Who.BROGAN,
         "Brogan was a knight until a dragon scare made him hang up his sword and open a smithy. He still makes the best armor in the kingdom, and he still wonders if he was brave enough.",
         "Welcome to my forge! I am Brogan. If it is made of metal, I can make it better.",
         listOf(Start("hub")),
@@ -190,7 +190,7 @@ object CoreNpcs {
     )
 
     val zig = Npc(
-        "merchant_zig", "Zig the Merchant", "Traveling merchant", Who.MERCHANT,
+        "merchant_zig", "Zig the Merchant", "Traveling merchant", Who.ZIG,
         "Zig travels the world looking for the silliest things there are, and has never once been bored. He believes that anyone wearing a chicken hat is already halfway to being brave.",
         "Step right up, step right up! I am Zig, and I sell the silliest, squeakiest gear in the land!",
         listOf(Start("hub")),
@@ -209,7 +209,7 @@ object CoreNpcs {
     )
 
     val fox = Npc(
-        "rascal_fox", "Rascal the Fox", "Market trickster", Who.SNEAK,
+        "rascal_fox", "Rascal the Fox", "Market trickster", Who.RASCAL,
         "Rascal learned to be sneaky because nobody ever shared anything with him. He does not mean harm. He just wants to win, and to be noticed.",
         "Psst! Hello there. I am Rascal. Fine goods, fine prices, no questions asked.",
         listOf(Start("page", Flag("quest_recipe"), NoFlag("recipe_got")), Start("hub")),
@@ -237,7 +237,7 @@ object CoreNpcs {
     )
 
     val lumi = Npc(
-        "lumi_lamp", "Lumi", "Lantern-keeper of Lantern Hollow", Who.CHILD,
+        "lumi_lamp", "Lumi", "Lantern-keeper of Lantern Hollow", Who.LUMI,
         "Lumi lights every lantern in Lantern Hollow at dusk, all thousand of them, all by herself. She dreams of lighting the whole kingdom, and she is a little scared of the dark herself.",
         "Hello! I am Lumi. I keep the lanterns. All of them. It takes a while.",
         listOf(Start("hub")),
@@ -258,7 +258,7 @@ object CoreNpcs {
     )
 
     val hob = Npc(
-        "captain_hob", "Captain Hob", "Captain of the Guard", Who.GUARD,
+        "captain_hob", "Captain Hob", "Captain of the Guard", Who.HOB,
         "Hob has guarded Lantern Hollow for twenty years. He worries about everything, but most of all about Windy Pass, where a bandit has been taking tolls from his travelers.",
         "Halt! Oh, sorry, habit. I am Captain Hob, and I keep Lantern Hollow safe.",
         listOf(Start("thanks", Flag("bess_befriended"), NoFlag("hob_thanked")), Start("hub")),
@@ -278,7 +278,7 @@ object CoreNpcs {
     )
 
     val merlo = Npc(
-        "old_merlo", "Old Merlo", "Wizard of Lantern Hollow", Who.ELDER,
+        "old_merlo", "Old Merlo", "Wizard of Lantern Hollow", Who.MERLO,
         "Merlo was once the greatest wizard in the land, until he forgot half of his spells. He is very forgetful and very kind, and he knows a bottle that scares off the Baron's sticky ink.",
         "Ah! A visitor! I am Merlo. Wizard. Retired. Mostly retired. I forget.",
         listOf(Start("hub")),
@@ -306,7 +306,7 @@ object CoreNpcs {
     )
 
     val finn = Npc(
-        "finn_fisher", "Finn the Fisherman", "Fisherman of the Dock", Who.TOWNSMAN,
+        "finn_fisher", "Finn the Fisherman", "Fisherman of the Dock", Who.FINN,
         "Finn has fished the lake for thirty years. His rowboat has been missing for a month, and the whole village has had to go the long way round the river without it.",
         "Ahoy there! I am Finn. Best fisherman on the lake. Worst luck in the kingdom, lately.",
         listOf(Start("boat", Flag("grumble_befriended"), NoFlag("finn_boat")), Start("hub")),
@@ -329,7 +329,7 @@ object CoreNpcs {
     )
 
     val ribbit = Npc(
-        "sir_ribbit", "Sir Ribbit", "Frog knight", Who.CRITTER,
+        "sir_ribbit", "Sir Ribbit", "Frog knight", Who.RIBBIT,
         "Sir Ribbit is the smallest and bravest knight in Whisperwood. He is also the only frog knight, and he has been waiting years for a certain kind of beans to pass his knight exam.",
         "Halt, stranger! I am Sir Ribbit, knight of the lake. Do you carry any beans?",
         listOf(Start("beans", HasItem("magic_beans"), NoFlag("ribbit_beans")), Start("hub")),
@@ -345,14 +345,14 @@ object CoreNpcs {
             n("why", "To pass my knight exam I must bring my teacher a bag of magic beans. Nobody has any. Well, the fox at the market has some, but he says they cost a fortune.", listOf(o("I will see what I can do", "talk_yes", "hub"))),
             n("joke", "Ha! That was a knightly joke indeed! You have the heart of a true knight.", listOf(o("Thank you", "talk_laugh", "hub"))),
             n(
-                "beans", "Magic beans! You have magic beans! <narrator>Sir Ribbit takes the bag and does a happy little hop. <critter>I have passed my exam! Take this, it is the least I can do.",
+                "beans", "Magic beans! You have magic beans! <narrator>Sir Ribbit takes the bag and does a happy little hop. <ribbit>I have passed my exam! Take this, it is the least I can do.",
                 listOf(bye()), listOf(Take("magic_beans"), Give("hint_scroll"), SetFlag("ribbit_beans"), Relation("sir_ribbit", 3)),
             ),
         ),
     )
 
     val grumble = Npc(
-        "grumble", "Grumble the Troll", "Troll of Old Stone Bridge", Who.GROWLER,
+        "grumble", "Grumble the Troll", "Troll of Old Stone Bridge", Who.GRUMBLE,
         "Grumble has guarded the bridge since his friends moved away. He took Finn's boat to build a raft so he could visit them, but he is too shy to say so, so he just growls at everyone.",
         "Stop! This is my bridge. Nobody crosses without paying the toll. Three coins.",
         listOf(Start("friend", Flag("grumble_befriended")), Start("passed", Flag("run:grumble_paid")), Start("passed", Flag("run:grumble_beaten")), Start("hub")),
@@ -375,7 +375,7 @@ object CoreNpcs {
                 ),
             ),
             n(
-                "befriend", "You... you want to be my friend? <narrator>A very big tear rolls down a very big nose. <growler>I will take the boat back to Finn right away. And you may cross any time. Friends do not pay tolls.",
+                "befriend", "You... you want to be my friend? <narrator>A very big tear rolls down a very big nose. <grumble>I will take the boat back to Finn right away. And you may cross any time. Friends do not pay tolls.",
                 listOf(bye()), listOf(SetFlag("grumble_befriended"), SetFlag("friend:grumble_troll"), Relation("grumble", 5), Heal(99)),
             ),
             n("beaten", "Ow. All right, you win. Cross, if you must.", listOf(bye()), listOf(SetFlag("run:grumble_beaten"))),
@@ -386,7 +386,7 @@ object CoreNpcs {
     )
 
     val bess = Npc(
-        "bandit_bess", "Bandit Bess", "Bandit of Windy Pass", Who.SNEAK,
+        "bandit_bess", "Bandit Bess", "Bandit of Windy Pass", Who.BESS,
         "Bess is not really a bad person. She has a little brother to feed and no other way to do it. She takes tolls from travelers because nobody ever gave her a job.",
         "Halt! This is my pass. Five coins to cross, or play for it.",
         listOf(Start("friend", Flag("bess_befriended")), Start("passed", Flag("run:bess_paid")), Start("passed", Flag("run:bess_beaten")), Start("hub")),
@@ -401,13 +401,13 @@ object CoreNpcs {
                 ),
             ),
             n("paid", "Pleasure. Off you go. And no, I am not saving up for anything. Do not ask me about my brother.", listOf(o("Tell me about your brother", "talk_listen", "brother", listOf(SetFlag("run:bess_paid"))), bye()), listOf(SetFlag("run:bess_paid"))),
-            n("song", "A song? For me? <narrator>You sing the softest, sweetest song, and the bandit wipes her eyes. <sneak>Nobody ever sang to me. All right. Tell me what you want.", listOf(o("Tell me about your brother", "talk_listen", "brother"))),
+            n("song", "A song? For me? <narrator>You sing the softest, sweetest song, and the bandit wipes her eyes. <bess>Nobody ever sang to me. All right. Tell me what you want.", listOf(o("Tell me about your brother", "talk_listen", "brother"))),
             n(
                 "brother", "My little brother is hungry, and I only know how to take. Captain Hob does not give out jobs to bandits.",
                 listOf(o("Hob wants to help you", "talk_give", "friend_made", needs = listOf(Flag("hob_asked"))), o("Give her some coins", "talk_coin", "friend_made", listOf(Pay(5)), needs = listOf(Coins(5))), bye()),
             ),
             n(
-                "friend_made", "Hob would give me a job? And you would help me? Then I do not need to be a bandit at all! <narrator>Bess shows you a secret path over the mountain that only she knows. <sneak>Use it any time, friend.",
+                "friend_made", "Hob would give me a job? And you would help me? Then I do not need to be a bandit at all! <narrator>Bess shows you a secret path over the mountain that only she knows. <bess>Use it any time, friend.",
                 listOf(bye()), listOf(SetFlag("bess_befriended"), SetFlag("friend:bandit_bess"), Relation("bandit_bess", 5)),
             ),
             n("beaten", "Ow. You are tougher than you look. Go on, then. The pass is yours.", listOf(bye()), listOf(SetFlag("run:bess_beaten"))),
@@ -418,7 +418,7 @@ object CoreNpcs {
     )
 
     val fern = Npc(
-        "fern_fairy", "Fern the Fairy", "Fairy of the Ring", Who.CHILD,
+        "fern_fairy", "Fern the Fairy", "Fairy of the Ring", Who.FERN,
         "Fern is a tiny fairy who lives in a ring of glowing mushrooms. She is very shy, and she gives gifts to anyone who dances without laughing at her wings.",
         "Oh! A visitor! I am Fern. Please do not laugh at my wings. They are a bit wobbly.",
         listOf(Start("hub")),
@@ -437,7 +437,7 @@ object CoreNpcs {
     )
 
     val henrietta = Npc(
-        "henrietta_hen", "Henrietta Hen", "Hen of Sleepy Meadow", Who.TOWNSWOMAN,
+        "henrietta_hen", "Henrietta Hen", "Hen of Sleepy Meadow", Who.HENRIETTA,
         "Henrietta is a hen with a great many chicks and very little time. She loses at least one every day, and it is always the naughtiest.",
         "Cluck, cluck, oh my feathers! I am Henrietta, and I have lost a chick again!",
         listOf(Start("hub")),
@@ -455,7 +455,7 @@ object CoreNpcs {
     )
 
     val otto = Npc(
-        "otto_otter", "Otto the Otter", "Otter of the Falls", Who.CRITTER,
+        "otto_otter", "Otto the Otter", "Otter of the Falls", Who.OTTO,
         "Otto plays in the waterfall all day and knows every secret of the pool. He loves to splash, and he loves to share his favorite hidden cave with anyone who plays along.",
         "Splash! Hello! I am Otto. Do you want to see something amazing?",
         listOf(Start("hub")),

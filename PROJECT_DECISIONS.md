@@ -1328,3 +1328,14 @@ The same screen shows how each skill is going from the challenge log (`progressO
 not bad. The adding counts as practice for addition. It reuses the dice screen and lines that were kept for it.
 
 **What might cause us to change it:** Dice screens feel like a detour; the other minigames are the better use of the slot.
+
+### 64. Kokoro v1.0, and a voice of their own for every named character
+
+**Status:** Accepted · 2026-10-05 · refines #43 and #45
+
+**Decision:** The voice moves from Kokoro v0.19 (11 speakers) to Kokoro v1.0 (`kokoro-int8-multi-lang-v1_0`, 54 speakers, 28 of them English), still
+through sherpa-onnx (1.13.8 is the latest release). Each of the 21 named voices (the narrator, the baby dragon and nineteen people) has a speaker of its own and no pitch change; the big dragon, the
+Shadow and the kinds of creature share a speaker with someone but differ in pitch and pace. `VoiceCastTest` holds this. Every recording changes (the voice id is part of its fingerprint),
+so the next build records everything again. The model grows from the v0.19 English one by about the lexicon (6 MB).
+
+**Why we made it:** The review found twenty characters sharing six speakers. **What might cause us to change it:** Someone hears the cast and wants other speakers; the first-run recording time.

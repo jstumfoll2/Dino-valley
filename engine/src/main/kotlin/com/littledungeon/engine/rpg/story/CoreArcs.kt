@@ -15,9 +15,9 @@ object CoreArcs {
         bossId = "baron_grumblewick",
         setup = listOf(
             "The Great Storybook of Whisperwood is losing its pages! One by one, the stories are vanishing: bedtime tales, bakery recipes, even the song of the Old Stone Bridge.",
-            "<elder>Hello, little adventurer. I am Professor Hoot, and I keep the Storybook. The pages are gone, and I know who took them. Baron Grumblewick, from the crooked manor.",
+            "<hoot>Hello, little adventurer. I am Professor Hoot, and I keep the Storybook. The pages are gone, and I know who took them. Baron Grumblewick, from the crooked manor.",
             "<pet>The grumpy man who never smiles? Why would he want stories?",
-            "<elder>Nobody knows. But his gate is sealed with sticky black ink. Only his own silver quill can write it open, and his imp guards it in the Inkwell Cellars.",
+            "<hoot>Nobody knows. But his gate is sealed with sticky black ink. Only his own silver quill can write it open, and his imp guards it in the Inkwell Cellars.",
         ),
         sealed = "The manor gate is sealed with sticky black ink! <pet>We need the Baron's silver quill. The Professor said it is in the Inkwell Cellars.",
         keyFound = "<pet>The silver quill! Now we can write the gate open. Let's go to the manor!",
@@ -36,7 +36,7 @@ object CoreArcs {
         ),
         returnSetup = listOf(
             "Another page of the Great Storybook has gone missing! The ink is spreading again.",
-            "<elder>Little adventurer, you are back! The pages are drifting off once more, and I fear it is the Baron's ink. Please, go and see what has happened.",
+            "<hoot>Little adventurer, you are back! The pages are drifting off once more, and I fear it is the Baron's ink. Please, go and see what has happened.",
         ),
         friendMeeting = "The manor door is open, and the Baron waits inside with his hat in his hands. <baron>You came back. My ink got away from me again, and the pages ran off in every direction. I am so sorry. Will you help me write them home? <pet>He is asking us for help, not for a fight!",
         friendSteps = listOf(

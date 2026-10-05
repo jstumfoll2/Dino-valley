@@ -76,9 +76,9 @@ object CoreMonsters {
 
     val rogues = listOf(
         Monster(
-            "sneaky_fox", "Sneaky Fox", Tier.MINION, 16, 4, listOf(LETTERS, COLORS), Who.SNEAK,
-            "A fox pops out from behind a crate. <sneak>You want it back? Then catch me, if you can!",
-            "The fox drops what it was holding. <sneak>Fine, fine. You are quicker than you look.",
+            "sneaky_fox", "Sneaky Fox", Tier.MINION, 16, 4, listOf(LETTERS, COLORS), Who.RASCAL,
+            "A fox pops out from behind a crate. <rascal>You want it back? Then catch me, if you can!",
+            "The fox drops what it was holding. <rascal>Fine, fine. You are quicker than you look.",
             "The fox darts around you so fast that you get dizzy and sit down.",
             coins = 3..6, roams = false,
         ),
@@ -110,9 +110,9 @@ object CoreMonsters {
             habitat = setOf(Terrain.FOREST, Terrain.MOUNTAIN),
         ),
         Monster(
-            "bandit_bess", "Bandit Bess", Tier.ELITE, 28, 6, listOf(PATTERNS, NUMBERS, ADDITION), Who.SNEAK,
-            "A bandit swings down from a rock. <sneak>This is my pass. Pay up, or play for it!",
-            "Bess lowers her fists and sits down hard. <sneak>All right, all right. I give up. Nobody ever beat me before.",
+            "bandit_bess", "Bandit Bess", Tier.ELITE, 28, 6, listOf(PATTERNS, NUMBERS, ADDITION), Who.BESS,
+            "A bandit swings down from a rock. <bess>This is my pass. Pay up, or play for it!",
+            "Bess lowers her fists and sits down hard. <bess>All right, all right. I give up. Nobody ever beat me before.",
             "Bess tips her hat, gives you a gentle shove, and everything goes dim.",
             coins = 8..12, drops = listOf(Drop("bubble_shield", 30)), befriendable = true, roams = false,
         ),
@@ -135,9 +135,9 @@ object CoreMonsters {
             coins = 12..18, drops = listOf(Drop("knight_sword", 15), Drop("big_potion", 40)), weakness = "spark_bomb",
         ),
         Monster(
-            "grumble_troll", "Grumble the Troll", Tier.MINI_BOSS, 48, 7, listOf(ADDITION, NUMBERS, SKIP_COUNTING), Who.GROWLER,
-            "Grumble the troll blocks the bridge. <growler>This is my bridge. Nobody crosses. Nobody ever asks me how I am.",
-            "Grumble sits down with a thump. <growler>Hmm. You listened. Nobody listens. You can cross, friend.",
+            "grumble_troll", "Grumble the Troll", Tier.MINI_BOSS, 48, 7, listOf(ADDITION, NUMBERS, SKIP_COUNTING), Who.GRUMBLE,
+            "Grumble the troll blocks the bridge. <grumble>This is my bridge. Nobody crosses. Nobody ever asks me how I am.",
+            "Grumble sits down with a thump. <grumble>Hmm. You listened. Nobody listens. You can cross, friend.",
             "Grumble stomps and the whole bridge shakes you back to the start.",
             coins = 12..18, drops = listOf(Drop("friendship_cookie", 50)), befriendable = true, weakness = "friendship_cookie",
         ),

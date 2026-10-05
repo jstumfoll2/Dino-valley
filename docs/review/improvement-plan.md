@@ -129,7 +129,7 @@ look is for a playtest (or the screenshot tests of 4.6). Each fix was worked out
 
 | Phase | What | Status |
 |---|---|---|
-| 5 | Voice bible and unique voices, music and ambience, effects per item and terrain | Needs a person (voice choices, licences), then planned. The voice bible is written (`voice/VOICE_BIBLE.md`) |
+| 5 | Voice bible and unique voices, music and ambience, effects per item and terrain | **5.1 done in code**: Kokoro v1.0, a speaker of their own for each of the 21 named voices (`VoiceCastTest`), captions by name; chosen by measurement, not yet listened to. 5.2 music and 5.3 effects not started |
 | 6 | Nine new minigames, one pull request each | **Started**: 6.1 Lucky Roll is a road event, and 6.2 the Potion Workshop is a dungeon room (recipes are now 1.4% to 1.7% of simulated puzzles, short of the 5% target: the world-changing potions of the roadmap are not built). The other seven are not started; each needs a generator, a judge, a screen and art |
 | 7 | Eight new story arcs and the Book One finale, one pull request each | Not started: every arc needs new painted people and places and, for most, a new minigame, so none can be made as data alone |
 | 8 | Parent gate, settings, progress view | **Started**: a gate (a two-digit sum), a second look after a miss, easiest and hardest puzzle level, the length of a day, and a progress view in words (`SettingsTest`, `ProgressTest`). Not yet: volume, export, moving the feedback tool behind the gate |
