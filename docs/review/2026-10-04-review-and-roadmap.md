@@ -35,7 +35,7 @@ whether the game is still the one the brief asked for.
   pipeline (`art/build.py`, `art/render.cjs`, `art/src/*.py`).
 - **Ran the engine tests** outside Android. All 51 pass. 23 of them exercise code the app no longer runs
   (`Adventure`, `GameSession`, `CountObjects*`), and `VoiceCatalogTest` alone takes 164 seconds.
-- **Simulated play.** [`BalanceSim.kt.txt`](BalanceSim.kt.txt) plays 300 journeys: 10 simulated children
+- **Simulated play.** `BalanceSim.kt` (now in `engine/src/test/kotlin/com/littledungeon/engine/rpg/balance/`) plays 300 journeys: 10 simulated children
   × 10 journeys each, at 60%, 75% and 90% puzzle accuracy, carrying hero, skills and world forward the way
   the app does. Dialog choices are random. Travel follows the baby dragon's hint 60% of the time. Time is
   estimated from narration word counts at about 140 words a minute, plus a few seconds per tap. Treat the
@@ -773,7 +773,7 @@ top of a broken difficulty model and unreadable memory would only multiply the p
 
 ## Appendix A: simulation numbers
 
-From [`BalanceSim.kt.txt`](BalanceSim.kt.txt): 10 simulated children × 10 journeys each, per accuracy.
+From `BalanceSim.kt` (original version, since moved into the engine tests and refined): 10 simulated children × 10 journeys each, per accuracy.
 "Minutes" is an estimate (narration words at about 140 a minute plus seconds per tap).
 
 | Accuracy | Median beats | Est. minutes (p10 / median / p90) | Puzzles per journey | Menus per journey | Battles | Faints | Forced-fight menus per 100 journeys | Friend-as-monster per 100 journeys |
@@ -801,5 +801,5 @@ From [`BalanceSim.kt.txt`](BalanceSim.kt.txt): 10 simulated children × 10 journ
 
 **A child who only guesses** reaches counting level 3 after 40 one-try puzzles, and never comes back down.
 
-**To reproduce:** copy `BalanceSim.kt.txt` to a Kotlin source file compiled with the engine's main sources
-(it uses `internal` members, so it must be in the same module), and run its `main`.
+**To reproduce:** run `./gradlew :engine:balanceReport`. Numbers differ a little from the first run because the harness
+was refined when it moved into the repository (see `docs/review/improvement-plan.md`).

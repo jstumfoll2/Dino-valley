@@ -60,6 +60,12 @@ jobs:
       - name: Test the engine and build the app
         run: ./gradlew :engine:test :app:assembleDebug --stacktrace
 
+      # Simulated children play many journeys: how long it takes, which skills come up, whether levels drift.
+      - name: Balance report
+        run: |
+          ./gradlew :engine:balanceReport -q
+          cat engine/build/balance/report.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Keep the APK with this run
         uses: actions/upload-artifact@v4
         with:
