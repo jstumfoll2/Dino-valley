@@ -45,16 +45,26 @@ import com.littledungeon.ui.art.BossStar
 import com.littledungeon.ui.art.Character
 import com.littledungeon.ui.art.Mood
 import com.littledungeon.ui.art.Picto
+import com.littledungeon.ui.art.PictoIcon
 import com.littledungeon.ui.art.Rigs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private fun Attribute.icon() = when (this) {
-    Attribute.COURAGE -> "❤️"
-    Attribute.CLEVERNESS -> "🧠"
-    Attribute.WISDOM -> "📖"
-    Attribute.KINDNESS -> "💛"
-    Attribute.MAGIC -> "✨"
+/** What each attribute looks like: a picture and its color, drawn in code. */
+private fun Attribute.picto() = when (this) {
+    Attribute.COURAGE -> Picto.HEART
+    Attribute.CLEVERNESS -> Picto.BULB
+    Attribute.WISDOM -> Picto.BOOK
+    Attribute.KINDNESS -> Picto.SMILE
+    Attribute.MAGIC -> Picto.SPARKLE
+}
+
+private fun Attribute.tint() = when (this) {
+    Attribute.COURAGE -> Color(0xFFE5484D)
+    Attribute.CLEVERNESS -> Color(0xFFF2B233)
+    Attribute.WISDOM -> Color(0xFF4F8FD9)
+    Attribute.KINDNESS -> Color(0xFFE0567A)
+    Attribute.MAGIC -> Color(0xFF8E4AD8)
 }
 
 /**
@@ -137,7 +147,7 @@ fun FinaleScreen(beat: Beat.Finale, vm: GameViewModel) {
             Row(horizontalArrangement = Arrangement.spacedBy(h * 0.04f), verticalAlignment = Alignment.CenterVertically) {
                 summary.starsEarned.entries.filter { it.value > 0 }.sortedByDescending { it.value }.forEach { (attr, stars) ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(attr.icon(), fontSize = mid, lineHeight = mid)
+                        PictoIcon(attr.picto(), attr.tint(), Modifier.size(h * 0.09f))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             BossStar(true, Modifier.size(h * 0.05f))
                             Text(
@@ -153,7 +163,7 @@ fun FinaleScreen(beat: Beat.Finale, vm: GameViewModel) {
                     Modifier.background(Color(0x22E5641F), RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    summary.unlocked.forEach { Text("🎁", fontSize = mid, lineHeight = mid) }
+                    summary.unlocked.forEach { PictoIcon(Picto.GIFT, Palette.Name, Modifier.size(h * 0.08f)) }
                 }
             }
         }

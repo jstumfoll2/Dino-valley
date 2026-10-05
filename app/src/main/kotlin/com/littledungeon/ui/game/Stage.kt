@@ -269,7 +269,7 @@ fun VoiceLoading(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (long) Text("📖", fontSize = 40.sp, modifier = Modifier.graphicsLayer { rotationZ = spin * 0.05f - 9f })
+            if (long) PictoIcon(Picto.BOOK, Palette.Ink, Modifier.size(40.dp).graphicsLayer { rotationZ = spin * 0.05f - 9f })
             repeat(3) { i ->
                 val up = (phase - i).let { if (it in 0f..1f) kotlin.math.sin(it * Math.PI).toFloat() else 0f }
                 Box(
