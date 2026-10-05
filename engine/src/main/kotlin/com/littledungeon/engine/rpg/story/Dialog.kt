@@ -2,6 +2,8 @@ package com.littledungeon.engine.rpg.story
 
 import com.littledungeon.engine.model.Who
 import com.littledungeon.engine.rpg.hero.Attribute
+import com.littledungeon.engine.rpg.learn.Skill
+import com.littledungeon.engine.rpg.learn.Thing
 
 /**
  * Something that must be true for an option, a start, or an event to apply. Conditions read the
@@ -44,8 +46,20 @@ sealed interface Effect {
      */
     data class Fight(val monsterId: String, val win: String?) : Effect
 
-    /** A one-try puzzle; to [win] or [lose]. [kind] is an Obstacle name (CLIMB, CROSS, DARK, LOCK, RIDDLE). */
-    data class Puzzle(val kind: String, val win: String?, val lose: String?) : Effect
+    /**
+     * A one-try puzzle; to [win] or [lose]. [kind] is an Obstacle name (CLIMB, CROSS, DARK, LOCK, RIDDLE) and decides
+     * which tools help. By default the puzzle wears that obstacle's costume. A person who has a puzzle of their own sets
+     * [skill], [ask] (what is said to set it up) and, for counting and adding, the [thing] to count, so the puzzle is about
+     * their story ("count my chicks") and not about a stone face.
+     */
+    data class Puzzle(
+        val kind: String,
+        val win: String?,
+        val lose: String?,
+        val skill: Skill? = null,
+        val ask: String? = null,
+        val thing: Thing? = null,
+    ) : Effect
 
     /** Opens a shop. */
     data class Shop(val shopId: String) : Effect

@@ -7,6 +7,7 @@ import com.littledungeon.engine.rpg.items.Item
 import com.littledungeon.engine.rpg.items.Obstacle
 import com.littledungeon.engine.rpg.learn.Challenge
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
+import com.littledungeon.engine.rpg.learn.Coach
 import com.littledungeon.engine.rpg.learn.PickOne
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.Thing
@@ -76,13 +77,7 @@ internal fun Journey.puzzleFor(skill: Skill, intro: String, thing: Thing = Thing
     return when (skill) {
         Skill.COUNTING -> ChallengeFactory.count(lvl, seed, thing, "$intro How many ${thing.many} are there?")
         Skill.NUMBERS -> ChallengeFactory.numeral(lvl, seed, intro)
-        Skill.ADDITION -> ChallengeFactory.add(lvl, seed, thing) { have, more, missing ->
-            if (missing) {
-                "$intro It needs ${Words.number(have + more)} ${thing.many} and has ${Words.number(have)}. How many more does it need?"
-            } else {
-                "$intro There ${if (have == 1) "is" else "are"} ${Words.number(have)} ${thing.words(have)}, and ${Words.number(more)} more. How many ${thing.many} is that altogether?"
-            }
-        }
+        Skill.ADDITION -> ChallengeFactory.add(lvl, seed, thing) { have, more, missing -> addStory(intro, thing, have, more, missing) }
         Skill.COLORS -> ChallengeFactory.color(lvl, seed, intro, thing.one)
         Skill.PATTERNS -> ChallengeFactory.pattern(lvl, seed, "$intro Which symbol comes next?")
         Skill.LETTERS -> ChallengeFactory.letter(lvl, seed, intro)
@@ -90,6 +85,17 @@ internal fun Journey.puzzleFor(skill: Skill, intro: String, thing: Thing = Thing
         else -> error("$skill has no pick-one puzzle")
     }
 }
+
+/**
+ * The words of a sum: what is there and what is added, or what is needed and what there is. A sentence a number is in never
+ * holds the intro (a monster's name), so every sentence can be recorded ahead of time (see `VoiceCatalog`).
+ */
+internal fun addStory(intro: String, thing: Thing, have: Int, more: Int, missing: Boolean): String =
+    if (missing) {
+        "$intro It needs ${Words.number(have + more)} ${thing.many} and has ${Words.number(have)}. How many more does it need?"
+    } else {
+        "$intro There ${if (have == 1) "is" else "are"} ${Words.number(have)} ${thing.words(have)}, and ${Words.number(more)} more. How many ${thing.many} is that altogether?"
+    }
 
 /** The one-try puzzle for something blocking the way, in the costume the child most needs. */
 internal fun Journey.obstaclePuzzle(o: Obstacle): PickOne {
@@ -99,20 +105,25 @@ internal fun Journey.obstaclePuzzle(o: Obstacle): PickOne {
     return puzzleFor(skill, c.intro, c.thing)
 }
 
-/** A monster's attack puzzle: one of its own skills (the one the child needs most), dressed in its name. */
-internal fun Journey.battlePuzzle(m: Monster): PickOne {
-    val skill = pickSkill(PICK_ONE_SKILLS, preferred = m.skills)
+/** How a monster dresses a puzzle of [skill]. */
+internal fun battleCostume(m: Monster, skill: Skill): Costume {
     val name = m.name
     return when (skill) {
-        Skill.COUNTING -> puzzleFor(skill, "The $name hid some coins.", Thing.COIN)
-        Skill.NUMBERS -> puzzleFor(skill, "The $name holds up a card.")
-        Skill.ADDITION -> puzzleFor(skill, "The $name is counting its gems.", Thing.GEM)
-        Skill.COLORS -> puzzleFor(skill, "The $name", Thing.GEM)
-        Skill.PATTERNS -> puzzleFor(skill, "The $name makes a pattern.")
-        Skill.LETTERS -> puzzleFor(skill, "The $name scribbles a letter.")
-        Skill.SKIP_COUNTING -> puzzleFor(skill, "The $name hops along.")
-        else -> puzzleFor(Skill.NUMBERS, "The $name holds up a card.")
+        Skill.COUNTING -> Costume(skill, "The $name hid some coins.", Thing.COIN)
+        Skill.NUMBERS -> Costume(skill, "The $name holds up a card.")
+        Skill.ADDITION -> Costume(skill, "The $name is counting its gems.", Thing.GEM)
+        Skill.COLORS -> Costume(skill, "The $name", Thing.GEM)
+        Skill.PATTERNS -> Costume(skill, "The $name makes a pattern.")
+        Skill.LETTERS -> Costume(skill, "The $name scribbles a letter.")
+        Skill.SKIP_COUNTING -> Costume(skill, "The $name hops along.")
+        else -> Costume(Skill.NUMBERS, "The $name holds up a card.")
     }
+}
+
+/** A monster's attack puzzle: one of its own skills leaning to the one the child needs most, dressed in its name. */
+internal fun Journey.battlePuzzle(m: Monster): PickOne {
+    val c = battleCostume(m, pickSkill(PICK_ONE_SKILLS, preferred = m.skills))
+    return puzzleFor(c.skill, c.intro, c.thing)
 }
 
 /**
@@ -134,7 +145,7 @@ internal fun Journey.askOnce(
     onFail: () -> List<JStep>,
 ): JStep {
     val misses = if (c is PickOne) 1 else 2
-    return JStep(Beat.Ask(scene, c, Speech.of(oops), Speech.of(yay), prop, oneTry = true, allowedMisses = misses, tried = tried)) { reply ->
+    return JStep(Beat.Ask(scene, c, Speech.of(oops), Speech.of(yay), prop, oneTry = true, allowedMisses = misses, tried = tried, explain = Coach.explain(c))) { reply ->
         val s = reply as? Reply.Solved ?: Reply.Solved(1, 0, 0)
         record(c, if (charmUsed) maxOf(2, s.tries) else s.tries, s.hints, s.millis, s.failed)
         if (!s.failed) {
@@ -199,8 +210,18 @@ internal fun Journey.extraWrong(c: Challenge, charm: Item, alreadyOut: List<Int>
     return candidates.take(minOf(charm.guess, room))
 }
 
-/** An obstacle on the road: a puzzle with one try. Winning goes on; failing turns the hero back. */
-internal fun Journey.obstacle(o: Obstacle, scene: Scene, next: () -> List<JStep>, turnBack: () -> List<JStep>): List<JStep> {
+/**
+ * An obstacle on the road: a puzzle with one try. Winning goes on; failing turns the hero back. With [own] it is a
+ * person's own puzzle (their story is the costume, so there is no obstacle introduction, no tool that gets past it,
+ * and what happens next is theirs to say), otherwise it wears the obstacle's costume that the child needs most.
+ */
+internal fun Journey.obstacle(
+    o: Obstacle, scene: Scene, next: () -> List<JStep>, turnBack: () -> List<JStep>, own: Costume? = null,
+): List<JStep> {
+    if (own != null) {
+        val c = puzzleFor(own.skill, own.intro, own.thing)
+        return listOf(askOnce(scene, c, say.puzzleOops(), say.puzzleYay(), null, onWin = { next() }, onFail = { turnBack() }))
+    }
     val c = obstaclePuzzle(o)
     return listOf(
         tell(scene, say.obstacleIntro(o)),

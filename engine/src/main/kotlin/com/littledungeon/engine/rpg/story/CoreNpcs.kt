@@ -2,6 +2,8 @@ package com.littledungeon.engine.rpg.story
 
 import com.littledungeon.engine.model.Who
 import com.littledungeon.engine.rpg.hero.Attribute
+import com.littledungeon.engine.rpg.learn.Skill
+import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.story.Cond.*
 import com.littledungeon.engine.rpg.story.Effect.*
 
@@ -147,7 +149,7 @@ object CoreNpcs {
             n(
                 "hub", "Do you like riddles?",
                 listOf(
-                    o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose")), needs = listOf(NoFlag("run:hazel_riddle"))),
+                    o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose", Skill.PATTERNS, "Hazel scratches a riddle in the dirt with a stick.")), needs = listOf(NoFlag("run:hazel_riddle"))),
                     o("Stay for tea", "talk_give", "tea", needs = listOf(Stat(Attribute.KINDNESS, 2))),
                     bye(),
                 ),
@@ -160,7 +162,7 @@ object CoreNpcs {
             ),
             n(
                 "friend", "My friend! The rope ladder is always down for you. Care for another riddle, or a cup of tea?",
-                listOf(o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose")), needs = listOf(NoFlag("run:hazel_riddle"))), bye()),
+                listOf(o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose", Skill.PATTERNS, "Hazel scratches a riddle in the dirt with a stick.")), needs = listOf(NoFlag("run:hazel_riddle"))), bye()),
             ),
         ),
     )
@@ -176,7 +178,7 @@ object CoreNpcs {
                 listOf(
                     o("Look at his wares", "talk_buy", null, listOf(Shop("smithy"))),
                     o("Ask about the dragon", "talk_ask", "dragon"),
-                    o("Prove your skill", "talk_puzzle", null, listOf(Puzzle("LOCK", "proof", "proof_fail")), needs = listOf(NoFlag("brogan_helm"), NoFlag("run:brogan_tried"))),
+                    o("Prove your skill", "talk_puzzle", null, listOf(Puzzle("LOCK", "proof", "proof_fail", Skill.NUMBERS, "Brogan hammers a number into a bar of iron.")), needs = listOf(NoFlag("brogan_helm"), NoFlag("run:brogan_tried"))),
                     bye(),
                 ),
             ),
@@ -224,7 +226,7 @@ object CoreNpcs {
                 "page", "A recipe page? What recipe page? I have never seen a recipe page in my life. <narrator>Something sticky is peeking out of his pocket.",
                 listOf(
                     o("Pay five coins", "talk_coin", "paid", listOf(Pay(5)), needs = listOf(Coins(5))),
-                    o("Challenge him", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "won", "lost"))),
+                    o("Challenge him", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "won", "lost", Skill.LETTERS, "Rascal waves the page and dares you to find the letter on it."))),
                     o("Chase him", "talk_fight", null, listOf(Fight("sneaky_fox", "won"))),
                 ),
             ),
@@ -292,7 +294,7 @@ object CoreNpcs {
             n(
                 "ink", "The Baron's ink! Yes, yes. It sticks to everything. I have a bottle that washes it right off, but I have forgotten where I put it. Solve my puzzle, or give me a cookie, and my memory will come back.",
                 listOf(
-                    o("Solve his puzzle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "cleaner", "forgot")), needs = listOf(NoFlag("run:merlo_cleaner"))),
+                    o("Solve his puzzle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "cleaner", "forgot", Skill.LETTERS, "Merlo tries to remember the first letter of his bottle spell.")), needs = listOf(NoFlag("run:merlo_cleaner"))),
                     o("Give him a cookie", "talk_cookie", "cleaner", listOf(Take("friendship_cookie")), needs = listOf(HasItem("friendship_cookie"), NoFlag("run:merlo_cleaner"))),
                     bye(),
                 ),
@@ -438,12 +440,12 @@ object CoreNpcs {
             n(
                 "hub", "Can you count my chicks?",
                 listOf(
-                    o("Count the chicks", "talk_puzzle", null, listOf(Puzzle("CLIMB", "found", "missed")), needs = listOf(NoFlag("run:hen_chicks"))),
+                    o("Count the chicks", "talk_puzzle", null, listOf(Puzzle("CLIMB", "found", "missed", Skill.COUNTING, "My chicks are hiding under the mushrooms, one chick under each.", Thing.MUSHROOM)), needs = listOf(NoFlag("run:hen_chicks"))),
                     bye(),
                 ),
             ),
-            n("found", "Eight, nine, ten! All ten chicks are here! You are a very clever counter. Please take a honey cake, and a coin for your trouble.", listOf(bye()), listOf(Give("honey_cake"), Earn(4), SetFlag("run:hen_chicks"))),
-            n("missed", "Oh dear, I think one is still lost. Come back and help me count again.", listOf(bye()), listOf(SetFlag("run:hen_chicks"))),
+            n("found", "You counted every mushroom, so every chick is found! You are a very clever counter. Please take a honey cake, and a coin for your trouble.", listOf(bye()), listOf(Give("honey_cake"), Earn(4), SetFlag("run:hen_chicks"))),
+            n("missed", "Oh dear, I think one chick is still hiding. Come back and help me count again.", listOf(bye()), listOf(SetFlag("run:hen_chicks"))),
         ),
     )
 
@@ -456,7 +458,7 @@ object CoreNpcs {
             n(
                 "hub", "Do you want to play in the falls?",
                 listOf(
-                    o("Hop across the stones", "talk_puzzle", null, listOf(Puzzle("CROSS", "cave", "splash")), needs = listOf(NoFlag("run:otto_cave"))),
+                    o("Hop across the stones", "talk_puzzle", null, listOf(Puzzle("CROSS", "cave", "splash", Skill.SKIP_COUNTING, "Hop across the stones behind the waterfall.")), needs = listOf(NoFlag("run:otto_cave"))),
                     o("Splash around", "talk_laugh", "splash_fun", listOf(Heal(99), SetFlag("run:otto_splash")), needs = listOf(NoFlag("run:otto_splash"))),
                     bye(),
                 ),

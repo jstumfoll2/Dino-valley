@@ -112,6 +112,8 @@ sealed interface Beat {
         val allowedMisses: Int = 1,
         /** Answers already ruled out (a second guess after a charm), crossed out and not tappable. */
         val tried: List<Int> = emptyList(),
+        /** Said with the right answer showing when the last try is missed: why it is right (see `Coach.explain`). */
+        val explain: List<Speech> = emptyList(),
     ) : Beat
 
     /**
@@ -216,6 +218,7 @@ fun Beat.speech(): List<List<Speech>> = when (this) {
         add(challenge.prompt)
         add(yay)
         add(oops)
+        if (explain.isNotEmpty()) add(explain)
     }
     is Beat.Roll -> listOf(why)
     is Beat.Choose -> listOf(prompt)

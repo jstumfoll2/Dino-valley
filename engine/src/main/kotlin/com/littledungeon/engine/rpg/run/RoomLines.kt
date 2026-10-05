@@ -16,9 +16,9 @@ internal class RoomLines(private val r: Random) {
     )
 
     fun runeOops() = pick(
-        "The door sneezes! [sneeze] Dust everywhere. Let's try again.",
-        "[zap] The runes giggle and wiggle. Not that one. Try again!",
-        "The door hums, \"Hmm, no, thank you!\" <pet>Try another one!",
+        "The door sneezes! [sneeze] Dust everywhere. Those were not the right runes.",
+        "[zap] The runes giggle and wiggle. That was not the right symbol.",
+        "The door hums, \"Hmm, no, thank you!\" <pet>That was not the one.",
     )
 
     fun runeYay() = pick(
@@ -32,8 +32,8 @@ internal class RoomLines(private val r: Random) {
     )
 
     fun bridgeOops() = pick(
-        "The bridge wobbles and shakes, and a bird flies away. Let's count again.",
-        "Oops! A stone falls into the water far below. [splash] Let's try again.",
+        "The bridge wobbles and shakes, and a bird flies away. That was not the right number.",
+        "Oops! A stone falls into the water far below. [splash]",
     )
 
     fun bridgeYay() = pick("You got it! The stones click into place. <pet>The bridge is strong!", "Yes! [stomp] The bridge holds tight! <pet>Whee, let's cross!")
@@ -62,7 +62,7 @@ internal class RoomLines(private val r: Random) {
 
     fun libraryOops() = pick(
         "[whoosh] The books fly faster! <pet>That's not the right letter!",
-        "The spell book giggles, \"That tickles!\" Try another letter.",
+        "The spell book giggles, \"That tickles!\" That was not the right letter.",
     )
 
     fun libraryYay() = pick("[whoosh] The books settle back on their shelves. The spell is finished!", "You got it! The spell book glows with happy magic! <pet>Hooray!")
@@ -74,7 +74,7 @@ internal class RoomLines(private val r: Random) {
 
     fun writePurpose() = pick("Let's light the tunnel!", "Write with your magic finger!", "Make the wall glow!")
 
-    fun tunnelOops() = pick("The magic fizzles out like a sparkler. Psst! Let's try that part again.", "Oops, the magic wandered off the line! Try again.")
+    fun tunnelOops() = pick("The magic fizzles out like a sparkler. It wandered off the line.", "Oops, the magic wandered off the line!")
 
     fun tunnelYay() = pick("It glows! The whole tunnel lights up!", "Your letter shines brightly. Now we can see!")
 
@@ -83,7 +83,7 @@ internal class RoomLines(private val r: Random) {
         "There are mirrors everywhere! Remember which door is real.",
     )
 
-    fun mirrorOops() = pick("Bonk! That was just a mirror. <pet>Hee hee! Try again.", "<pet>Hello, me! That's just a reflection. <narrator>Let's try again.")
+    fun mirrorOops() = pick("Bonk! That was just a mirror. <pet>Hee hee!", "<pet>Hello, me! That's just a reflection.")
 
     fun mirrorYay() = pick("That's the real door! <pet>You remembered!", "Yes! The mirrors cheer. <pet>What a memory!")
 
@@ -92,7 +92,7 @@ internal class RoomLines(private val r: Random) {
         "Oh my! The goblins' storeroom is so messy that we can't get through. Let's put things in baskets!",
     )
 
-    fun storeroomOops() = pick("Oops! That basket spits it back out. <pet>It says, that's not mine! Try another one.", "[boing] It bounced out. Does it look like the others in that basket?")
+    fun storeroomOops() = pick("Oops! That basket spits it back out. <pet>It says, that's not mine!", "[boing] It bounced out. Does it look like the others in that basket?")
 
     fun storeroomYay() = pick("All tidy! The goblins will be so happy.", "What a tidy storeroom! Now we can walk through.")
 
@@ -101,7 +101,7 @@ internal class RoomLines(private val r: Random) {
         "Here's a quiet pond with lily pads. A little frog wants to hop across, but it needs your help counting!",
     )
 
-    fun pondOops() = pick("[splash] The frog falls in the water. It's okay, frogs love water! Let's count again.", "[ribbit] <pet>The frog says, not that one! <narrator>Let's count again.")
+    fun pondOops() = pick("[splash] The frog falls in the water. It's okay, frogs love water!", "[ribbit] <pet>The frog says, not that number!")
 
     fun pondYay() = pick("[boing] The frog jumps across!", "You got it! The frog hops all the way!")
 
@@ -116,7 +116,7 @@ internal class RoomLines(private val r: Random) {
 
     fun vault() = pick("A treasure vault! A big chest with a magic lock sits in the middle.", "Gold glitters everywhere! This is a treasure vault.")
 
-    fun vaultOops() = pick("[coins] The coins jump back out of your bag. Let's count again.", "The chest burps! [burp] Let's count again.")
+    fun vaultOops() = pick("[coins] The coins jump back out of your bag.", "The chest burps! [burp]")
 
     fun vaultYay() = pick("[coins] Into your bag they go!", "You got it! What a lot of treasure!")
 }

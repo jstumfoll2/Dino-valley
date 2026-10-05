@@ -91,7 +91,8 @@ object ChallengeFactory {
             )
         }.shuffled(r)
         val name = (if (sized) "${target.size.word} " else "") + target.hue.word.uppercase()
-        val ask = if (speaker != null) "$who <${speaker.tag}>I need the $name $what! Can you find it?" else "$who needs the $name $what. Can you find it?"
+        // Who asks and which color are in different sentences, so every monster's name does not multiply every color.
+        val ask = if (speaker != null) "$who <${speaker.tag}>I need the $name $what! Can you find it?" else "$who wants a $what. Can you find the $name one?"
         return ColorChallenge(level, seed, Speech.of(ask), target, options)
     }
 

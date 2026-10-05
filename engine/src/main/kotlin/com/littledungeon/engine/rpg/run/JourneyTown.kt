@@ -3,6 +3,7 @@ package com.littledungeon.engine.rpg.run
 import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.items.Obstacle
+import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.story.Effect
 import com.littledungeon.engine.rpg.story.Npc
 import com.littledungeon.engine.rpg.story.ShopDef
@@ -222,10 +223,12 @@ internal fun Journey.runEffects(list: List<Effect>, npc: Npc?, back: () -> List<
         }
         is Effect.Puzzle -> {
             val o = Obstacle.valueOf(e.kind)
+            val own = e.skill?.let { Costume(it, e.ask.orEmpty(), e.thing ?: Thing.STONE) }
             obstacle(
                 o, s,
                 next = { e.win?.let { node(npc!!, it, back) } ?: cont() },
                 turnBack = { e.lose?.let { node(npc!!, it, back) } ?: cont() },
+                own = own,
             )
         }
         is Effect.Shop -> {

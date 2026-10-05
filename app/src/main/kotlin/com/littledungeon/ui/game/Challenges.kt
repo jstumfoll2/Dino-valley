@@ -220,7 +220,12 @@ private class Turn(
         scope.launch {
             narrator.speak(beat.oops)
             narrator.speak(Say.ONE_TRY_MISS)
-            delay(1800)
+            // With the right answer glowing: why it is right, not just that it was missed.
+            if (beat.explain.isNotEmpty()) {
+                say(beat.explain)
+                narrator.speak(beat.explain)
+            }
+            delay(1200)
             solved(Reply.Solved(ladder.tries, ladder.hints, ladder.millis, failed = true, wrong = wrong.toList()))
         }
         return 0

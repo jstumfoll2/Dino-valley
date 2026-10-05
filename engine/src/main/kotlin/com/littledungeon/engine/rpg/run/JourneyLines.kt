@@ -103,6 +103,11 @@ internal class JourneyLines(private val r: Random) {
         Obstacle.RIDDLE -> pick("The stone face smiles and the door slides open.", "That is the one! The door opens.")
     }
 
+    /** For a person's own puzzle: they say what it means; these only react to the tap. */
+    fun puzzleOops() = pick("Oh no, that is not it.", "Hmm, not that one.")
+
+    fun puzzleYay() = pick("That's it! Well done.", "Yes! You got it.")
+
     fun rescueAsk(thing: String) = pick("Wait! You have $thing. Would you like to use it?", "You have $thing. Do you want to use it now?")
 
     fun toolWorks(tool: String, o: Obstacle) = when (o) {

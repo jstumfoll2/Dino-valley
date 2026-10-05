@@ -9,7 +9,10 @@ import com.littledungeon.engine.rpg.learn.ChallengeFactory
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.Words
+import com.littledungeon.engine.rpg.battle.Monster
+import com.littledungeon.engine.rpg.learn.Challenge
 import com.littledungeon.engine.rpg.story.BOOK_PAGES
+import com.littledungeon.engine.rpg.story.PeaceStep
 import com.littledungeon.engine.rpg.world.Location
 import com.littledungeon.engine.rpg.world.RoomKind
 
@@ -76,13 +79,7 @@ internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JSt
         RoomKind.MIRROR_HALL -> Room5(rooms.mirrorHall(), ChallengeFactory.memory(lv(Skill.MEMORY), seed), rooms.mirrorOops(), rooms.mirrorYay(), Obstacle.RIDDLE)
         RoomKind.VAULT -> Room5(
             rooms.vault(),
-            ChallengeFactory.add(lv(Skill.ADDITION), seed, Thing.COIN) { have, more, missing ->
-                if (missing) {
-                    "The magic purse holds ${Words.number(have + more)} coins. You have ${Words.number(have)}. How many more do you need to fill it?"
-                } else {
-                    "${if (have == 1) "There is one coin" else "There are ${Words.number(have)} coins"} in the chest, and ${Words.number(more)} more on the floor. How many coins is that altogether?"
-                }
-            },
+            ChallengeFactory.add(lv(Skill.ADDITION), seed, Thing.COIN, ::vaultStory),
             rooms.vaultOops(), rooms.vaultYay(), Obstacle.LOCK,
         )
         RoomKind.STOREROOM -> Room5(rooms.storeroom(), ChallengeFactory.sort(lv(Skill.SORTING), seed), rooms.storeroomOops(), rooms.storeroomYay(), Obstacle.RIDDLE)
@@ -91,6 +88,14 @@ internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JSt
     }
     return listOf(tell(s, intro), askOnce(s, c, oops, yay, obstacle, onWin = { solved() }, onFail = { listOf(tell(s, say.failedFor(obstacle))) + failed() }))
 }
+
+/** The words of the vault's sum (kept apart so the voice catalog can list every one). */
+internal fun vaultStory(have: Int, more: Int, missing: Boolean): String =
+    if (missing) {
+        "The magic purse holds ${Words.number(have + more)} coins. You have ${Words.number(have)}. How many more do you need to fill it?"
+    } else {
+        "${if (have == 1) "There is one coin" else "There are ${Words.number(have)} coins"} in the chest, and ${Words.number(more)} more on the floor. How many coins is that altogether?"
+    }
 
 private data class Room5(val intro: String, val c: com.littledungeon.engine.rpg.learn.Challenge, val oops: String, val yay: String, val obstacle: Obstacle)
 
@@ -144,14 +149,7 @@ private fun Journey.peace(l: Location, i: Int): List<JStep> {
     val step = arc.peaceSteps[i]
     val boss = Content.monster(arc.bossId)!!
     val s = sceneAt(l).copy(npc = NpcView(boss.id, boss.name, boss.art, boss.who))
-    val lvl = { skill: Skill -> level(skill) }
-    val c = when (step.kind) {
-        "letters" -> ChallengeFactory.letter(lvl(Skill.LETTERS), nextSeed(), step.intro)
-        "pattern" -> ChallengeFactory.pattern(lvl(Skill.PATTERNS), nextSeed(), step.intro)
-        "colors" -> ChallengeFactory.color(lvl(Skill.COLORS), nextSeed(), step.intro, "gem", speaker = boss.who)
-        "numbers" -> ChallengeFactory.numeral(lvl(Skill.NUMBERS), nextSeed(), step.intro)
-        else -> ChallengeFactory.count(lvl(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")
-    }
+    val c = peaceChallenge(step, boss)
     return listOf(
         JStep(Beat.Ask(s, c, Speech.of(say.peaceOops()), Speech.of(step.yay))) { reply ->
             val r = reply as? Reply.Solved ?: Reply.Solved(1, 0, 0)
@@ -159,6 +157,15 @@ private fun Journey.peace(l: Location, i: Int): List<JStep> {
             peace(l, i + 1)
         },
     )
+}
+
+/** The puzzle a boss sets on the peaceful way, in the boss's own voice. */
+internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge = when (step.kind) {
+    "letters" -> ChallengeFactory.letter(level(Skill.LETTERS), nextSeed(), step.intro)
+    "pattern" -> ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed(), step.intro)
+    "colors" -> ChallengeFactory.color(level(Skill.COLORS), nextSeed(), step.intro, "gem", speaker = boss.who)
+    "numbers" -> ChallengeFactory.numeral(level(Skill.NUMBERS), nextSeed(), step.intro)
+    else -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")
 }
 
 /** The story ends: a page of the Storybook comes home, and what the child chose is remembered. */
