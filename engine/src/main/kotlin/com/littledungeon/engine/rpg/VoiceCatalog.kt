@@ -249,6 +249,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
                 val c = j.peaceChallenge(step, boss)
                 hear(c.prompt)
                 (c as? BellChallenge)?.let { b -> hear(b.listen) }
+                (c as? MemoryChallenge)?.let { m -> hear(m.remember) }
             }
         }
         // The puzzle rooms of a dungeon, as the journey sets them up.

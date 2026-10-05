@@ -364,7 +364,7 @@ object ChallengeFactory {
         }
     }
 
-    fun memory(level: Int, seed: Long): MemoryChallenge {
+    fun memory(level: Int, seed: Long, intro: String = ""): MemoryChallenge {
         val r = Random(seed)
         val (doorCount, steps, show) = when (level) {
             1 -> Triple(3, 1, 2600L)
@@ -382,7 +382,8 @@ object ChallengeFactory {
             "Remember the doors in order. " + names.mapIndexed { i, n -> if (i == 0) "First, the $n door." else "Then the $n door." }.joinToString(" ")
         }
         val ask = if (steps == 1) "The doors are hiding! Which one was it?" else "The doors are hiding! Tap them in order."
-        return MemoryChallenge(level, seed, Speech.of(ask), doors, sequence, show, Speech.of(remember))
+        val lead = if (intro.isBlank()) "" else "$intro "
+        return MemoryChallenge(level, seed, Speech.of(ask), doors, sequence, show, Speech.of("$lead$remember"))
     }
 
     /** A short song on three bells: longer and quicker with level, and from level 3 a bell can ring twice in a row. */

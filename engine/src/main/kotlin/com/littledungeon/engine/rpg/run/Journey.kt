@@ -188,7 +188,7 @@ class Journey(
 
     // ------------------------------------------------------------- helpers shared by the parts
 
-    internal val cast: Set<Actor> get() = setOf(Actor.HERO, Actor.COMPANION)
+    internal val cast: Set<Actor> get() = setOf(Actor.HERO, Actor.COMPANION) + listOfNotNull(if (arc.companion == "ruby") Actor.RUBY else null)
 
     internal fun scene(
         place: Place, vararg extra: Actor, mood: Mood = Mood.CALM, cleared: Boolean = false,

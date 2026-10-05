@@ -386,5 +386,97 @@ object CoreArcs {
         ),
     )
 
-    val all = listOf(missingPages, lonelyDragon, lanternNight, inkShadow)
+    /**
+     * "Princess Ruby and the Wandering Doors": doors are appearing in Gloomwood Mine where no doors should be, and Princess Ruby, who does not wait in
+     * towers to be rescued, comes to ask for help. She goes with the hero for the whole story and is on stage in every scene. The golden doorknob
+     * (kept by the Mossy Golem) opens the Hall of Doors, where Knocker the Door Warden has lost track of his doors.
+     */
+    val rubysQuest = Arc(
+        id = "ruby_quest",
+        title = "Princess Ruby and the Wandering Doors",
+        lairId = "lair_doors",
+        keyDungeonId = "gloomwood_mine",
+        keyItemId = "golden_knob",
+        bossId = "knocker",
+        companion = "ruby",
+        setup = listOf(
+            "Something strange is happening in Gloomwood Mine. Doors are appearing in the tunnels where no doors should be, and nobody knows where they lead.",
+            "<hoot>Ah, and here is Princess Ruby herself, come all the way from the castle to ask for your help.",
+            "<ruby>Hello! I am Ruby. I do not wait in a tower to be rescued. I go and find out what is wrong. Something is moving the doors, and I need somebody who is good at remembering them. Will you come?",
+            "<pet>Yes! A real princess adventure!",
+            "<hoot>Be careful. You will need the golden doorknob, which opens any door. The Mossy Golem has been playing with it, deep in Gloomwood Mine.",
+        ),
+        sealed = "A great stone archway stands alone in the field, and its doors will not open for any push or pull. <ruby>It needs the golden doorknob. The Professor said the Mossy Golem has it, in Gloomwood Mine.",
+        keyFound = "<ruby>The golden doorknob! It shines like a little sun. Come on, let's find whoever keeps these doors!",
+        gateOpens = "You fit the golden doorknob to the great doors, and they swing open with a creak. Inside, a hundred doors stand in rows, and every one of them is moving, just a little, as if it were breathing.",
+        ask = "What will you do about the Door Warden?",
+        fightLabel = "Face the warden",
+        peaceLabel = "Knock politely",
+        peaceSteps = listOf(
+            PeaceStep(
+                "doors", "<knocker>If you want to talk, show me you can remember my doors.", "<knocker>You remembered! Nobody has ever remembered my doors before.",
+                skippedBy = "knows_doors_remember",
+                skipNote = "<knocker>You already know why I lose track of my doors? Then you know how to help. You may skip my game.",
+            ),
+            PeaceStep("map", "<knocker>My doors lead everywhere, and I forget the way. Help me follow the map.", "<knocker>That is the way! I remember it now."),
+            PeaceStep("pattern", "<knocker>My doors come in a pattern, and I have lost it. What comes next?", "<knocker>Yes! That is the pattern. The doors know their places again."),
+        ),
+        returnSetup = listOf(
+            "The doors in Gloomwood Mine are wandering again, and Princess Ruby has sent for you.",
+            "<ruby>I knew you would come back! Come on, the doors will not wait.",
+        ),
+        friendMeeting = "Knocker waits at the great doors, with his knocker ring polished and a welcome mat under his boots. <knocker>My friend! I have lost track of the doors again. Will you help me? <ruby>He is asking for help, not for a fight!",
+        friendSteps = listOf(
+            PeaceStep("doors", "<knocker>Help me remember my doors.", "<knocker>Yes! That is where they go."),
+            PeaceStep("map", "<knocker>Now help me follow the map.", "<knocker>That is the way. Thank you, my friend."),
+        ),
+        friendEnd = "Every door in the hall settles into its place, and Knocker rings his knocker in a happy little tune. A page of the Storybook is waiting behind the biggest door. <knocker>Whatever else happens, my doors are always open to you. <ruby>That is the best welcome of all.",
+        rivalMeeting = "Knocker slams every door in the hall at once. <knocker>You are the one who knocked me down. This time, my doors will not open for you.",
+        moments = listOf(
+            Moment(
+                "mossbrook",
+                "Mayor Tilly waits by the well with a basket of rolls for the princess. <tilly>The bakery has grown a new door, dear, and the door is walking about. Bun is delighted, of course.",
+                needs = listOf(Cond.Flag("tilly_thanked")),
+            ),
+            Moment(
+                "hermit_hill",
+                "Hazel waves from the top of the rope ladder. <hazel>Doors that wander? Now that is a riddle. Tell me when you have solved it.",
+                needs = listOf(Cond.Flag("hazel_friend")),
+            ),
+            Moment("pennywhistle", "A door is leaning against Zig's stall with a price tag hanging from its handle. <zig>Only three coins, and it comes with a free mystery! <ruby>Do not buy it. It belongs to the Warden."),
+            Moment(
+                "whispering_falls",
+                "A door stands in the middle of the waterfall, and the water runs right around it. <ruby>It goes nowhere at all. Somebody has forgotten where each door belongs.",
+                effects = listOf(Effect.SetFlag("knows_doors_remember")),
+            ),
+            Moment(
+                "gloomwood_mine",
+                "Chalk marks cover a door deep in the mine: a green door, a red door, a blue door, over and over. <ruby>Somebody was counting them. It says, they move when nobody looks. Remember where each one was.",
+                effects = listOf(Effect.SetFlag("knows_doors_remember")),
+            ),
+            Moment("fishers_dock", "Finn is rowing a door across the lake like a raft. <finn>It floated by this morning. Handy, though. It has a very good knocker."),
+        ),
+        variants = listOf(
+            Variant(
+                "lost_keys",
+                "A tall wooden door stands in the middle of the hall, patting its own pockets. <knocker>My keys! I have lost my keys, and now I cannot keep track of my doors. <ruby>He is not a villain. He is lost!",
+                "The Door Warden creaks and slams, and every door in the hall falls still. <knocker>I only wanted my keys back. <narrator>The doors line up in rows, and a page of the Storybook slides out from under the very last one. <ruby>Maybe we should have looked for his keys first.",
+                "You help the Warden remember every door, one by one, until each is back in its place. <knocker>I never lost my keys at all. They were in my other pocket! <narrator>The doors settle down, and a page of the Storybook is waiting behind the biggest one. <ruby>That was the nicest adventure I ever had.",
+            ),
+            Variant(
+                "lonely_warden",
+                "The Door Warden bangs every door in the hall, one after another. <knocker>Nobody ever knocks. Nobody ever comes in. I move my doors about, to see if anyone will notice. <ruby>He is lonely, and he is knocking at himself!",
+                "The Warden slumps against the wall, and the banging stops. <knocker>Well, at least somebody noticed. <narrator>The doors stand still, and a page of the Storybook drifts down from the top of the tallest one. <ruby>Next time, let's knock first.",
+                "You knock on the Warden's own door, three times, very politely. <knocker>Somebody knocked! Come in, come in! <narrator>He opens himself wide, and inside there is a tiny, cozy room with a kettle on. A page of the Storybook is under the teacups. <ruby>I will bring cake next time.",
+            ),
+            Variant(
+                "rewritten_doors",
+                "The Warden holds a page of the Storybook in his knocker ring. <knocker>It says every door must lead somewhere new. I am only doing what it says! <ruby>The page is rewriting the doors!",
+                "The Warden drops the page, and the doors stop wandering at once. <knocker>I did not mean any harm. <narrator>You carry the page home, and it is only a little crumpled. <ruby>A page that rewrites doors. I wonder what else it can rewrite.",
+                "You read the page aloud, all the way to the end, and the last line says that a door may lead home, too. <knocker>Home. I had forgotten that doors could do that. <narrator>Every door in the hall swings gently toward the way back, and the page is yours to keep. <ruby>Now every door knows where home is.",
+            ),
+        ),
+    )
+
+    val all = listOf(missingPages, lonelyDragon, lanternNight, rubysQuest, inkShadow)
 }

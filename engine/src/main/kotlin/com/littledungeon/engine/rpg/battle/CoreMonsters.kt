@@ -180,6 +180,13 @@ object CoreMonsters {
             coins = 20..30, drops = listOf(Drop("storybook_page", 100)),
         ),
         Monster(
+            "knocker", "Knocker the Door Warden", Tier.BOSS, 60, 8, listOf(PATTERNS, COLORS, COUNTING), Who.KNOCKER,
+            "A tall wooden door stomps out of the dark on two little boots. <knocker>I am Knocker, the Door Warden! Nobody opens my doors without knocking first!",
+            "The Door Warden creaks, and his knocker rings softly. <knocker>All right, all right. Maybe I forgot where I put them.",
+            "The Door Warden slams, and you bounce right out into the cold.",
+            coins = 20..30, drops = listOf(Drop("storybook_page", 100)), befriendable = true, weakness = "friendship_cookie",
+        ),
+        Monster(
             "big_dragon", "The Dragon", Tier.BOSS, 68, 9, listOf(NUMBERS, ADDITION, COUNTING, COLORS, LETTERS), Who.DRAGON,
             "The great dragon opens one golden eye. <dragon>Who dares come into my lair?",
             "The dragon lowers its great head. <dragon>You are very brave. Maybe I was wrong about you.",

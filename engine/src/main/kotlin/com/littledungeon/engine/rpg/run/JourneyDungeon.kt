@@ -193,6 +193,7 @@ internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge =
     "bats" -> PictureFactory.share(level(Skill.SHARING), nextSeed(), step.intro, PictureFactory.ShareTheme.BATS)
     "map" -> PictureFactory.map(level(Skill.MAPS), nextSeed(), step.intro)
     "bells" -> ChallengeFactory.bells(level(Skill.LISTENING), nextSeed(), step.intro)
+    "doors" -> ChallengeFactory.memory(level(Skill.MEMORY), nextSeed(), step.intro)
     "trace" -> if (level(Skill.TRACING) <= 2) ChallengeFactory.wire(level(Skill.TRACING), nextSeed(), step.intro) else traceStep(step, "to light the lanterns.")
     "write" -> traceStep(step, "to draw on the page.")
     else -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")

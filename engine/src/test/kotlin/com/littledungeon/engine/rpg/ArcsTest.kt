@@ -93,7 +93,7 @@ class ArcsTest {
         assertEquals(stories.size, stories.map { it.lairId }.toSet().size, "each story has its own lair")
         assertEquals(stories.size, stories.map { it.keyItemId }.toSet().size, "and its own key (the finale is told at the first story's lair, with its key)")
         assertEquals(1, Content.arcs.count { it.finale }, "one finale closes the book")
-        val kinds = setOf("letters", "pattern", "colors", "numbers", "count", "rhyme", "money", "share", "bats", "map", "bells", "trace", "write")
+        val kinds = setOf("letters", "pattern", "colors", "numbers", "count", "rhyme", "money", "share", "bats", "map", "bells", "trace", "write", "doors")
         for (arc in Content.arcs) {
             assertEquals(LocationKind.LAIR, Content.kingdom.location(arc.lairId).kind, arc.id)
             assertEquals(LocationKind.DUNGEON, Content.kingdom.location(arc.keyDungeonId).kind, arc.id)
@@ -170,11 +170,27 @@ class ArcsTest {
         assertEquals(3, bats)
         assertEquals(2, batsKnown)
         assertTrue(heardBats.any { "You may skip the bells" in it })
+        val (doors, _) = lairAsks("ruby_quest", emptySet())
+        val (doorsKnown, heardDoors) = lairAsks("ruby_quest", setOf("knows_doors_remember"))
+        assertEquals(3, doors)
+        assertEquals(2, doorsKnown)
+        assertTrue(heardDoors.any { "You may skip my game" in it })
         val (shadow, _) = lairAsks("ink_shadow", emptySet())
         val (shadowKnown, heardShadow) = lairAsks("ink_shadow", setOf("knows_shadow_lonely"))
         assertEquals(3, shadow)
         assertEquals(2, shadowKnown)
         assertTrue(heardShadow.any { "We can skip the writing lesson" in it })
+    }
+
+    @Test
+    fun `Ruby goes with the hero through her whole story, and only hers`() {
+        val ruby = com.littledungeon.engine.rpg.run.Actor.RUBY
+        val hers = play(journeyFor("ruby_quest"), peace = true)
+        assertTrue(hers.all { ruby in it.scene.cast }, "Ruby is on stage in every scene of her story")
+        assertTrue(hers.any { "I do not wait in a tower" in said(it) })
+        for (id in listOf("lonely_dragon", "lantern_night", "ink_shadow")) {
+            assertTrue(play(journeyFor(id), peace = true).none { ruby in it.scene.cast }, "$id has no Ruby")
+        }
     }
 
     @Test
