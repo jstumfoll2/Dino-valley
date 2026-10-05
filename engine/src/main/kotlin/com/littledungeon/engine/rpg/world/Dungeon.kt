@@ -18,12 +18,12 @@ enum class RoomKind(val skill: Skill?) {
     POND(Skill.SKIP_COUNTING),
     MOSAIC_HALL(Skill.PUZZLES),
 
-    /** Reserved for the potion workshop minigame (the recipe challenge exists; no room deals it yet). */
+    /** A potion workshop: read a recipe, then brew it (see `ChallengeFactory.recipe`). */
     WORKSHOP(Skill.RECIPES),
     ;
 
     companion object {
         /** The rooms a dungeon deals from. */
-        val learningRooms = listOf(RUNE_DOOR, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, STOREROOM, POND, MOSAIC_HALL)
+        val learningRooms = listOf(RUNE_DOOR, BRIDGE, CRYSTAL_CAVE, LIBRARY, TUNNEL, MIRROR_HALL, VAULT, STOREROOM, POND, MOSAIC_HALL, WORKSHOP)
     }
 }

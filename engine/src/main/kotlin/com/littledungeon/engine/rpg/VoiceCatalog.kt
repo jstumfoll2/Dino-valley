@@ -143,6 +143,12 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         for (thing in Thing.entries) hear(Speech.of(addStory("", thing, have, more, missing)))
         hear(Speech.of(vaultStory(have, more, missing)))
     }
+    // Every recipe a workshop can ask for: each step is its own sentence, so a few hundred recipes reach them all.
+    for (level in 1..5) for (potion in com.littledungeon.engine.rpg.learn.PotionKind.entries) for (seed in 0L until 150L) {
+        val recipe = ChallengeFactory.recipe(level, seed, potion)
+        hear(recipe.prompt)
+        recipe.riddle?.let { hear(it) }
+    }
     // Everything the stories and people say, whether or not random play happened to reach it in this world.
     for (arc in Content.arcs) {
         val said = arc.setup + arc.returnSetup + listOfNotNull(arc.sealed, arc.keyFound, arc.gateOpens, arc.ask, arc.friendMeeting, arc.friendEnd, arc.rivalMeeting) +

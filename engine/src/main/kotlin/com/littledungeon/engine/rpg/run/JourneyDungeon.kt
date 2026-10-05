@@ -84,6 +84,11 @@ internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JSt
         )
         RoomKind.STOREROOM -> Room5(rooms.storeroom(), ChallengeFactory.sort(lv(Skill.SORTING), seed), rooms.storeroomOops(), rooms.storeroomYay(), Obstacle.RIDDLE)
         RoomKind.POND -> Room5(rooms.pond(), ChallengeFactory.skipCount(lv(Skill.SKIP_COUNTING), seed), rooms.pondOops(), rooms.pondYay(), Obstacle.CROSS)
+        RoomKind.WORKSHOP -> Room5(
+            rooms.workshop(),
+            ChallengeFactory.recipe(lv(Skill.RECIPES), seed, com.littledungeon.engine.rpg.learn.PotionKind.entries[(seed and 0x7fffffff).toInt() % com.littledungeon.engine.rpg.learn.PotionKind.entries.size]),
+            rooms.workshopOops(), rooms.workshopYay(), Obstacle.RIDDLE,
+        )
         else -> Room5(rooms.mosaic(), ChallengeFactory.puzzle(lv(Skill.PUZZLES), seed), rooms.mosaicOops(), rooms.mosaicYay(), Obstacle.RIDDLE)
     }
     return listOf(tell(s, intro), askOnce(s, c, oops, yay, obstacle, onWin = { solved() }, onFail = { listOf(tell(s, say.failedFor(obstacle))) + failed() }))

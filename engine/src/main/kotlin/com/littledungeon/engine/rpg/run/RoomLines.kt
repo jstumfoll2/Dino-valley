@@ -114,6 +114,12 @@ internal class RoomLines(private val r: Random) {
 
     fun mosaicYay() = pick("The picture is whole again! It sparkles, and the door opens.", "You fixed it! The magic picture glows!")
 
+    fun workshop() = pick("A potion workshop! A big cauldron bubbles, and a recipe card hangs on the wall.", "Shelves of berries, leaves and crystals line this workshop. The cauldron is waiting for a recipe.")
+
+    fun workshopOops() = pick("Blub. That is not in the recipe. Read the card again!", "Fizz, pop! Wrong ingredient. Look at the recipe!")
+
+    fun workshopYay() = pick("The potion glows and bubbles. You are a real potion maker!", "Perfect! The cauldron sparkles, and the door opens.")
+
     fun vault() = pick("A treasure vault! A big chest with a magic lock sits in the middle.", "Gold glitters everywhere! This is a treasure vault.")
 
     fun vaultOops() = pick("[coins] The coins jump back out of your bag.", "The chest burps! [burp]")
