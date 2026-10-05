@@ -120,6 +120,8 @@ object BalanceSim {
                     }
                 }
                 is Beat.Choose -> {
+                    // The same announcement as a story beat: a monster turns up, and the fight starts if the child chooses it.
+                    if (Voice.caption(b.prompt).let { "blocks the way" in it || "Here comes a" in it }) ambush = true
                     batch.menus++
                     if (b.options.isNotEmpty() && b.options.all { it.icon == "talk_fight" }) batch.forcedFights++
                     Reply.Picked(r.nextInt(b.options.size))

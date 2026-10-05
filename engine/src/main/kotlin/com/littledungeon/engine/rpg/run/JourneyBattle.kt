@@ -38,6 +38,19 @@ private fun Journey.scaled(m: Monster): Fight {
 }
 
 /**
+ * A monster turns up on the way and the child decides: fight it (two pictures, the swords and the way out), or slip away, which is
+ * [retreat]. Asking "what will you do?" and then fighting whatever was answered was a question with no choice in it.
+ */
+internal fun Journey.encounter(m: Monster, s: Scene, retreat: () -> List<JStep>, onWin: () -> List<JStep>): List<JStep> {
+    val choices = listOf(Choice("talk_fight", "Fight"), Choice("hub_leave", "Go away"))
+    return listOf(
+        JStep(Beat.Choose(s, Speech.of(say.fightAsk(m.name.lowercase())), choices)) { reply ->
+            if ((reply as? Reply.Picked)?.index == 1) retreat() else battle(m, s.place, onWin)
+        },
+    )
+}
+
+/**
  * A fight. A win goes on to [onWin]; being knocked out carries the hero to the nearest safe place
  * (the camp or a town they have been to) with a quarter of their coins lost; the smoke pearl lets
  * them slip away to [onEscape].

@@ -96,7 +96,7 @@ internal fun Journey.wildEvent(l: Location, s: Scene): List<JStep> = when (rando
     in 25 until 40 -> shrineEvent(s)
     in 40 until 65 -> {
         val m = roadMonster(Terrain.FOREST, 1 + random.nextInt(2))
-        listOf(tell(s, say.fightAsk(m.name.lowercase()))) + battle(m, s.place, onWin = { emptyList() })
+        encounter(m, s, retreat = { listOf(tell(s, say.sneakAway())) }, onWin = { emptyList() })
     }
     in 65 until 80 -> wandererEvent(s)
     else -> hiddenRoom(s)

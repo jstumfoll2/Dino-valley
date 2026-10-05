@@ -3,7 +3,11 @@ package com.littledungeon.engine.rpg
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.hero.Hero
 import com.littledungeon.engine.rpg.learn.SkillBook
+import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Journey
+import com.littledungeon.engine.rpg.run.Place
+import com.littledungeon.engine.rpg.run.Reply
+import com.littledungeon.engine.rpg.run.encounter
 import com.littledungeon.engine.rpg.run.roadMonster
 import com.littledungeon.engine.rpg.run.tollCheck
 import com.littledungeon.engine.rpg.story.Effect
@@ -39,6 +43,20 @@ class WorldRulesTest {
                 assertTrue(m.id !in storyFoes, "${m.id} turned up on a ${terrain.word}")
             }
         }
+    }
+
+    @Test
+    fun `a monster on the way is a choice, fight it or go away`() {
+        // The narrator used to ask "what will you do?" and then start the fight whatever the child did.
+        val j = journey()
+        val monster = Content.monsters.first { it.roams }
+        var wentAway = false
+        val ask = j.encounter(monster, j.scene(Place.CAMP), retreat = { wentAway = true; emptyList() }, onWin = { emptyList() }).single()
+        val menu = ask.beat as Beat.Choose
+        assertEquals(listOf("talk_fight", "hub_leave"), menu.options.map { it.icon })
+        assertTrue(ask.then(Reply.Picked(1)).isEmpty() && wentAway, "going away starts no fight")
+        val fight = ask.then(Reply.Picked(0))
+        assertNotNull(fight.first().beat.scene.battle, "fighting starts with the monster in the scene")
     }
 
     @Test

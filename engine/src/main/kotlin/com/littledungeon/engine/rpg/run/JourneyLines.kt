@@ -256,6 +256,11 @@ internal class JourneyLines(private val r: Random) {
 
     fun wakeUp(place: String) = pick("You wake up in $place, safe and sound.", "You open your eyes. You are back in $place, feeling a little better.")
 
+    /** Choosing not to fight on a road: the hero goes back, and the road is not closed (it is only closed when a puzzle is failed). */
+    fun backAway(from: String) = pick("You back away slowly and go back to $from. <pet>Maybe there is another way!", "You hurry back to $from. <pet>Let's try a different road!")
+
+    fun sneakAway() = pick("You tiptoe away before it notices you. <pet>Phew!", "You slip away quietly. <pet>That was close!")
+
     fun fightAsk(foe: String) = pick("A $foe blocks the way! What will you do?", "Here comes a $foe! Fight, or find another way?")
 
     // ------------------------------------------------------------- shops and inns

@@ -179,7 +179,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     for (l in Content.locations) repeat(30) {
         for (line in listOf(
             lines.arriveTown(l.name), lines.arriveWild(l.name), lines.hubAsk(l.name), lines.quiet(l.name), lines.dungeonAsk(l.name), lines.dungeonEnter(l.name),
-            lines.alreadyDone(l.name), lines.dungeonDone(l.name), lines.thrownOut(l.name), lines.turnedBack(l.name), lines.blockedRoad(l.name), lines.wakeUp(l.name),
+            lines.alreadyDone(l.name), lines.dungeonDone(l.name), lines.thrownOut(l.name), lines.turnedBack(l.name), lines.backAway(l.name), lines.blockedRoad(l.name), lines.wakeUp(l.name),
         )) hear(Speech.of(line))
         for (terrain in Terrain.entries) for (danger in listOf(null, 0, 1, 2)) for (visited in listOf(false, true)) for (marked in listOf(false, true)) {
             hear(Speech.of(lines.routeSaid(l.name, terrain, danger, visited, marked)))
