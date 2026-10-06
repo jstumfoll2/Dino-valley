@@ -63,4 +63,8 @@ data class Arc(
     val friendEnd: String? = null,
     /** At the lair when the hero fought and beat the boss in an earlier adventure. */
     val rivalMeeting: String? = null,
+    /** Someone who goes with the hero for the whole story and is on stage in every scene of it: "ruby". */
+    val companion: String? = null,
+    /** The story that closes a Storybook: told when four pages are home, never before, and followed by the ball. */
+    val finale: Boolean = false,
 )

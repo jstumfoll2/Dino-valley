@@ -1328,3 +1328,77 @@ The same screen shows how each skill is going from the challenge log (`progressO
 not bad. The adding counts as practice for addition. It reuses the dice screen and lines that were kept for it.
 
 **What might cause us to change it:** Dice screens feel like a detour; the other minigames are the better use of the slot.
+
+### 64. Kokoro v1.0, and a voice of their own for every named character
+
+**Status:** Accepted · 2026-10-05 · refines #43 and #45
+
+**Decision:** The voice moves from Kokoro v0.19 (11 speakers) to Kokoro v1.0 (`kokoro-int8-multi-lang-v1_0`, 54 speakers, 28 of them English), still
+through sherpa-onnx (1.13.8 is the latest release). Each of the 21 named voices (the narrator, the baby dragon and nineteen people) has a speaker of its own and no pitch change; the big dragon, the
+Shadow and the kinds of creature share a speaker with someone but differ in pitch and pace. `VoiceCastTest` holds this. Every recording changes (the voice id is part of its fingerprint),
+so the next build records everything again. The model grows from the v0.19 English one by about the lexicon (6 MB).
+
+**Why we made it:** The review found twenty characters sharing six speakers. **What might cause us to change it:** Someone hears the cast and wants other speakers; the first-run recording time.
+
+### 65. Rhymes, money, sharing, maps and the trip are skills with picture puzzles of their own
+
+**Status:** Accepted · 2026-10-05 · extends #54 and answers review finding T6
+
+**Decision:** Five skills the brief asked for and the game never asked are added: rhymes and first sounds, money, sharing, maps (a route on a grid, from "go right two steps" to north,
+south, east and west) and story (remember the trip). All but maps are one generic challenge, `PictureChallenge`: a picture, some answer cards (pictures or numbers) and a spoken reason for the right one,
+so a new puzzle of this kind is a generator in `PictureFactory` and not a new screen. The treasure map is a `GridChallenge`. They are dealt at obstacles (costumes), never in fights, so a
+monster's own tricks stay the six original skills. At the end of every journey that went far enough, before the page and the stars, the child is asked to tell the trip back (`recap`).
+Every sentence they make is built from small sets, so the voice catalog lists them all (#59).
+
+**Why we made it:** The review measured recipes, maps, rhymes and money at 0% of puzzles. **What might cause us to change it:** A playtest that finds the picture cards too like each other;
+a better reading of "money" than coins that add up.
+
+### 66. Writing starts with lines and shapes, not letters
+
+**Status:** Accepted · 2026-10-05 · refines #48
+
+**Decision:** The tunnel room's tracing climbs the pre-writing ladder: a line and a curve (level 1), a zigzag, a loop, a circle and a triangle (level 2), then letters from the straight ones
+to the twisty ones (levels 3 to 5). The same ladder serves the Bat King's glowing path.
+
+**Why we made it:** The review found that the game asked for letters from the first puzzle, skipping the strokes they are made of.
+
+### 67. Sir Ribbit's Bell Song: a listening skill, judged in the engine
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** A new skill, listening: three bells of different pitch (a fourth and a fifth apart, so they are easy to tell apart) ring a song of two to five bells, and the child plays it back. The
+bells are synthesized by `scripts/make-sfx.py` (CC0 by construction) and carry the color marks. A bell rings its own note when tapped, right or wrong, so the child hears what was played; a miss rings the song
+again and they start over; the next bell glows after a second miss. The judge is `BellChallenge.expects` in the engine, tested without a screen, which is the first step of plan item 2.8
+for a new puzzle (the older ones still judge in the app). The bell tower is a room dungeons can deal, and the same bells are a step on the Bat King's peaceful way.
+
+**What might cause us to change it:** Children who cannot hear the difference between the notes (the light and the swing carry the same information, so the puzzle still works silently).
+
+### 68. Book One has several stories, and what the child learned on the way spares a puzzle
+
+**Status:** Accepted · 2026-10-05 · extends #51; first part of review phase 7
+
+**Decision:** Besides the Baron's missing pages there are now "The Dragon Who Did Not Want to Fight" (the stone key from Gloomwood Mine, the gate of Dragon's Peak) and "The Night of a Thousand Lanterns"
+(glow-silk from the Spider Caves, the Bat Belfry). Each has its own lair, key, boss, three ways of being told and a peaceful way made of the new puzzles (rhymes, sharing and money for the dragon; bells, tracing and
+sharing for the bats). Each reads at least two things the world remembered from earlier adventures (a friend made at the bridge, the pass or the lamp shop; a friend made of the Baron) and
+has a clue that spares a puzzle when it was found on the way. A boss made a friend asks for help next time and a beaten one remembers it, as before (#56). The other roadmap stories still need people or places that do not exist yet; the plan says which.
+
+**Why we made it:** The review's first finding: there was one story. **What might cause us to change it:** Playtests that find the order of stories matters (which should come second).
+
+### 69. New pictures are looked at before they are installed
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** Art is built to a scratch folder first (`art/preview.py`), opened and checked against the list in `docs/art-plan.md`, laid over the screen it is for, and only then written into the app. What each
+look found is kept in that document's log.
+
+**Why we made it:** Several of the review's layering faults were pictures that were fine alone and wrong on stage. **What might cause us to change it:** Screenshot tests (plan step 4.6) doing the checking.
+
+### 70. A story can bring a companion, and one more lair
+
+**Status:** Accepted · 2026-10-05 · extends #68
+
+**Decision:** An `Arc` can name a `companion` ("ruby"): she is on stage in every scene of that story, next to the hero and the baby dragon, and speaks with her own tag. The fifth story,
+Princess Ruby and the Wandering Doors, uses it. It has a new lair (the Hall of Doors, drawn on the map and shown on the old rune-hall backdrop), a new key (the golden doorknob) and a new boss
+(Knocker the Door Warden, whose picture and creaky voice are new). Ruby's picture and voice existed from the first game; the stage already knew how to draw her.
+
+**Why we made it:** The review's third story, and the cheapest way to show a second companion without a new screen. **What might cause us to change it:** A second companion crowding the stage on a small phone (the answers' zone starts at 40% of the width).

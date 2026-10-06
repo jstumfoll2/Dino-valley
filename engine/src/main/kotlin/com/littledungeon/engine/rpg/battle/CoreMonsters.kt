@@ -76,9 +76,9 @@ object CoreMonsters {
 
     val rogues = listOf(
         Monster(
-            "sneaky_fox", "Sneaky Fox", Tier.MINION, 16, 4, listOf(LETTERS, COLORS), Who.SNEAK,
-            "A fox pops out from behind a crate. <sneak>You want it back? Then catch me, if you can!",
-            "The fox drops what it was holding. <sneak>Fine, fine. You are quicker than you look.",
+            "sneaky_fox", "Sneaky Fox", Tier.MINION, 16, 4, listOf(LETTERS, COLORS), Who.RASCAL,
+            "A fox pops out from behind a crate. <rascal>You want it back? Then catch me, if you can!",
+            "The fox drops what it was holding. <rascal>Fine, fine. You are quicker than you look.",
             "The fox darts around you so fast that you get dizzy and sit down.",
             coins = 3..6, roams = false,
         ),
@@ -110,9 +110,9 @@ object CoreMonsters {
             habitat = setOf(Terrain.FOREST, Terrain.MOUNTAIN),
         ),
         Monster(
-            "bandit_bess", "Bandit Bess", Tier.ELITE, 28, 6, listOf(PATTERNS, NUMBERS, ADDITION), Who.SNEAK,
-            "A bandit swings down from a rock. <sneak>This is my pass. Pay up, or play for it!",
-            "Bess lowers her fists and sits down hard. <sneak>All right, all right. I give up. Nobody ever beat me before.",
+            "bandit_bess", "Bandit Bess", Tier.ELITE, 28, 6, listOf(PATTERNS, NUMBERS, ADDITION), Who.BESS,
+            "A bandit swings down from a rock. <bess>This is my pass. Pay up, or play for it!",
+            "Bess lowers her fists and sits down hard. <bess>All right, all right. I give up. Nobody ever beat me before.",
             "Bess tips her hat, gives you a gentle shove, and everything goes dim.",
             coins = 8..12, drops = listOf(Drop("bubble_shield", 30)), befriendable = true, roams = false,
         ),
@@ -135,9 +135,9 @@ object CoreMonsters {
             coins = 12..18, drops = listOf(Drop("knight_sword", 15), Drop("big_potion", 40)), weakness = "spark_bomb",
         ),
         Monster(
-            "grumble_troll", "Grumble the Troll", Tier.MINI_BOSS, 48, 7, listOf(ADDITION, NUMBERS, SKIP_COUNTING), Who.GROWLER,
-            "Grumble the troll blocks the bridge. <growler>This is my bridge. Nobody crosses. Nobody ever asks me how I am.",
-            "Grumble sits down with a thump. <growler>Hmm. You listened. Nobody listens. You can cross, friend.",
+            "grumble_troll", "Grumble the Troll", Tier.MINI_BOSS, 48, 7, listOf(ADDITION, NUMBERS, SKIP_COUNTING), Who.GRUMBLE,
+            "Grumble the troll blocks the bridge. <grumble>This is my bridge. Nobody crosses. Nobody ever asks me how I am.",
+            "Grumble sits down with a thump. <grumble>Hmm. You listened. Nobody listens. You can cross, friend.",
             "Grumble stomps and the whole bridge shakes you back to the start.",
             coins = 12..18, drops = listOf(Drop("friendship_cookie", 50)), befriendable = true, weakness = "friendship_cookie",
         ),
@@ -149,11 +149,11 @@ object CoreMonsters {
             coins = 12..18, drops = listOf(Drop("owl_feather", 50)), weakness = "lantern",
         ),
         Monster(
-            "bat_king", "The Bat King", Tier.MINI_BOSS, 42, 7, listOf(COLORS, COUNTING, NUMBERS), Who.CRITTER,
-            "A giant bat unfolds from the ceiling, wearing a tiny crown. <critter>I am the Bat King! All the lanterns in the kingdom belong to me!",
-            "The Bat King's crown slips down over his eyes. <critter>Oh dear. Maybe I should share.",
-            "The Bat King swoops, and the whole cave goes upside down.",
-            coins = 12..18, drops = listOf(Drop("lantern", 60)), weakness = "lantern",
+            "bat_king", "The Bat King", Tier.BOSS, 56, 8, listOf(COLORS, COUNTING, NUMBERS), Who.BATKING,
+            "A bat as big as a door unfolds from the rafters, wearing a tiny crown. <batking>I am the Bat King! Every lantern in the belfry belongs to me!",
+            "The Bat King's crown slips down over his eyes. <batking>Oh dear. Maybe I should share.",
+            "The Bat King swoops, and the whole belfry goes upside down.",
+            coins = 20..30, drops = listOf(Drop("storybook_page", 100)), befriendable = true, weakness = "lantern",
         ),
         Monster(
             "inky_imp", "Inky Imp", Tier.MINI_BOSS, 40, 6, listOf(LETTERS, PATTERNS, COLORS), Who.SNEAK,
@@ -178,6 +178,13 @@ object CoreMonsters {
             "The Ink Shadow shrinks into a tiny blot. <shadow>I only wanted to draw. Nobody ever gave me a page of my own.",
             "The Ink Shadow scribbles on you, and you wake up somewhere safe.",
             coins = 20..30, drops = listOf(Drop("storybook_page", 100)),
+        ),
+        Monster(
+            "knocker", "Knocker the Door Warden", Tier.BOSS, 60, 8, listOf(PATTERNS, COLORS, COUNTING), Who.KNOCKER,
+            "A tall wooden door stomps out of the dark on two little boots. <knocker>I am Knocker, the Door Warden! Nobody opens my doors without knocking first!",
+            "The Door Warden creaks, and his knocker rings softly. <knocker>All right, all right. Maybe I forgot where I put them.",
+            "The Door Warden slams, and you bounce right out into the cold.",
+            coins = 20..30, drops = listOf(Drop("storybook_page", 100)), befriendable = true, weakness = "friendship_cookie",
         ),
         Monster(
             "big_dragon", "The Dragon", Tier.BOSS, 68, 9, listOf(NUMBERS, ADDITION, COUNTING, COLORS, LETTERS), Who.DRAGON,

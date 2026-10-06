@@ -30,7 +30,8 @@ class BalanceTest {
         val strong = BalanceSim.run(0.9, children = 6, journeysEach = 8)
         // Before: a child who got 60 percent right was at level 5 in every skill after ten journeys.
         assertTrue(weak.meanLevel() <= 2.0, "a 60% child should not be pushed up: mean level ${weak.meanLevel()}")
-        assertTrue(strong.meanLevel() >= weak.meanLevel() + 1.0, "a 90% child should be well ahead of a 60% one: ${strong.meanLevel()} vs ${weak.meanLevel()}")
+        // Ten kinds of pick-one puzzle share the practice now (it was seven), so each of the everyday ones climbs more slowly: the gap is smaller, not gone.
+        assertTrue(strong.meanLevel() >= weak.meanLevel() + 0.75, "a 90% child should be well ahead of a 60% one: ${strong.meanLevel()} vs ${weak.meanLevel()}")
     }
 
     @Test

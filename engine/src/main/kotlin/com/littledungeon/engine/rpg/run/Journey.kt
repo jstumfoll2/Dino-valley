@@ -98,12 +98,13 @@ class Journey(
     internal var faints = 0
     internal var slips = 0
     internal var finishing = false
+    internal var recapped = false
     internal var lastEnding = ""
 
     /** What the hero is carrying and how they are doing, for the corner of the screen. */
-    data class Bag(val hp: Int, val maxHp: Int, val coins: Int, val hasKey: Boolean, val pages: Int)
+    data class Bag(val hp: Int, val maxHp: Int, val coins: Int, val hasKey: Boolean, val pages: Int, val keyItemId: String = "")
 
-    val bag: Bag get() = Bag(hp, hero.maxHp, hero.coins, hero.has(arc.keyItemId), world.pages)
+    val bag: Bag get() = Bag(hp, hero.maxHp, hero.coins, hero.has(arc.keyItemId), world.pages, arc.keyItemId)
 
     /** The shape of the Storybook so far: how many pages are home. */
     val pages: Int get() = world.pages
@@ -187,7 +188,7 @@ class Journey(
 
     // ------------------------------------------------------------- helpers shared by the parts
 
-    internal val cast: Set<Actor> get() = setOf(Actor.HERO, Actor.COMPANION)
+    internal val cast: Set<Actor> get() = setOf(Actor.HERO, Actor.COMPANION) + listOfNotNull(if (arc.companion == "ruby") Actor.RUBY else null)
 
     internal fun scene(
         place: Place, vararg extra: Actor, mood: Mood = Mood.CALM, cleared: Boolean = false,
@@ -369,6 +370,10 @@ internal fun Journey.night(): List<JStep> {
 
 /** The XP and level bookkeeping used when an adventure ends. */
 internal fun Journey.finale(): List<JStep> {
+    if (!recapped) {
+        recapped = true
+        recap()?.let { return it }
+    }
     val earned = stars.values.sum()
     val levelAfter = hero.level
     val unlocked = Progression.unlocksBetween(levelBefore, levelAfter)

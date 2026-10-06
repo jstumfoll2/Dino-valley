@@ -6,6 +6,7 @@ import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.hero.Attribute
 import com.littledungeon.engine.rpg.items.Obstacle
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
+import com.littledungeon.engine.rpg.learn.PictureFactory
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.Words
@@ -75,7 +76,7 @@ internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JSt
         RoomKind.BRIDGE -> Room5(rooms.bridge(), ChallengeFactory.count(lv(Skill.COUNTING), seed, Thing.STONE, "How many stones are on the bridge?"), rooms.bridgeOops(), rooms.bridgeYay(), Obstacle.CROSS)
         RoomKind.CRYSTAL_CAVE -> Room5(rooms.crystalCave(), ChallengeFactory.color(lv(Skill.COLORS), seed, "", speaker = Who.WIZARD), rooms.crystalOops(), rooms.crystalYay(), Obstacle.DARK)
         RoomKind.LIBRARY -> Room5(rooms.library(), ChallengeFactory.letter(lv(Skill.LETTERS), seed, rooms.letterPurpose()), rooms.libraryOops(), rooms.libraryYay(), Obstacle.RIDDLE)
-        RoomKind.TUNNEL -> Room5(rooms.tunnel(), ChallengeFactory.write(lv(Skill.TRACING), seed, rooms.writePurpose()), rooms.tunnelOops(), rooms.tunnelYay(), Obstacle.DARK)
+        RoomKind.TUNNEL -> Room5(rooms.tunnel(), tunnelTrace(lv(Skill.TRACING), seed, rooms.writePurpose()), rooms.tunnelOops(), rooms.tunnelYay(), Obstacle.DARK)
         RoomKind.MIRROR_HALL -> Room5(rooms.mirrorHall(), ChallengeFactory.memory(lv(Skill.MEMORY), seed), rooms.mirrorOops(), rooms.mirrorYay(), Obstacle.RIDDLE)
         RoomKind.VAULT -> Room5(
             rooms.vault(),
@@ -84,6 +85,16 @@ internal fun Journey.roomPuzzle(kind: RoomKind, s: Scene, solved: () -> List<JSt
         )
         RoomKind.STOREROOM -> Room5(rooms.storeroom(), ChallengeFactory.sort(lv(Skill.SORTING), seed), rooms.storeroomOops(), rooms.storeroomYay(), Obstacle.RIDDLE)
         RoomKind.POND -> Room5(rooms.pond(), ChallengeFactory.skipCount(lv(Skill.SKIP_COUNTING), seed), rooms.pondOops(), rooms.pondYay(), Obstacle.CROSS)
+        RoomKind.WORKSHOP -> Room5(
+            rooms.workshop(),
+            ChallengeFactory.recipe(lv(Skill.RECIPES), seed, com.littledungeon.engine.rpg.learn.PotionKind.entries[(seed and 0x7fffffff).toInt() % com.littledungeon.engine.rpg.learn.PotionKind.entries.size]),
+            rooms.workshopOops(), rooms.workshopYay(), Obstacle.RIDDLE,
+        )
+        RoomKind.BELFRY -> Room5(rooms.belfry(), ChallengeFactory.bells(lv(Skill.LISTENING), seed), rooms.belfryOops(), rooms.belfryYay(), Obstacle.RIDDLE)
+        RoomKind.MARKET_STALL -> Room5(rooms.marketStall(), PictureFactory.money(lv(Skill.MONEY), seed), rooms.marketStallOops(), rooms.marketStallYay(), Obstacle.LOCK)
+        RoomKind.RHYME_BRIDGE -> Room5(rooms.rhymeBridge(), PictureFactory.rhyme(lv(Skill.RHYMES), seed), rooms.rhymeBridgeOops(), rooms.rhymeBridgeYay(), Obstacle.CROSS)
+        RoomKind.BAT_CAVE -> Room5(rooms.batCave(), PictureFactory.share(lv(Skill.SHARING), seed), rooms.batCaveOops(), rooms.batCaveYay(), Obstacle.DARK)
+        RoomKind.MAP_ROOM -> Room5(rooms.mapRoom(), PictureFactory.map(lv(Skill.MAPS), seed), rooms.mapRoomOops(), rooms.mapRoomYay(), Obstacle.RIDDLE)
         else -> Room5(rooms.mosaic(), ChallengeFactory.puzzle(lv(Skill.PUZZLES), seed), rooms.mosaicOops(), rooms.mosaicYay(), Obstacle.RIDDLE)
     }
     return listOf(tell(s, intro), askOnce(s, c, oops, yay, obstacle, onWin = { solved() }, onFail = { listOf(tell(s, say.failedFor(obstacle))) + failed() }))
@@ -176,8 +187,23 @@ internal fun Journey.peaceChallenge(step: PeaceStep, boss: Monster): Challenge =
     "pattern" -> ChallengeFactory.pattern(level(Skill.PATTERNS), nextSeed(), step.intro)
     "colors" -> ChallengeFactory.color(level(Skill.COLORS), nextSeed(), step.intro, "gem", speaker = boss.who)
     "numbers" -> ChallengeFactory.numeral(level(Skill.NUMBERS), nextSeed(), step.intro)
+    "rhyme" -> PictureFactory.rhyme(level(Skill.RHYMES), nextSeed(), step.intro)
+    "money" -> PictureFactory.money(level(Skill.MONEY), nextSeed(), step.intro)
+    "share" -> PictureFactory.share(level(Skill.SHARING), nextSeed(), step.intro, PictureFactory.ShareTheme.PLATES)
+    "bats" -> PictureFactory.share(level(Skill.SHARING), nextSeed(), step.intro, PictureFactory.ShareTheme.BATS)
+    "map" -> PictureFactory.map(level(Skill.MAPS), nextSeed(), step.intro)
+    "bells" -> ChallengeFactory.bells(level(Skill.LISTENING), nextSeed(), step.intro)
+    "doors" -> ChallengeFactory.memory(level(Skill.MEMORY), nextSeed(), step.intro)
+    "trace" -> if (level(Skill.TRACING) <= 2) ChallengeFactory.wire(level(Skill.TRACING), nextSeed(), step.intro) else traceStep(step, "to light the lanterns.")
+    "write" -> traceStep(step, "to draw on the page.")
     else -> ChallengeFactory.count(level(Skill.COUNTING), nextSeed(), Thing.GEM, step.intro + " How many gems?")
 }
+
+/** A tracing puzzle in a boss's own words. A line or a shape has no room for them in its sentence, so they go first; a letter's already begin with them. */
+private fun Journey.traceStep(step: PeaceStep, goal: String): Challenge =
+    tunnelTrace(level(Skill.TRACING), nextSeed(), step.intro, goal).let { c ->
+        if (c.glyph == null) c.copy(prompt = Speech.of("${step.intro} ${com.littledungeon.engine.model.Voice.caption(c.prompt)}")) else c
+    }
 
 /** The story ends: a page of the Storybook comes home, and what the child chose is remembered. */
 private fun Journey.ending(l: Location, fought: Boolean, friend: Boolean = false): List<JStep> {
@@ -206,5 +232,31 @@ private fun Journey.ending(l: Location, fought: Boolean, friend: Boolean = false
     steps += item(s, "storybook_page").take(1)
     steps += tell(s, say.pageFound(), say.pagesLine(pagesNow))
     if (pagesNow % BOOK_PAGES == 0) steps += tell(s, say.bookWhole(), say.newBook())
+    if (arc.finale) steps += ball()
     return steps
+}
+
+/** The Storybook Ball, after a book's finale: up to five of the hero's friends (who the world remembers) come, one at a time, and dance. */
+private fun Journey.ball(): List<JStep> {
+    val s = scene(Place.BALLROOM).copy(mood = Mood.HAPPY)
+    val guests = world.flags.filter { it.startsWith("friend:") }.map { it.removePrefix("friend:") }.sorted().mapNotNull { id ->
+        Content.npc(id)?.let { NpcView(it.id, it.name, it.art, it.who) } ?: Content.monster(id)?.let { NpcView(it.id, it.name, it.art, it.who) }
+    }.shuffled(random).take(5)
+    val steps = mutableListOf(tell(s, say.ballIntro()))
+    if (guests.isEmpty()) steps += tell(s, say.ballEmpty())
+    for (g in guests) steps += tell(s.copy(npc = g), say.ballGuest(g.name))
+    steps += tell(s, say.ballEnd())
+    return steps
+}
+
+/**
+ * Learning to write starts before letters: a line, a curve, a zigzag, a loop, a circle and a triangle (levels 1 and 2), then letters from
+ * straight ones to twisty ones (levels 3 to 5). Writing letters from the first level skipped the strokes they are made of.
+ */
+internal fun tunnelTrace(level: Int, seed: Long, purpose: String, goal: String = "to light up the tunnel.") = when (level) {
+    1 -> if (seed % 4L == 1L) ChallengeFactory.wire(1, seed) else ChallengeFactory.trace(1 + (seed and 1L).toInt(), seed, goal)
+    2 -> if (seed % 4L == 1L) ChallengeFactory.wire(2, seed) else ChallengeFactory.trace(3 + ((seed and 0xffffL) % 3).toInt(), seed, goal)
+    3 -> ChallengeFactory.write(1, seed, purpose)
+    4 -> ChallengeFactory.write(2 + (seed and 1L).toInt(), seed, purpose)
+    else -> ChallengeFactory.write(4 + (seed and 1L).toInt(), seed, purpose)
 }

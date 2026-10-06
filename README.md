@@ -7,11 +7,12 @@ rules, procedural generation, good game design, and local data.
 
 **Status:** a playable journey across the kingdom of Whisperwood. The child picks roads on a painted map, makes
 friends in towns, solves puzzles that block the way, fights (and befriends) monsters, and brings a lost page of the
-Storybook home from Baron Grumblewick, with their own baby dragon along. Counting, numbers, adding, colors, patterns,
-letters, skip counting, tracing, memory, sorting and jigsaws are all practiced inside the story, and the game follows
+Storybook home from Baron Grumblewick, a lonely dragon or a flock of frightened bats, with their own baby dragon along.
+Counting, numbers, adding, colors, patterns, letters, skip counting, tracing, memory, sorting, jigsaws, rhymes, money,
+sharing, maps, brewing, listening and remembering the trip are all practiced inside the story, and the game follows
 what the child shows: it never asks for much more than they can do. An adventure is played in days of about ten
-minutes, is saved after every tap, and carries on from the camp. There is one story so far, told three ways; more
-are planned (see below).
+minutes, is saved after every tap, and carries on from the camp. There are three stories so far, each told three ways;
+more are planned (see below).
 
 **Try it:** on the phone, open the [latest build](https://github.com/jstumfoll2/the-little-dungeon/releases/tag/latest),
 download `the-little-dungeon.apk`, and open it to install. The first time, Android
@@ -33,6 +34,7 @@ real player.
   art, voice) and a roadmap; [`improvement-plan.md`](docs/review/improvement-plan.md) tracks every finding to the step that fixes
   it and says what is done.
 - [`voice/VOICE_BIBLE.md`](voice/VOICE_BIBLE.md): who speaks, how each voice is made, and the choices waiting for a person.
+- [`docs/art-plan.md`](docs/art-plan.md): how the pictures are made and checked, what each look found, and what is still to draw.
 - [`docs/SOUND_CREDITS.md`](docs/SOUND_CREDITS.md): where each sound effect comes from.
 - [`docs/archive/`](docs/archive/): plans for versions of the game that no longer exist.
 

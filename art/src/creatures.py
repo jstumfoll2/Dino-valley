@@ -336,6 +336,32 @@ def imp(c="#3b4a8a"):
     return rig(defs, body, eyes(98, 142, 100, r=9, white=True, pupil="#ffb020"), (calm, talk))
 
 
+def door_warden(c="#a8693c"):
+    """Knocker, the Door Warden: a tall wooden door on stubby boots, with a brass knocker for a nose and a mail slot for a mouth."""
+    brass = "#e8b84a"
+    defs = grad("dw", c, "lin") + grad("dwi", light(c, 0.1), "lin") + grad("bz", brass)
+    iron = "#4a4650"
+    body = (
+        f'<rect x="76" y="222" width="32" height="28" rx="9" fill="{dark(c, 0.3)}" {S(o)}/><rect x="132" y="222" width="32" height="28" rx="9" fill="{dark(c, 0.3)}" {S(o)}/>'
+        f'<path d="M64 130 C40 146 34 176 42 200" fill="none" {S(o, 17)}/><path d="M64 130 C40 146 34 176 42 200" fill="none" stroke="{dark(c, 0.1)}" stroke-width="11" stroke-linecap="round"/>'
+        f'<path d="M176 130 C200 146 206 176 198 200" fill="none" {S(o, 17)}/><path d="M176 130 C200 146 206 176 198 200" fill="none" stroke="{dark(c, 0.1)}" stroke-width="11" stroke-linecap="round"/>'
+        f'<circle cx="42" cy="204" r="12" fill="url(#bz)" {S(o, 3.5)}/><circle cx="198" cy="204" r="12" fill="url(#bz)" {S(o, 3.5)}/>'
+        f'<path d="M60 226 L60 82 C60 20 180 20 180 82 L180 226 Z" fill="url(#dw)" {S(o, 5)}/>'
+        f'<path d="M74 214 L74 84 C74 42 166 42 166 84 L166 214 Z" fill="none" stroke="{dark(c, 0.3)}" stroke-width="4" opacity="0.55"/>'
+        f'<path d="M92 62 L92 222 M148 62 L148 222" stroke="{dark(c, 0.3)}" stroke-width="3" opacity="0.35"/>'
+        f'<rect x="84" y="196" width="72" height="22" rx="6" fill="url(#dwi)" {S(dark(c, 0.35), 3.5)}/>'
+        f'<rect x="54" y="76" width="16" height="12" rx="3" fill="{iron}" {S(o, 3)}/><rect x="54" y="134" width="16" height="12" rx="3" fill="{iron}" {S(o, 3)}/><rect x="54" y="192" width="16" height="12" rx="3" fill="{iron}" {S(o, 3)}/>'
+        f'<path d="M80 76 L106 69 M160 76 L134 69" stroke="{o}" stroke-width="6" stroke-linecap="round"/>'
+        f'<circle cx="120" cy="116" r="11" fill="url(#bz)" {S(o, 3.5)}/><circle cx="120" cy="142" r="19" fill="none" {S(o, 11)}/><circle cx="120" cy="142" r="19" fill="none" stroke="{brass}" stroke-width="6"/>'
+        f'<path d="M110 134 C112 128 118 126 124 126" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>'
+        f'<circle cx="82" cy="152" r="3.5" fill="{iron}"/><circle cx="158" cy="152" r="3.5" fill="{iron}"/>'
+    )
+    calm = f'<rect x="92" y="170" width="56" height="9" rx="4" fill="#2a1a10" {S(brass, 4)}/>'
+    talk = (f'<rect x="92" y="166" width="56" height="22" rx="7" fill="#2a1a10" {S(brass, 4)}/>'
+            f'<path d="M100 184 L132 184 L136 176 L104 176 Z" fill="#fff6dc" {S(o, 2)}/><path d="M104 178 L130 178" stroke="#b9a27a" stroke-width="2"/>')
+    return rig(defs, body, eyes(98, 142, 94, r=9, white=True), (calm, talk))
+
+
 BARON = dict(skin="fair", robe="#3a3046", trim="#a8301f", hair="#9a9aa6", hairstyle="short", hat="tophat", moustache="#4a4a58", build="tall", cheeks=False)
 
 MONSTERS = {
@@ -355,6 +381,7 @@ MONSTERS = {
     "spider_queen": lambda: spider("#5a3a8a", "#ffd34d", crown=True),
     "bat_king": lambda: bat("#5a4a8a", crown=True),
     "inky_imp": lambda: imp(),
+    "knocker": lambda: door_warden(),
 }
 
 ANIMALS = {

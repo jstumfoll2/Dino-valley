@@ -8,7 +8,9 @@ import com.littledungeon.engine.rpg.hero.Hero
 import com.littledungeon.engine.rpg.hero.HeroClass
 import com.littledungeon.engine.rpg.hero.Progression
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
+import com.littledungeon.engine.rpg.learn.PictureFactory
 import com.littledungeon.engine.rpg.learn.Coach
+import com.littledungeon.engine.rpg.learn.BellChallenge
 import com.littledungeon.engine.rpg.learn.MemoryChallenge
 import com.littledungeon.engine.rpg.learn.RecipeChallenge
 import com.littledungeon.engine.rpg.learn.Skill
@@ -20,12 +22,15 @@ import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.run.Costume
 import com.littledungeon.engine.rpg.run.Journey
 import com.littledungeon.engine.rpg.run.JourneyLines
+import com.littledungeon.engine.rpg.run.tunnelTrace
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Reply
 import com.littledungeon.engine.rpg.run.RoomLines
+import com.littledungeon.engine.rpg.run.BATTLE_SKILLS
 import com.littledungeon.engine.rpg.run.PICK_ONE_SKILLS
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.engine.rpg.run.addStory
+import com.littledungeon.engine.rpg.run.ballGuestLines
 import com.littledungeon.engine.rpg.run.peaceChallenge
 import com.littledungeon.engine.rpg.run.battleCostume
 import com.littledungeon.engine.rpg.run.costumesFor
@@ -91,6 +96,7 @@ object VoiceCatalog {
                         hear(b.explain)
                         when (val c = b.challenge) {
                             is MemoryChallenge -> hear(c.remember)
+                            is BellChallenge -> hear(c.listen)
                             is RecipeChallenge -> c.riddle?.let { hear(it) }
                             else -> Unit
                         }
@@ -128,6 +134,9 @@ object VoiceCatalog {
         }
         enumerateDomains(::hear)
         JourneyLines.numbered().forEach { hear(Speech.of(it)) }
+        // What every choice says, whether or not a random adventure met the person who offers it.
+        for (npc in Content.npcs) for (n in npc.nodes) for (o in n.options) choices += o.said
+        for (arc in Content.arcs) choices += listOf(arc.fightLabel, arc.peaceLabel)
         Say.all(choices.toList()).forEach { hear(Speech.of(it)) }
         return sentences.sortedWith(compareBy({ it.who }, { it.text })).toCollection(linkedSetOf()) to sounds
     }
@@ -142,6 +151,35 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     for (have in 1..9) for (more in 1..(10 - have)) for (missing in listOf(false, true)) {
         for (thing in Thing.entries) hear(Speech.of(addStory("", thing, have, more, missing)))
         hear(Speech.of(vaultStory(have, more, missing)))
+    }
+    // Tell it back: every place, and every pair of places one after the other.
+    for (a in Content.locations) {
+        hear(Speech.of("After ${a.name}, where did you go next?"))
+        hear(Speech.of("Where did you go before ${a.name}?"))
+        hear(Speech.of("${a.name} was the first place you went to."))
+        for (b in Content.locations) {
+            hear(Speech.of("You went from ${a.name} to ${b.name}."))
+            hear(Speech.of("You went to ${a.name}, and then to ${b.name}."))
+        }
+    }
+    // The pre-writing shapes and letters of the tunnel, with each of its purposes.
+    for (level in 1..5) for (seed in 0L until 40L) for (purpose in listOf("Let's light the tunnel!", "Draw with your magic finger!", "Make the wall glow!")) {
+        hear(tunnelTrace(level, seed, purpose).prompt)
+    }
+    // Every picture puzzle, at every level: small sets of words, foods and numbers, so a few hundred seeds reach them all.
+    for (level in 1..5) for (seed in 0L until 600L) {
+        for (c in listOf(PictureFactory.rhyme(level, seed), PictureFactory.money(level, seed)) + PictureFactory.ShareTheme.entries.map { PictureFactory.share(level, seed, theme = it) }) {
+            hear(c.prompt)
+            hear(c.because)
+        }
+        PictureFactory.map(level, seed).let { hear(it.prompt); hear(it.because) }
+
+    }
+    // Every recipe a workshop can ask for: each step is its own sentence, so a few hundred recipes reach them all.
+    for (level in 1..5) for (potion in com.littledungeon.engine.rpg.learn.PotionKind.entries) for (seed in 0L until 150L) {
+        val recipe = ChallengeFactory.recipe(level, seed, potion)
+        hear(recipe.prompt)
+        recipe.riddle?.let { hear(it) }
     }
     // Everything the stories and people say, whether or not random play happened to reach it in this world.
     for (arc in Content.arcs) {
@@ -167,6 +205,9 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     everyPlainLine(RoomLines(Random(3)))
     // Lines that name a person, an item, a monster or a place, for every one of them.
     val lines = JourneyLines(Random(1))
+    for (arc in Content.arcs) for (chapter in 1..5) hear(Speech.of(lines.chapter(chapter, arc.title)))
+    // Every friend who can come to the Storybook Ball, with everything they can do there.
+    for (name in Content.npcs.map { it.name } + Content.monsters.map { it.name }) ballGuestLines(name).forEach { hear(Speech.of(it)) }
     for (item in Content.items) repeat(30) {
         hear(Speech.of(lines.itemFound(item.name)))
         hear(Speech.of(lines.bought(item.name, 7)))
@@ -191,7 +232,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
     val own = Content.npcs.flatMap { n -> n.nodes.flatMap { it.effects + it.options.flatMap { o -> o.effects } } }
         .filterIsInstance<Effect.Puzzle>().mapNotNull { e -> e.skill?.let { Costume(it, e.ask.orEmpty(), e.thing ?: Thing.STONE) } }
     val costumes = Obstacle.entries.flatMap { costumesFor(it) } + own +
-        Content.monsters.flatMap { m -> PICK_ONE_SKILLS.map { battleCostume(m, it) } }
+        Content.monsters.flatMap { m -> BATTLE_SKILLS.map { battleCostume(m, it) } }
     for (level in 1..5) {
         // A journey that has warmed up, with every skill at this level, so puzzles come at exactly this level.
         val j = Journey(level.toLong(), Hero(), SkillBook(levels = PICK_ONE_SKILLS.associateWith { level }), WorldMemory(), Clock { 0L })
@@ -204,7 +245,12 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
         // The puzzles a boss sets on the peaceful way, in the boss's voice.
         for (arc in Content.arcs) {
             val boss = Content.monster(arc.bossId) ?: continue
-            for (step in arc.peaceSteps) repeat(60) { hear(j.peaceChallenge(step, boss).prompt) }
+            for (step in arc.peaceSteps + arc.friendSteps) repeat(60) {
+                val c = j.peaceChallenge(step, boss)
+                hear(c.prompt)
+                (c as? BellChallenge)?.let { b -> hear(b.listen) }
+                (c as? MemoryChallenge)?.let { m -> hear(m.remember) }
+            }
         }
         // The puzzle rooms of a dungeon, as the journey sets them up.
         for (seed in 1L..200L) {
@@ -215,6 +261,7 @@ private fun enumerateDomains(hear: (List<Speech>) -> Unit) {
             hear(ChallengeFactory.write(level, seed, "", number = true).prompt)
             hear(ChallengeFactory.memory(level, seed).prompt)
             hear(ChallengeFactory.memory(level, seed).remember)
+            ChallengeFactory.bells(level, seed).let { hear(it.prompt); hear(it.listen) }
             hear(ChallengeFactory.sort(level, seed).prompt)
             hear(ChallengeFactory.skipCount(level, seed).prompt)
             hear(ChallengeFactory.puzzle(level, seed).prompt)

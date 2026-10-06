@@ -73,6 +73,7 @@ def _init(model_dir: str):
                 voices=os.path.join(model_dir, "voices.bin"),
                 tokens=os.path.join(model_dir, "tokens.txt"),
                 data_dir=os.path.join(model_dir, "espeak-ng-data"),
+                lexicon=os.path.join(model_dir, "lexicon-us-en.txt"),
             ),
             num_threads=1,
             provider="cpu",

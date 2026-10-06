@@ -19,7 +19,10 @@ object ArcPicker {
     fun pick(world: WorldMemory, random: Random, arcs: List<Arc> = Content.arcs): Arc {
         if (world.adventures == 0) return arcs.first()
         val chapter = chapter(world)
-        val open = arcs.filter { it.minChapter <= chapter }.ifEmpty { arcs }
+        // The last page of a book is its finale, when there is one; the other stories are told before it.
+        if (chapter == BOOK_PAGES) arcs.firstOrNull { it.finale }?.let { return it }
+        val told = arcs.filter { !it.finale }.ifEmpty { arcs }
+        val open = told.filter { it.minChapter <= chapter }.ifEmpty { told }
         val fresh = open.filter { it.id != world.lastArc }.ifEmpty { open }
         return fresh.minByOrNull { (world.arcsDone[it.id] ?: 0) * 10 + random.nextInt(10) }!!
     }

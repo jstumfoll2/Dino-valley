@@ -26,6 +26,6 @@ class VoiceCatalogTest {
     @Test
     fun `clip names match the build script`() {
         // scripts/render-voice.py: hashlib.sha1(f"{VOICE_ID}|{sentence}").hexdigest()[:16]
-        assertEquals("0bf130af87c18ae9", Voice.key("Hello, Sparky!"))
+        assertEquals("953433564221ddcb", Voice.key("Hello, Sparky!"))
     }
 }

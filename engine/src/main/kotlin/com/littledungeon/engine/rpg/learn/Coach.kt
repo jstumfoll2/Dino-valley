@@ -60,6 +60,8 @@ object Coach {
             val said = (1..c.shown).joinToString(", ") { Words.number(c.step * it).uppercase() }
             Speech.of("Count by $by: $said.")
         }
+        is PictureChallenge -> c.because
+        is GridChallenge -> c.because
         else -> emptyList()
     }
 }

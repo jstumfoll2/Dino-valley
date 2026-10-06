@@ -3,6 +3,7 @@ package com.littledungeon.ui.game
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -72,6 +74,7 @@ import com.littledungeon.audio.Narrator
 import com.littledungeon.audio.Sfx
 import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.learn.AddChallenge
+import com.littledungeon.engine.rpg.learn.BellChallenge
 import com.littledungeon.engine.rpg.learn.Coach
 import com.littledungeon.engine.rpg.learn.ColorChallenge
 import com.littledungeon.engine.rpg.learn.CountChallenge
@@ -82,11 +85,16 @@ import com.littledungeon.engine.rpg.learn.MapChallenge
 import com.littledungeon.engine.rpg.learn.MemoryChallenge
 import com.littledungeon.engine.rpg.learn.NumberChallenge
 import com.littledungeon.engine.rpg.learn.PatternChallenge
+import com.littledungeon.engine.rpg.learn.Card
+import com.littledungeon.engine.rpg.learn.GridChallenge
 import com.littledungeon.engine.rpg.learn.PickOne
+import com.littledungeon.engine.rpg.learn.PictureChallenge
+import com.littledungeon.engine.rpg.learn.Shown
 import com.littledungeon.engine.rpg.learn.RecipeChallenge
 import com.littledungeon.engine.rpg.learn.RecipeStep
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.TraceChallenge
+import com.littledungeon.engine.rpg.learn.TraceShape
 import com.littledungeon.engine.rpg.learn.SortChallenge
 import com.littledungeon.engine.rpg.learn.SkipCountChallenge
 import com.littledungeon.engine.rpg.learn.PuzzleChallenge
@@ -98,6 +106,7 @@ import com.littledungeon.engine.rpg.run.Reply
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.ui.art.Art
 import com.littledungeon.ui.art.HueMark
+import com.littledungeon.ui.art.Picto
 import com.littledungeon.ui.art.RuneIcon
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -279,8 +288,8 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
     val turn = remember { Turn(beat, Ladder(sparkle), sparkle, narrator, sfx, scope, say, celebrate, solved) }
     val c = beat.challenge
     LaunchedEffect(Unit) {
-        // The memory doors say their own words: first what to remember, then the question.
-        if (c !is MemoryChallenge) {
+        // The memory doors and the bells say their own words: first what to remember or listen to, then the question.
+        if (c !is MemoryChallenge && c !is BellChallenge) {
             say(c.prompt)
             narrator.speak(c.prompt)
             turn.markAsked()
@@ -298,10 +307,13 @@ fun AskBeat(beat: Beat.Ask, sparkle: Boolean, say: (List<Speech>) -> Unit, celeb
             is MapChallenge -> MapPick(c, turn, zone)
             is TraceChallenge -> TraceRoom(c, turn, zone)
             is MemoryChallenge -> MemoryRoom(c, turn, zone)
+            is BellChallenge -> BellRoom(c, turn, zone)
             is RecipeChallenge -> PotionRoom(c, turn, zone)
             is SortChallenge -> SortRoom(c, turn, zone)
             is SkipCountChallenge -> PondRoom(c, turn, zone)
             is PuzzleChallenge -> PuzzleRoom(c, turn, zone)
+            is PictureChallenge -> PicturePick(c, turn, zone)
+            is GridChallenge -> TreasureMap(c, turn, zone)
         }
     }
 }
@@ -392,6 +404,85 @@ private fun Modifier.spot(): Modifier = this
     .shadow(4.dp, CircleShape)
     .background(Color(0xDDFFF6E0), CircleShape)
     .border(3.dp, Palette.PaperEdge, CircleShape)
+
+// ------------------------------------------------------------------ picture cards: rhymes, money, sharing
+
+@Composable
+private fun PicturePick(c: PictureChallenge, turn: Turn, z: Zone) {
+    val pick = remember { Pick(turn, c) }
+    // What the question is about, above the cards: the picture to rhyme with, the food and its price, the bats and their berries.
+    if (c.scene.isNotEmpty()) {
+        Box(Modifier.at(z.cx, z.h * 0.3f, z.width, z.h * 0.3f)) { Pictures(c.scene.flatMap { s -> List(s.count) { s.art } }, z.width, z.h * 0.3f) }
+    }
+    val n = c.options.size
+    val tile = z.tile(n, z.h * 0.34f)
+    z.row(n, tile).forEachIndexed { i, x ->
+        Tile(pick, i, Modifier.at(x, z.h * 0.72f, tile, tile).spot()) {
+            Box(
+                Modifier.fillMaxSize().background(Palette.Paper, RoundedCornerShape(18.dp)).border(3.dp, Palette.PaperEdge, RoundedCornerShape(18.dp)).padding(tile * 0.06f),
+                contentAlignment = Alignment.Center,
+            ) { CardFace(c.options[i], tile) }
+        }
+    }
+}
+
+/** A card: a number drawn big, or its pictures (a rhyming word's picture, a handful of coins). */
+@Composable
+private fun CardFace(card: Card, tile: Dp) {
+    if (card.pictures.isEmpty()) {
+        val fs = with(LocalDensity.current) { (tile * 0.5f).toSp() }
+        Text(card.label, fontSize = fs, lineHeight = fs, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black, color = Palette.Ink)
+    } else {
+        Pictures(card.pictures.flatMap { s: Shown -> List(s.count) { s.art } }, tile * 0.88f, tile * 0.88f)
+    }
+}
+
+/** [arts] laid out in tidy rows that fill [w] by [h]: one big, or several smaller ones. */
+@Composable
+private fun Pictures(arts: List<String>, w: Dp, h: Dp) {
+    if (arts.isEmpty()) return
+    val cols = if (arts.size <= 4) arts.size else (arts.size + 1) / 2
+    val rows = (arts.size + cols - 1) / cols
+    val item = minOf(w / (cols * 1.05f), h / (rows * 1.05f))
+    Column(Modifier.size(w, h), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        for (row in arts.chunked(cols)) {
+            Row {
+                for (art in row) Image(painterResource(Art.byName("art_$art") ?: R.drawable.art_treasure), null, Modifier.size(item))
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------ Hoot's treasure map
+
+/** A grid of squares on parchment: follow the route from the circle and tap where the treasure is. */
+@Composable
+private fun TreasureMap(c: GridChallenge, turn: Turn, z: Zone) {
+    val pick = remember { Pick(turn, c) }
+    val cell = minOf(z.width / c.cols, z.h * 0.7f / c.rows)
+    val gridW = cell * c.cols
+    val gridH = cell * c.rows
+    val cx = z.cx
+    val cy = z.h * 0.6f
+    Box(
+        Modifier.at(cx, cy, gridW + 16.dp, gridH + 16.dp).background(Color(0xFFF3E4BF), RoundedCornerShape(12.dp)).border(4.dp, Palette.PaperEdge, RoundedCornerShape(12.dp)),
+    )
+    for (i in 0 until c.optionCount) {
+        val row = i / c.cols
+        val col = i % c.cols
+        val x = cx - gridW / 2 + cell * (col + 0.5f)
+        val y = cy - gridH / 2 + cell * (row + 0.5f)
+        Tile(pick, i, Modifier.at(x, y, cell, cell).spot()) {
+            Box(Modifier.fillMaxSize().padding(2.dp).border(2.dp, Color(0x66B8913F), RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+                if (row == c.startRow && col == c.startCol) Box(Modifier.size(cell * 0.5f).border(5.dp, Palette.Berry, CircleShape))
+                // The treasure shows once the square is found (or shown, when the only try is spent).
+                if (turn.done && i == c.answer) Image(painterResource(Art.byName("art_mini_chest") ?: R.drawable.art_treasure), null, Modifier.size(cell * 0.8f))
+            }
+        }
+    }
+    // With compass words, the compass says which way is north (up).
+    if (c.compass) Image(painterResource(Art.byName("art_mini_compass") ?: R.drawable.art_treasure), null, Modifier.at(z.right - z.h * 0.08f, z.h * 0.3f, z.h * 0.14f, z.h * 0.14f))
+}
 
 // ------------------------------------------------------------------ counting
 
@@ -778,7 +869,17 @@ private fun TraceRoom(c: TraceChallenge, turn: Turn, z: Zone) {
         for (i in 1 until trail.size) drawLine(Color(0x88FFFFFF), trail[i - 1], trail[i], stroke * 0.4f, StrokeCap.Round)
         if (glowDone > 0f) drawRoundRect(Color(0xFFFFE680).copy(alpha = 0.18f * glowDone), cornerRadius = CornerRadius(28.dp.toPx()))
     }
-    if (c.glyph == null) {
+    if (c.shape == TraceShape.WIRE) {
+        // Lumi's lamps: the first is lit, and each of the others lights when the wire reaches it. A lamp stands on its dot, so the dot still shows where to start.
+        val lamp = z.h * 0.17f
+        c.lamps.forEachIndexed { i, p ->
+            val lit = i == 0 || covered[i - 1].all { it }
+            Image(
+                painterResource(Art.byName(if (lit) "art_mini_lamp_on" else "art_mini_lamp_off") ?: R.drawable.art_lantern), null,
+                Modifier.at(z.left + cardW * p.x, cardTop + cardH * p.y - lamp * 0.38f, lamp, lamp),
+            )
+        }
+    } else if (c.glyph == null) {
         // A path or shape leads to a glowing crystal.
         val end = c.path.last()
         val gem = z.h * 0.12f
@@ -875,6 +976,116 @@ private fun MemoryRoom(c: MemoryChallenge, turn: Turn, z: Zone) {
             ) {
                 Text("?", fontSize = fs, lineHeight = fs, fontWeight = FontWeight.Black, color = Color(0xFF6B7586))
             }
+        }
+    }
+}
+
+// ------------------------------------------------------------------ the bell song
+
+/** The bells from low to high: red, yellow, blue. Each picture carries its own mark, so color is never the only clue. */
+private val BELL_ART = listOf("art_mini_bell_red", "art_mini_bell_yellow", "art_mini_bell_blue")
+
+/**
+ * Three bells hang from a beam and ring a song (the lowest on the left, the biggest); the child plays it back. A bell rings its own
+ * note when tapped, right or wrong, so the child hears what they played. A miss means the song is rung again, then they start over; the
+ * next bell glows after a second miss.
+ */
+@Composable
+private fun BellRoom(c: BellChallenge, turn: Turn, z: Zone) {
+    val narrator = LocalNarrator.current
+    val sfx = LocalSfx.current
+    val scope = rememberCoroutineScope()
+    val swings = remember { List(c.bells) { Animatable(0f) } }
+    val flashes = remember { List(c.bells) { Animatable(0f) } }
+    var playing by remember { mutableStateOf(true) }
+    var step by remember { mutableIntStateOf(0) }
+    var guide by remember { mutableStateOf(false) }
+    var wrong by remember { mutableIntStateOf(-1) }
+    var wrongTick by remember { mutableIntStateOf(0) }
+
+    fun ring(i: Int) {
+        sfx.play("bell_${i + 1}", 0.9f)
+        scope.launch { flashes[i].snapTo(1f); flashes[i].animateTo(0f, tween(550)) }
+        scope.launch {
+            swings[i].snapTo(if (i % 2 == 0) 12f else -12f)
+            swings[i].animateTo(0f, spring(dampingRatio = 0.2f, stiffness = Spring.StiffnessVeryLow))
+        }
+    }
+
+    suspend fun playSong() {
+        playing = true
+        delay(350)
+        for (b in c.song) {
+            ring(b)
+            delay(c.gapMillis)
+        }
+        delay(300)
+        playing = false
+    }
+
+    LaunchedEffect(Unit) {
+        turn.say(c.listen)
+        narrator.speak(c.listen)
+        playSong()
+        turn.say(c.prompt)
+        narrator.speak(c.prompt)
+        turn.markAsked()
+    }
+
+    val tile = z.tile(c.bells, z.h * 0.36f)
+    val beamY = z.h * 0.34f
+    Box(
+        Modifier.at(z.cx, beamY, z.width * 0.94f, tile * 0.1f)
+            .background(Color(0xFF8A5A33), RoundedCornerShape(50))
+            .border(3.dp, Palette.Ink, RoundedCornerShape(50)),
+    )
+    z.row(c.bells, tile).forEachIndexed { i, x ->
+        val size = tile * (1f - 0.12f * i)
+        val shake = rememberShake(if (wrong == i) wrongTick else null)
+        Box(
+            // The picture has a loop at the top; its top edge sits just above the beam, so the bell hangs from it.
+            Modifier.at(x, beamY + size * 0.35f, size, size)
+                .graphicsLayer {
+                    translationX = shake.value
+                    rotationZ = swings[i].value
+                    transformOrigin = TransformOrigin(0.5f, 0.15f)
+                }
+                .clickable(NoRipple, null) {
+                    if (playing || turn.done || turn.locked) return@clickable
+                    ring(i)
+                    if (c.expects(step, i)) {
+                        step += 1
+                        if (step == c.song.size) turn.win()
+                    } else {
+                        wrong = i
+                        wrongTick += 1
+                        step = 0
+                        val tier = turn.miss { c.listen }
+                        if (tier >= 2) {
+                            guide = true
+                            turn.ladder.noteHints(2)
+                        }
+                        if (!turn.done) {
+                            // The song again once the feedback has been said, then they start over.
+                            turn.ladder.noteHints(1)
+                            scope.launch {
+                                while (turn.busy) delay(60)
+                                playSong()
+                            }
+                        }
+                    }
+                },
+        ) {
+            if (guide && !playing && c.song.getOrNull(step) == i) GlowRing(Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = flashes[i].value; scaleX = 1.25f; scaleY = 1.25f }.background(Color(0xFFFFE066), CircleShape))
+            Image(painterResource(Art.byName(BELL_ART[i]) ?: R.drawable.art_treasure), null, Modifier.fillMaxSize())
+        }
+    }
+    // The song again, whenever the child wants it.
+    RoundButton(Picto.LISTEN, Palette.Sky, z.h * 0.16f, Modifier.at(z.cx, z.h * 0.82f, z.h * 0.16f, z.h * 0.16f)) {
+        if (!playing && !turn.done && !turn.locked) {
+            step = 0
+            scope.launch { playSong() }
         }
     }
 }

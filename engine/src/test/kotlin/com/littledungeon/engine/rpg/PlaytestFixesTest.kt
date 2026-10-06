@@ -34,7 +34,7 @@ class PlaytestFixesTest {
     fun `adventures have characters talking with each other`() {
         val (said, _) = VoiceCatalog.speech(runs = 300)
         val speakers = said.map { it.who }.toSet()
-        assertTrue(speakers.containsAll(listOf(Who.NARRATOR, Who.PET, Who.WIZARD, Who.BARON, Who.MERCHANT)), "heard only $speakers")
+        assertTrue(speakers.containsAll(listOf(Who.NARRATOR, Who.PET, Who.WIZARD, Who.BARON, Who.ZIG)), "heard only $speakers")
         assertTrue(said.count { it.who != Who.NARRATOR } > 40)
     }
 

@@ -34,7 +34,12 @@ data class Rune(val shape: RuneShape, val hue: Hue)
 enum class LetterMode { NAME, MATCH_CASE, SOUND, FIRST_SOUND }
 
 /** Paths to trace with a finger, from a straight line up to shapes (brief: pre-writing stages). */
-enum class TraceShape { LINE, CURVE, ZIGZAG, LOOP, CIRCLE, TRIANGLE, LETTER, NUMBER }
+enum class TraceShape {
+    LINE, CURVE, ZIGZAG, LOOP, CIRCLE, TRIANGLE, LETTER, NUMBER,
+
+    /** Lumi's lamps: a glowing wire from lamp to lamp, one stroke between each pair. A lamp lights when the wire reaches it. */
+    WIRE,
+}
 
 /** A point on the tracing card, 0..1 across and down. */
 data class Point(val x: Float, val y: Float)
@@ -191,6 +196,9 @@ data class TraceChallenge(
 ) : Challenge {
     override val skill get() = Skill.TRACING
     val path: List<Point> get() = strokes.flatten()
+
+    /** Where the lamps are (a [TraceShape.WIRE] only): the start of the first wire and the end of each one. */
+    val lamps: List<Point> get() = if (shape == TraceShape.WIRE) listOf(strokes.first().first()) + strokes.map { it.last() } else emptyList()
 }
 
 /** Look at the doors, then they hide; tap the doors in [sequence] order (indices into [doors]). */
@@ -205,6 +213,26 @@ data class MemoryChallenge(
     val remember: List<Speech>,
 ) : Challenge {
     override val skill get() = Skill.MEMORY
+}
+
+/**
+ * The Bell Song: three bells of different pitch (0 is the lowest, [bells] - 1 the highest) ring a short [song], and the child plays it
+ * back on the same bells. [listen] is said while the bells ring, then [prompt]. Judged tap by tap with [expects]; a bell rings its note
+ * whether or not it was the right one, so the child hears what they played. Rung every [gapMillis].
+ */
+data class BellChallenge(
+    override val level: Int,
+    override val seed: Long,
+    override val prompt: List<Speech>,
+    val bells: Int,
+    val song: List<Int>,
+    val gapMillis: Long,
+    val listen: List<Speech>,
+) : Challenge {
+    override val skill get() = Skill.LISTENING
+
+    /** Whether [bell] is the right one to ring after [done] right taps. */
+    fun expects(done: Int, bell: Int): Boolean = song.getOrNull(done) == bell
 }
 
 enum class PotionKind(val title: String) {

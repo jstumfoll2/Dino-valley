@@ -9,31 +9,60 @@ package com.littledungeon.engine.model
  * changing a voice records its lines again. The narrator's must never change by accident.
  */
 enum class Who(val tag: String, val sid: Int, val speed: Float, val pitch: Float, val voiceId: String) {
-    NARRATOR("narrator", 1, 0.9f, 1f, Voice.VOICE_ID),
-    PET("pet", 8, 0.88f, 1.0f, "kokoro-en-v0_19/sid8/speed0.88/pitch1.0"),
-    WIZARD("wizard", 3, 0.9f, 0.92f, "kokoro-en-v0_19/sid3/speed0.9/pitch0.92"),
-    GOBLIN("goblin", 5, 1.0f, 1.15f, "kokoro-en-v0_19/sid5/speed1.0/pitch1.15"),
-    RUBY("ruby", 7, 0.95f, 1f, "kokoro-en-v0_19/sid7/speed0.95/pitch1.0"),
-    DRAGON("dragon", 10, 0.9f, 0.85f, "kokoro-en-v0_19/sid10/speed0.9/pitch0.85"),
-    SHADOW("shadow", 6, 0.9f, 0.8f, "kokoro-en-v0_19/sid6/speed0.9/pitch0.8"),
+    // The story and the companion.
+    NARRATOR("narrator", 3, 0.9f, 1f, Voice.VOICE_ID),
+    PET("pet", 7, 0.92f, 1f, v(7, 0.92f, 1f)),
 
-    // The wider world: townspeople, shopkeepers, rogues and monsters. More can be added; a new
-    // voice is a new entry here and its lines are recorded by the build like everyone else's.
-    GRANNY("granny", 2, 0.88f, 0.92f, "kokoro-en-v0_19/sid2/speed0.88/pitch0.92"),
-    ELDER("elder", 9, 0.88f, 1.0f, "kokoro-en-v0_19/sid9/speed0.88/pitch1.0"),
-    BARON("baron", 9, 0.85f, 0.9f, "kokoro-en-v0_19/sid9/speed0.85/pitch0.9"),
-    MERCHANT("merchant", 0, 1.0f, 1.0f, "kokoro-en-v0_19/sid0/speed1.0/pitch1.0"),
-    TOWNSWOMAN("townswoman", 2, 0.95f, 1.0f, "kokoro-en-v0_19/sid2/speed0.95/pitch1.0"),
-    TOWNSMAN("townsman", 5, 0.95f, 0.95f, "kokoro-en-v0_19/sid5/speed0.95/pitch0.95"),
-    GUARD("guard", 6, 0.95f, 1.0f, "kokoro-en-v0_19/sid6/speed0.95/pitch1.0"),
-    CHILD("child", 4, 0.95f, 1.0f, "kokoro-en-v0_19/sid4/speed0.95/pitch1.0"),
-    SNEAK("sneak", 0, 1.0f, 1.1f, "kokoro-en-v0_19/sid0/speed1.0/pitch1.1"),
-    GROWLER("growler", 10, 0.9f, 0.75f, "kokoro-en-v0_19/sid10/speed0.9/pitch0.75"),
-    CRITTER("critter", 6, 1.0f, 1.12f, "kokoro-en-v0_19/sid6/speed1.0/pitch1.12"),
-    SPOOK("spook", 9, 0.85f, 0.8f, "kokoro-en-v0_19/sid9/speed0.85/pitch0.8"),
+    // Named people of the kingdom: each has a Kokoro v1.0 speaker of their own (a test keeps it so), and no pitch change.
+    HOOT("hoot", 25, 0.88f, 1f, v(25, 0.88f, 1f)),
+    BARON("baron", 26, 0.85f, 1f, v(26, 0.85f, 1f)),
+    MERLO("merlo", 19, 0.9f, 1f, v(19, 0.9f, 1f)),
+    HAZEL("hazel", 21, 0.9f, 1f, v(21, 0.9f, 1f)),
+    WILLOW("willow", 20, 0.88f, 1f, v(20, 0.88f, 1f)),
+    TILLY("tilly", 0, 0.95f, 1f, v(0, 0.95f, 1f)),
+    BUN("bun", 2, 1.0f, 1f, v(2, 1.0f, 1f)),
+    BROGAN("brogan", 11, 0.95f, 1f, v(11, 0.95f, 1f)),
+    ZIG("zig", 16, 1.0f, 1f, v(16, 1.0f, 1f)),
+    RASCAL("rascal", 15, 1.05f, 1f, v(15, 1.05f, 1f)),
+    BESS("bess", 5, 0.95f, 1f, v(5, 0.95f, 1f)),
+    LUMI("lumi", 4, 0.95f, 1f, v(4, 0.95f, 1f)),
+    RIBBIT("ribbit", 18, 1.0f, 1f, v(18, 1.0f, 1f)),
+    GRUMBLE("grumble", 17, 0.85f, 1f, v(17, 0.85f, 1f)),
+    HOB("hob", 13, 0.95f, 1f, v(13, 0.95f, 1f)),
+    FINN("finn", 12, 0.95f, 1f, v(12, 0.95f, 1f)),
+    FERN("fern", 1, 1.0f, 1f, v(1, 1.0f, 1f)),
+    HENRIETTA("henrietta", 6, 0.95f, 1f, v(6, 0.95f, 1f)),
+    OTTO("otto", 27, 1.0f, 1f, v(27, 1.0f, 1f)),
+
+    // Big characters and kinds of creature. These share a speaker with someone else but differ in pitch and pace.
+    DRAGON("dragon", 24, 0.85f, 0.8f, v(24, 0.85f, 0.8f)),
+    SHADOW("shadow", 22, 0.85f, 0.8f, v(22, 0.85f, 0.8f)),
+    SPOOK("spook", 23, 0.85f, 0.9f, v(23, 0.85f, 0.9f)),
+    CRITTER("critter", 9, 1.0f, 1.1f, v(9, 1.0f, 1.1f)),
+    BATKING("batking", 9, 1.05f, 1.3f, v(9, 1.05f, 1.3f)),
+    KNOCKER("knocker", 14, 0.8f, 0.75f, v(14, 0.8f, 0.75f)),
+    GROWLER("growler", 14, 0.9f, 0.85f, v(14, 0.9f, 0.85f)),
+
+    // Kept for stories to come and the first dungeon's cast; nobody in a journey speaks with these yet.
+    WIZARD("wizard", 24, 0.9f, 1f, v(24, 0.9f, 1f)),
+    GOBLIN("goblin", 10, 1.0f, 1.15f, v(10, 1.0f, 1.15f)),
+    RUBY("ruby", 8, 0.95f, 1f, v(8, 0.95f, 1f)),
+    SNEAK("sneak", 8, 1.0f, 1.1f, v(8, 1.0f, 1.1f)),
+    ELDER("elder", 25, 0.9f, 1.08f, v(25, 0.9f, 1.08f)),
+    GRANNY("granny", 20, 0.9f, 0.95f, v(20, 0.9f, 0.95f)),
+    MERCHANT("merchant", 16, 1.0f, 1.08f, v(16, 1.0f, 1.08f)),
+    TOWNSWOMAN("townswoman", 0, 0.95f, 1.08f, v(0, 0.95f, 1.08f)),
+    TOWNSMAN("townsman", 11, 0.95f, 1.08f, v(11, 0.95f, 1.08f)),
+    GUARD("guard", 13, 0.95f, 0.92f, v(13, 0.95f, 0.92f)),
+    CHILD("child", 4, 1.0f, 1.1f, v(4, 1.0f, 1.1f)),
     ;
 
     companion object {
+        /** The people who each have a speaker to themselves. */
+        val NAMED = listOf(
+            NARRATOR, PET, HOOT, BARON, MERLO, HAZEL, WILLOW, TILLY, BUN, BROGAN, ZIG, RASCAL, BESS, LUMI, RIBBIT, GRUMBLE, HOB, FINN, FERN, HENRIETTA, OTTO,
+        )
+
         fun ofTag(tag: String): Who = entries.first { it.tag == tag }
     }
 }
@@ -79,3 +108,6 @@ sealed interface Speech {
         private val TOKEN = Regex("\\{name\\}|\\[([a-z]+)\\]|<([a-z]+)>")
     }
 }
+
+/** The id of a Kokoro v1.0 voice setting: part of every recording's fingerprint. */
+private fun v(sid: Int, speed: Float, pitch: Float) = "kokoro-multi-lang-v1_0/sid$sid/speed$speed/pitch$pitch"

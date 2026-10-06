@@ -27,6 +27,8 @@ object CoreKingdom {
         Location("windy_pass", "Windy Pass", WILD, 0.78f, 0.38f, "A narrow pass between two mountains, where the wind sings.", residents = listOf("bandit_bess")),
         Location("inkwell_cellars", "Inkwell Cellars", DUNGEON, 0.84f, 0.15f, "Barrels of ink line the cellars, and the floor is sticky.", guardian = "inky_imp", rooms = 3),
         Location("lair_peak", "Dragon's Peak", LAIR, 0.93f, 0.45f, "The tallest mountain, where smoke curls from a cave high above."),
+        Location("lair_belfry", "Bat Belfry", LAIR, 0.70f, 0.22f, "An old bell tower on a windy ridge, where hundreds of tiny eyes blink in the dark.", theme = "belfry"),
+        Location("lair_doors", "Hall of Doors", LAIR, 0.57f, 0.70f, "A stone archway stands alone in a field, and behind it, a hundred doors open onto nowhere.", theme = "rune_hall"),
         Location("lair_manor", "Grumblewick Manor", LAIR, 0.92f, 0.72f, "A tall crooked house with every window dark, except one."),
     )
 
@@ -61,6 +63,10 @@ object CoreKingdom {
         Road("windy_pass", "inkwell_cellars", FOREST, 1),
         Road("windy_pass", "lair_manor", FOREST, 1),
         Road("inkwell_cellars", "lair_peak", ROAD, 1),
+        Road("inkwell_cellars", "lair_belfry", FOREST, 1),
+        Road("windy_pass", "lair_belfry", MOUNTAIN, 2),
+        Road("fishers_dock", "lair_doors", FOREST, 1),
+        Road("whispering_falls", "lair_doors", FOREST, 1),
     )
 
     /** Friendships that make the world easier for good: the road they open stays open in every adventure. */

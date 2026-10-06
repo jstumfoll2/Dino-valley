@@ -10,6 +10,7 @@ import com.littledungeon.engine.rpg.learn.Challenge
 import com.littledungeon.engine.rpg.learn.ChallengeFactory
 import com.littledungeon.engine.rpg.learn.Coach
 import com.littledungeon.engine.rpg.learn.PickOne
+import com.littledungeon.engine.rpg.learn.PictureFactory
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.learn.Words
@@ -27,25 +28,33 @@ internal fun costumesFor(o: Obstacle): List<Costume> = when (o) {
         Costume(Skill.COUNTING, "Count the stones in the staircase."),
         Costume(Skill.ADDITION, "Some stones in the staircase are missing."),
         Costume(Skill.NUMBERS, "Numbers are carved into the steps."),
+        Costume(Skill.MONEY, "A toll keeper sells a rope for coins."),
+        Costume(Skill.SHARING, "Hungry bats guard the trail."),
+        Costume(Skill.MAPS, "A treasure map is stuck to the rocks."),
     )
     Obstacle.CROSS -> listOf(
         Costume(Skill.SKIP_COUNTING, "Hop across the river on the lily pads."),
         Costume(Skill.COUNTING, "Count the stepping stones across the river."),
         Costume(Skill.COLORS, "The river frog", Thing.GEM),
+        Costume(Skill.RHYMES, "The planks of the bridge are pictures."),
     )
     Obstacle.DARK -> listOf(
         Costume(Skill.PATTERNS, "Glowing marks show the safe path."),
         Costume(Skill.COLORS, "The marsh sprite", Thing.GEM),
         Costume(Skill.LETTERS, "Glowing letters show the safe path."),
+        Costume(Skill.SHARING, "Hungry bats squeak in the dark."),
     )
     Obstacle.LOCK -> listOf(
         Costume(Skill.NUMBERS, "The lock wants a number."),
         Costume(Skill.ADDITION, "The lock counts the coins you put in.", Thing.COIN),
+        Costume(Skill.MONEY, "The lock only takes exact coins."),
     )
     Obstacle.RIDDLE -> listOf(
         Costume(Skill.LETTERS, "The stone face wants a letter."),
         Costume(Skill.COLORS, "The stone face", Thing.GEM),
         Costume(Skill.PATTERNS, "The stone face shows a pattern."),
+        Costume(Skill.RHYMES, "The stone face loves rhymes."),
+        Costume(Skill.MAPS, "Professor Hoot's old map is torn."),
     )
 }
 
@@ -63,10 +72,13 @@ internal fun Journey.pickSkill(candidates: List<Skill>, preferred: Collection<Sk
     }
 }
 
-/** Every skill that has a pick-one puzzle (one tap per try). */
-internal val PICK_ONE_SKILLS = listOf(
+/** The skills a monster can ask in a fight (each dresses as the monster); the newer picture skills are asked at obstacles. */
+internal val BATTLE_SKILLS = listOf(
     Skill.COUNTING, Skill.NUMBERS, Skill.ADDITION, Skill.COLORS, Skill.PATTERNS, Skill.LETTERS, Skill.SKIP_COUNTING,
 )
+
+/** Every skill that has a pick-one puzzle (one tap per try). */
+internal val PICK_ONE_SKILLS = BATTLE_SKILLS + listOf(Skill.RHYMES, Skill.MONEY, Skill.SHARING, Skill.MAPS)
 
 /**
  * One pick-one puzzle for [skill], set up with [intro] and counting [thing]s. The words always say what to
@@ -83,6 +95,10 @@ internal fun Journey.puzzleFor(skill: Skill, intro: String, thing: Thing = Thing
         Skill.PATTERNS -> ChallengeFactory.pattern(lvl, seed, "$intro Which symbol comes next?")
         Skill.LETTERS -> ChallengeFactory.letter(lvl, seed, intro)
         Skill.SKIP_COUNTING -> ChallengeFactory.skipCount(lvl, seed, intro)
+        Skill.RHYMES -> PictureFactory.rhyme(lvl, seed, intro)
+        Skill.MONEY -> PictureFactory.money(lvl, seed, intro)
+        Skill.SHARING -> PictureFactory.share(lvl, seed, intro)
+        Skill.MAPS -> PictureFactory.map(lvl, seed, intro)
         else -> error("$skill has no pick-one puzzle")
     }
 }
@@ -123,7 +139,7 @@ internal fun battleCostume(m: Monster, skill: Skill): Costume {
 
 /** A monster's attack puzzle: one of its own skills leaning to the one the child needs most, dressed in its name. */
 internal fun Journey.battlePuzzle(m: Monster): PickOne {
-    val c = battleCostume(m, pickSkill(PICK_ONE_SKILLS, preferred = m.skills))
+    val c = battleCostume(m, pickSkill(BATTLE_SKILLS, preferred = m.skills))
     return puzzleFor(c.skill, c.intro, c.thing)
 }
 
@@ -243,5 +259,24 @@ internal fun Journey.obstacle(
     return listOf(
         tell(scene, say.obstacleIntro(o)),
         askOnce(scene, c, say.obstacleOops(o), say.obstacleYay(o), o, onWin = { next() }, onFail = { listOf(tell(scene, say.failedFor(o))) + turnBack() }),
+    )
+}
+
+/**
+ * Back at camp, before the Storybook page and the stars: remember the trip (where did you go after the market?). It is the child's
+ * own journey, in order, so it asks for recall and sequence, and it is a gentle puzzle (a hint ladder, no turning back).
+ */
+internal fun Journey.recap(): List<JStep>? {
+    val spot = { l: com.littledungeon.engine.rpg.world.Location -> PictureFactory.Spot(l.name, l.theme) }
+    val trail = visited.map { spot(kingdom.location(it)) }
+    val c = PictureFactory.recall(level(Skill.STORY), nextSeed(), trail, kingdom.locations.map(spot)) ?: return null
+    val s = scene(Place.CAMP)
+    return listOf(
+        tell(s, say.recapIntro()),
+        JStep(Beat.Ask(s, c, Speech.of(say.recapOops()), Speech.of(say.recapYay()), explain = Coach.explain(c))) { reply ->
+            val r = reply as? Reply.Solved ?: Reply.Solved(1, 0, 0)
+            record(c, r.tries, r.hints, r.millis)
+            emptyList()
+        },
     )
 }

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Downloads the offline narrator voice into the app before it is built (decision #43):
-# the sherpa-onnx speech engine (Apache-2.0) and the Kokoro English voice (Apache-2.0).
+# the sherpa-onnx speech engine (Apache-2.0, v1.13.8) and the Kokoro v1.0 voices (Apache-2.0: 54 speakers, of which the 28 English ones are used).
 # Both are too big for git, so CI fetches them; the app falls back to the phone's own
 # text-to-speech when they are missing.
 set -euo pipefail
 
 SHERPA_VERSION="v1.13.8"
-VOICE="kokoro-int8-en-v0_19"
+VOICE="kokoro-int8-multi-lang-v1_0"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 JNI="$ROOT/app/src/main/jniLibs/arm64-v8a"
 ASSETS="$ROOT/app/src/main/assets/kokoro"
@@ -26,9 +26,9 @@ if [ ! -f "$ASSETS/model.int8.onnx" ]; then
   tar -xjf "$WORK/voice.tar.bz2" -C "$WORK"
   rm -rf "$ASSETS"
   mkdir -p "$ASSETS"
-  cp "$WORK/$VOICE/model.int8.onnx" "$WORK/$VOICE/voices.bin" "$WORK/$VOICE/tokens.txt" "$WORK/$VOICE/LICENSE" "$ASSETS/"
+  cp "$WORK/$VOICE/model.int8.onnx" "$WORK/$VOICE/voices.bin" "$WORK/$VOICE/tokens.txt" "$WORK/$VOICE/lexicon-us-en.txt" "$WORK/$VOICE/LICENSE" "$ASSETS/"
   cp -r "$WORK/$VOICE/espeak-ng-data" "$ASSETS/"
-  # English only: drop the other languages' pronunciation dictionaries.
+  # English only: the Chinese and other lexicons, dictionaries and number grammars are not copied; drop the other languages' pronunciation dictionaries.
   find "$ASSETS/espeak-ng-data" -maxdepth 1 -name '*_dict' ! -name 'en_dict' -delete
 fi
 

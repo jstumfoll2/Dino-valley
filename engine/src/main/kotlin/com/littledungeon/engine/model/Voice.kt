@@ -100,7 +100,7 @@ object Voice {
         if (HELD_SOUND.matches(spokenSentence)) LETTER_SOUND_ID else who.voiceId
 
     /** Changes when the narrator's voice settings change, so every clip is made again. */
-    const val VOICE_ID = "kokoro-en-v0_19/sid1/speed0.9"
+    const val VOICE_ID = "kokoro-multi-lang-v1_0/sid3/speed0.9/pitch1.0"
 
     /** The default name of the baby dragon, said by the narrator until the child records one. */
     const val DEFAULT_NAME = "Sparky"
