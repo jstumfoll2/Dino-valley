@@ -2,6 +2,8 @@ package com.littledungeon.engine.rpg.story
 
 import com.littledungeon.engine.model.Who
 import com.littledungeon.engine.rpg.hero.Attribute
+import com.littledungeon.engine.rpg.learn.Skill
+import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.story.Cond.*
 import com.littledungeon.engine.rpg.story.Effect.*
 
@@ -32,7 +34,7 @@ object CoreNpcs {
     val hoot = Npc(
         "professor_hoot", "Professor Hoot", "Keeper of the Storybook", Who.ELDER,
         "Professor Hoot is an old owl who has kept the Great Storybook for sixty years. He never lost a single page until this year, and he feels it is all his fault.",
-        "Welcome back, little adventurer! I am Professor Hoot, keeper of the Great Storybook.",
+        "Hello, little adventurer! I am Professor Hoot, keeper of the Great Storybook.",
         listOf(Start("hub")),
         listOf(
             n(
@@ -147,7 +149,7 @@ object CoreNpcs {
             n(
                 "hub", "Do you like riddles?",
                 listOf(
-                    o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose")), needs = listOf(NoFlag("run:hazel_riddle"))),
+                    o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose", Skill.PATTERNS, "Hazel scratches a riddle in the dirt with a stick.")), needs = listOf(NoFlag("run:hazel_riddle"))),
                     o("Stay for tea", "talk_give", "tea", needs = listOf(Stat(Attribute.KINDNESS, 2))),
                     bye(),
                 ),
@@ -160,7 +162,7 @@ object CoreNpcs {
             ),
             n(
                 "friend", "My friend! The rope ladder is always down for you. Care for another riddle, or a cup of tea?",
-                listOf(o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose")), needs = listOf(NoFlag("run:hazel_riddle"))), bye()),
+                listOf(o("Try a riddle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "riddle_win", "riddle_lose", Skill.PATTERNS, "Hazel scratches a riddle in the dirt with a stick.")), needs = listOf(NoFlag("run:hazel_riddle"))), bye()),
             ),
         ),
     )
@@ -176,11 +178,11 @@ object CoreNpcs {
                 listOf(
                     o("Look at his wares", "talk_buy", null, listOf(Shop("smithy"))),
                     o("Ask about the dragon", "talk_ask", "dragon"),
-                    o("Prove your skill", "talk_puzzle", null, listOf(Puzzle("LOCK", "proof", "proof_fail")), needs = listOf(NoFlag("brogan_helm"), NoFlag("run:brogan_tried"))),
+                    o("Prove your skill", "talk_puzzle", null, listOf(Puzzle("LOCK", "proof", "proof_fail", Skill.NUMBERS, "Brogan hammers a number into a bar of iron.")), needs = listOf(NoFlag("brogan_helm"), NoFlag("run:brogan_tried"))),
                     bye(),
                 ),
             ),
-            n("dragon", "I was a knight when the dragon came down from the peak. I did not fight it. I ran. Do you think that makes me a coward? <narrator>Sparky shakes its head. <pet>Running is smart sometimes!", listOf(o("You are not a coward", "talk_yes", "hub", listOf(Relation("smith_brogan", 1))))),
+            n("dragon", "I was a knight when the dragon came down from the peak. I did not fight it. I ran. Do you think that makes me a coward? <narrator>{name} shakes its head. <pet>Running is smart sometimes!", listOf(o("You are not a coward", "talk_yes", "hub", listOf(Relation("smith_brogan", 1))))),
             n("proof", "Sharp mind, steady hand. You have earned something. This helmet was meant for a knight, and I think you are one.", listOf(bye()), listOf(Give("iron_helm"), SetFlag("brogan_helm"), Relation("smith_brogan", 2))),
             n("proof_fail", "Not quite. Come back with a clearer head, and we will try again.", listOf(bye()), listOf(SetFlag("run:brogan_tried"))),
         ),
@@ -224,7 +226,7 @@ object CoreNpcs {
                 "page", "A recipe page? What recipe page? I have never seen a recipe page in my life. <narrator>Something sticky is peeking out of his pocket.",
                 listOf(
                     o("Pay five coins", "talk_coin", "paid", listOf(Pay(5)), needs = listOf(Coins(5))),
-                    o("Challenge him", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "won", "lost"))),
+                    o("Challenge him", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "won", "lost", Skill.LETTERS, "Rascal waves the page and dares you to find the letter on it."))),
                     o("Chase him", "talk_fight", null, listOf(Fight("sneaky_fox", "won"))),
                 ),
             ),
@@ -292,7 +294,7 @@ object CoreNpcs {
             n(
                 "ink", "The Baron's ink! Yes, yes. It sticks to everything. I have a bottle that washes it right off, but I have forgotten where I put it. Solve my puzzle, or give me a cookie, and my memory will come back.",
                 listOf(
-                    o("Solve his puzzle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "cleaner", "forgot")), needs = listOf(NoFlag("run:merlo_cleaner"))),
+                    o("Solve his puzzle", "talk_puzzle", null, listOf(Puzzle("RIDDLE", "cleaner", "forgot", Skill.LETTERS, "Merlo tries to remember the first letter of his bottle spell.")), needs = listOf(NoFlag("run:merlo_cleaner"))),
                     o("Give him a cookie", "talk_cookie", "cleaner", listOf(Take("friendship_cookie")), needs = listOf(HasItem("friendship_cookie"), NoFlag("run:merlo_cleaner"))),
                     bye(),
                 ),
@@ -353,7 +355,7 @@ object CoreNpcs {
         "grumble", "Grumble the Troll", "Troll of Old Stone Bridge", Who.GROWLER,
         "Grumble has guarded the bridge since his friends moved away. He took Finn's boat to build a raft so he could visit them, but he is too shy to say so, so he just growls at everyone.",
         "Stop! This is my bridge. Nobody crosses without paying the toll. Three coins.",
-        listOf(Start("friend", Flag("grumble_befriended")), Start("hub")),
+        listOf(Start("friend", Flag("grumble_befriended")), Start("passed", Flag("run:grumble_paid")), Start("passed", Flag("run:grumble_beaten")), Start("hub")),
         listOf(
             n(
                 "hub", "Well? Are you paying, or not?",
@@ -376,16 +378,18 @@ object CoreNpcs {
                 "befriend", "You... you want to be my friend? <narrator>A very big tear rolls down a very big nose. <growler>I will take the boat back to Finn right away. And you may cross any time. Friends do not pay tolls.",
                 listOf(bye()), listOf(SetFlag("grumble_befriended"), SetFlag("friend:grumble_troll"), Relation("grumble", 5), Heal(99)),
             ),
-            n("beaten", "Ow. All right, you win. Cross, if you must.", listOf(bye())),
+            n("beaten", "Ow. All right, you win. Cross, if you must.", listOf(bye()), listOf(SetFlag("run:grumble_beaten"))),
+            n("passed", "We have settled things, you and I. Cross the bridge whenever you like.", listOf(bye("Wave goodbye"))),
             n("friend", "My friend! Cross whenever you like. Finn has his boat back, and I have been practicing my waving.", listOf(bye("Wave goodbye"))),
         ),
+        passFlags = listOf("run:grumble_paid", "grumble_befriended", "run:grumble_beaten"),
     )
 
     val bess = Npc(
         "bandit_bess", "Bandit Bess", "Bandit of Windy Pass", Who.SNEAK,
         "Bess is not really a bad person. She has a little brother to feed and no other way to do it. She takes tolls from travelers because nobody ever gave her a job.",
         "Halt! This is my pass. Five coins to cross, or play for it.",
-        listOf(Start("friend", Flag("bess_befriended")), Start("hub")),
+        listOf(Start("friend", Flag("bess_befriended")), Start("passed", Flag("run:bess_paid")), Start("passed", Flag("run:bess_beaten")), Start("hub")),
         listOf(
             n(
                 "hub", "Well? What will it be?",
@@ -393,6 +397,7 @@ object CoreNpcs {
                     o("Pay five coins", "talk_coin", "paid", listOf(Pay(5)), needs = listOf(Coins(5), NoFlag("run:bess_paid"))),
                     o("Sing her a song", "talk_sing", "song", needs = listOf(Stat(Attribute.KINDNESS, 2))),
                     o("Fight her", "talk_fight", null, listOf(Fight("bandit_bess", "beaten"))),
+                    bye("Back away"),
                 ),
             ),
             n("paid", "Pleasure. Off you go. And no, I am not saving up for anything. Do not ask me about my brother.", listOf(o("Tell me about your brother", "talk_listen", "brother", listOf(SetFlag("run:bess_paid"))), bye()), listOf(SetFlag("run:bess_paid"))),
@@ -405,9 +410,11 @@ object CoreNpcs {
                 "friend_made", "Hob would give me a job? And you would help me? Then I do not need to be a bandit at all! <narrator>Bess shows you a secret path over the mountain that only she knows. <sneak>Use it any time, friend.",
                 listOf(bye()), listOf(SetFlag("bess_befriended"), SetFlag("friend:bandit_bess"), Relation("bandit_bess", 5)),
             ),
-            n("beaten", "Ow. You are tougher than you look. Go on, then. The pass is yours.", listOf(bye())),
+            n("beaten", "Ow. You are tougher than you look. Go on, then. The pass is yours.", listOf(bye()), listOf(SetFlag("run:bess_beaten"))),
+            n("passed", "We are square, you and me. Off you go.", listOf(bye("Wave goodbye"))),
             n("friend", "My friend! The secret path is always open for you. And tell Hob I start my new job on Monday.", listOf(bye("Wave goodbye"))),
         ),
+        passFlags = listOf("run:bess_paid", "bess_befriended", "run:bess_beaten"),
     )
 
     val fern = Npc(
@@ -438,12 +445,12 @@ object CoreNpcs {
             n(
                 "hub", "Can you count my chicks?",
                 listOf(
-                    o("Count the chicks", "talk_puzzle", null, listOf(Puzzle("CLIMB", "found", "missed")), needs = listOf(NoFlag("run:hen_chicks"))),
+                    o("Count the chicks", "talk_puzzle", null, listOf(Puzzle("CLIMB", "found", "missed", Skill.COUNTING, "My chicks are hiding under the mushrooms, one chick under each.", Thing.MUSHROOM)), needs = listOf(NoFlag("run:hen_chicks"))),
                     bye(),
                 ),
             ),
-            n("found", "Eight, nine, ten! All ten chicks are here! You are a very clever counter. Please take a honey cake, and a coin for your trouble.", listOf(bye()), listOf(Give("honey_cake"), Earn(4), SetFlag("run:hen_chicks"))),
-            n("missed", "Oh dear, I think one is still lost. Come back and help me count again.", listOf(bye()), listOf(SetFlag("run:hen_chicks"))),
+            n("found", "You counted every mushroom, so every chick is found! You are a very clever counter. Please take a honey cake, and a coin for your trouble.", listOf(bye()), listOf(Give("honey_cake"), Earn(4), SetFlag("run:hen_chicks"))),
+            n("missed", "Oh dear, I think one chick is still hiding. Come back and help me count again.", listOf(bye()), listOf(SetFlag("run:hen_chicks"))),
         ),
     )
 
@@ -456,7 +463,7 @@ object CoreNpcs {
             n(
                 "hub", "Do you want to play in the falls?",
                 listOf(
-                    o("Hop across the stones", "talk_puzzle", null, listOf(Puzzle("CROSS", "cave", "splash")), needs = listOf(NoFlag("run:otto_cave"))),
+                    o("Hop across the stones", "talk_puzzle", null, listOf(Puzzle("CROSS", "cave", "splash", Skill.SKIP_COUNTING, "Hop across the stones behind the waterfall.")), needs = listOf(NoFlag("run:otto_cave"))),
                     o("Splash around", "talk_laugh", "splash_fun", listOf(Heal(99), SetFlag("run:otto_splash")), needs = listOf(NoFlag("run:otto_splash"))),
                     bye(),
                 ),

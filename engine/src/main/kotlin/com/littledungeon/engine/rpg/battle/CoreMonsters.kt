@@ -80,7 +80,7 @@ object CoreMonsters {
             "A fox pops out from behind a crate. <sneak>You want it back? Then catch me, if you can!",
             "The fox drops what it was holding. <sneak>Fine, fine. You are quicker than you look.",
             "The fox darts around you so fast that you get dizzy and sit down.",
-            coins = 3..6,
+            coins = 3..6, roams = false,
         ),
     )
 
@@ -114,15 +114,15 @@ object CoreMonsters {
             "A bandit swings down from a rock. <sneak>This is my pass. Pay up, or play for it!",
             "Bess lowers her fists and sits down hard. <sneak>All right, all right. I give up. Nobody ever beat me before.",
             "Bess tips her hat, gives you a gentle shove, and everything goes dim.",
-            coins = 8..12, drops = listOf(Drop("bubble_shield", 30)), befriendable = true,
+            coins = 8..12, drops = listOf(Drop("bubble_shield", 30)), befriendable = true, roams = false,
         ),
         Monster(
-            "mossy_golem", "Mossy Golem", Tier.ELITE, 36, 5, listOf(PATTERNS, COUNTING, ADDITION), Who.GROWLER,
+            "mossy_golem", "Mossy Golem", Tier.MINI_BOSS, 38, 6, listOf(PATTERNS, COUNTING, ADDITION), Who.GROWLER,
             "A mossy golem rumbles to life. <growler>Stone must stay still. Puzzles must be solved. That is the rule.",
             "The golem crumbles into a pile of mossy rocks. <growler>Rule solved. Thank you.",
             "The golem leans over, and everything goes dark and mossy.",
-            coins = 7..12, drops = listOf(Drop("iron_helm", 10), Drop("big_potion", 20)),
-            habitat = setOf(Terrain.MOUNTAIN, Terrain.SWAMP),
+            // The guardian of Gloomwood Mine stays in its mine.
+            coins = 7..12, drops = listOf(Drop("iron_helm", 10), Drop("big_potion", 20)), roams = false,
         ),
     )
 

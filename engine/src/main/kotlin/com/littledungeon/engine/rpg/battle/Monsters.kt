@@ -41,6 +41,11 @@ data class Monster(
     val weakness: String? = null,
     /** The roads it lurks on (empty: anywhere). */
     val habitat: Set<com.littledungeon.engine.rpg.world.Terrain> = emptySet(),
+    /**
+     * False for a person with a story of their own (Bess, Rascal): they are only fought where their own conversation
+     * puts the hero in front of them, never met as a random monster on a road, least of all after becoming friends.
+     */
+    val roams: Boolean = true,
 ) {
     /** The picture name; the app looks up `art_monster_<id>`. */
     val art: String get() = "monster_$id"

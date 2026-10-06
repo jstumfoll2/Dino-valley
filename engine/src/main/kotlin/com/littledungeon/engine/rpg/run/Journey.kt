@@ -4,6 +4,7 @@ import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.hero.Attribute
 import com.littledungeon.engine.rpg.hero.Hero
+import com.littledungeon.engine.rpg.hero.Power
 import com.littledungeon.engine.rpg.hero.Progression
 import com.littledungeon.engine.rpg.items.Item
 import com.littledungeon.engine.rpg.items.Slot
@@ -23,6 +24,9 @@ import com.littledungeon.engine.rpg.world.Terrain
 import com.littledungeon.engine.rpg.world.WorldMemory
 import com.littledungeon.engine.util.Clock
 import kotlin.random.Random
+
+/** Stars of kindness for each point of friendship earned from a person. */
+internal const val KINDNESS_PER_FRIENDSHIP = 5
 
 /** One moment lined up to show, and what to line up after the child answers it. */
 internal class JStep(val beat: Beat, val then: (Reply) -> List<JStep> = { emptyList() })
@@ -48,7 +52,7 @@ class Journey(
 ) {
     internal val random = Random(seed)
     internal val say = JourneyLines(Random(random.nextLong()))
-    internal val rooms = Lines(Random(random.nextLong()))
+    internal val rooms = RoomLines(Random(random.nextLong()))
 
     val kingdom: Kingdom = Content.kingdom
     val arc: Arc = ArcPicker.pick(startWorld, random)
@@ -74,6 +78,9 @@ class Journey(
 
     val visited = mutableSetOf(kingdom.camp.id)
 
+    /** Where the hero set off from on the road that led here, so someone who holds the way can send them back. */
+    internal var cameFrom: String = kingdom.camp.id
+
     /** Health now; the most is [Hero.maxHp]. */
     var hp: Int = startHero.maxHp
         internal set
@@ -84,6 +91,8 @@ class Journey(
     internal var moves = 0
     internal val done = mutableSetOf<String>()
     internal val dungeonRooms = mutableMapOf<String, Int>()
+    internal val walked = mutableSetOf<String>()
+    internal val dungeonPlans = mutableMapOf<String, List<com.littledungeon.engine.rpg.world.RoomKind>>()
     internal var monstersBeaten = 0
     internal var faints = 0
     internal var slips = 0
@@ -122,10 +131,31 @@ class Journey(
         beat = queue.first().beat
     }
 
-    fun reply(reply: Reply) {
+    /** What the child has done so far, in order. With the seed and the starting hero, skills and world it rebuilds this journey: see [replay]. */
+    val commands: List<Command> get() = log
+
+    private val log = mutableListOf<Command>()
+
+    /** The time of the command being run, so everything that notes a time notes the same one however many times it is replayed. */
+    private var now = 0L
+
+    /** Seconds of play so far in the day that is running, by [effortSeconds]; at [DAY_SECONDS] the party camps for the night. */
+    internal var dayEffort = 0.0
+
+    /** Which day of the journey it is, from 1. */
+    var day = 1
+        internal set
+
+    fun reply(reply: Reply) = play(Command(reply, clock.nowMillis()))
+
+    /** Runs one thing the child did. Every journey, live or replayed, goes through here. */
+    fun play(command: Command) {
         if (finished) return
+        log += command
+        now = command.at
         val step = queue.removeFirst()
-        val follow = step.then(reply)
+        dayEffort += step.beat.effortSeconds()
+        val follow = step.then(command.reply)
         for (s in follow.asReversed()) queue.addFirst(s)
         if (queue.isEmpty()) queue += nextAction()
         beat = queue.first().beat
@@ -161,7 +191,7 @@ class Journey(
     internal fun scene(
         place: Place, vararg extra: Actor, mood: Mood = Mood.CALM, cleared: Boolean = false,
         npc: NpcView? = null, battle: BattleView? = null,
-    ) = Scene(place, cast + extra, mood, null, cleared, npc, battle)
+    ) = Scene(place, cast + extra, mood, cleared, npc, battle)
 
     /** The backdrop for where the hero is. */
     internal fun placeOf(l: Location): Place = Place(l.theme)
@@ -176,14 +206,32 @@ class Journey(
         stars[attribute] = (stars[attribute] ?: 0) + amount
     }
 
-    /** The puzzle level for a skill: what the child has reached, pushed up as the hero grows. */
-    internal fun level(skill: Skill): Int = (skills.level(skill) + hero.puzzleBoost).coerceAtMost(5)
+    /** Skills whose first puzzle of this journey has been answered; until then the puzzle is a level easier (a warm-up). */
+    internal val warmedUp = mutableSetOf<Skill>()
+
+    /** How many puzzles of each skill have been answered this journey, so no skill takes over. */
+    internal val skillUse = mutableMapOf<Skill, Int>()
+
+    /** Wrong answers sparkle magic can still take away this journey (see [Hero.sparkleCharges]). */
+    internal var sparkleLeft: Int = startHero.sparkleCharges
+
+    /**
+     * The puzzle level for a skill: what the child has reached, with the first puzzle of each skill in a
+     * journey one level easier so every skill starts with a win. The hero's own level never makes puzzles
+     * harder (it makes monsters tougher); only what the child shows does.
+     */
+    internal fun level(skill: Skill): Int {
+        val reached = skills.level(skill)
+        return if (skill in warmedUp) reached else (reached - 1).coerceAtLeast(1)
+    }
 
     internal fun nextSeed() = random.nextLong()
 
     /** Notes a finished puzzle. A failed one counts as a miss, never as a drop in level. */
     internal fun record(c: Challenge, tries: Int, hints: Int, millis: Long, failed: Boolean = false) {
-        val r = ChallengeRecord(c.skill, c.kind, c.level, if (failed) 2 else tries.coerceAtLeast(1), hints, millis, clock.nowMillis(), c.seed)
+        val r = ChallengeRecord(c.skill, c.kind, c.level, tries.coerceAtLeast(1), hints, millis, now, c.seed, failed)
+        warmedUp += c.skill
+        skillUse.merge(c.skill, 1, Int::plus)
         records += r
         skills = skills.record(r)
         gain(c.skill.attribute, if (r.firstTry) 15 else 10)
@@ -225,14 +273,18 @@ class Journey(
 
     internal fun relation(npcId: String): Int = world.relations[npcId] ?: 0
 
+    /** Being good to someone is kindness: every point of friendship earns stars of it. */
     internal fun befriend(npcId: String, delta: Int) {
-        world = world.copy(relations = world.relations + (npcId to relation(npcId) + delta))
+        val bonus = if (delta > 0 && hero.heroClass.power == Power.FRIEND_MAGNET) 1 else 0
+        world = world.copy(relations = world.relations + (npcId to relation(npcId) + delta + bonus))
+        if (delta > 0) gain(Attribute.KINDNESS, delta * KINDNESS_PER_FRIENDSHIP)
     }
 
     internal fun holds(c: Cond): Boolean = when (c) {
         is Cond.HasItem -> hero.count(c.itemId) >= c.n
         is Cond.Coins -> hero.coins >= c.atLeast
-        is Cond.Stat -> hero.statLevel(c.attribute) >= c.atLeast
+        // A Guardian is a magnet for friends: kind choices are always open to them.
+        is Cond.Stat -> hero.statLevel(c.attribute) >= c.atLeast || (c.attribute == Attribute.KINDNESS && hero.heroClass.power == Power.FRIEND_MAGNET)
         is Cond.Flag -> hasFlag(c.name)
         is Cond.NoFlag -> !hasFlag(c.name)
         is Cond.Friend -> relation(c.npcId) >= c.atLeast
@@ -259,12 +311,31 @@ class Journey(
         // Before each adventure: which chapter of the Storybook this is, and how many pages are home.
         steps += tell(s, say.chapter(chapter, arc.title))
         if (world.adventures > 0 && world.pages > 0) steps += tell(s, say.pagesLine(world.pages))
-        arc.setup.forEach { steps += tell(s, it) }
+        (if ((world.arcsDone[arc.id] ?: 0) > 0 && arc.returnSetup.isNotEmpty()) arc.returnSetup else arc.setup).forEach { steps += tell(s, it) }
         steps += tell(JourneyStory.mapScene(this), JourneyStory.toTheMap(this, chapter))
         return steps
     }
 
-    private fun nextAction(): List<JStep> = if (finishing) finale() else travel()
+    private fun nextAction(): List<JStep> = when {
+        finishing -> finale()
+        dayEffort >= DAY_SECONDS -> night()
+        else -> travel()
+    }
+
+    companion object {
+        /** A day of play, in seconds by [effortSeconds]: after this the party camps, a good place to put the game down. */
+        const val DAY_SECONDS = 540.0
+
+        /**
+         * The journey that [commands] lead to, from the same start: the same beat, hero, skills and world as when they were
+         * first played. What the child does next is stamped by [clock].
+         */
+        fun replay(seed: Long, hero: Hero, skills: SkillBook, world: WorldMemory, commands: List<Command>, clock: Clock = Clock.System): Journey {
+            val j = Journey(seed, hero, skills, world, clock)
+            commands.forEach { j.play(it) }
+            return j
+        }
+    }
 }
 
 internal object JourneyStory {
@@ -272,6 +343,29 @@ internal object JourneyStory {
 
     fun toTheMap(j: Journey, chapter: Int): String =
         "This is the kingdom of Whisperwood. You are at ${j.kingdom.camp.name}, and the story ends at ${j.kingdom.location(j.arc.lairId).name}. Many roads lead there. Visit the towns, make friends, and find what you need. Every friend you make could help!"
+}
+
+/**
+ * These steps, then whatever [next] lines up once the last of them (and anything it leads to) is done.
+ * [next] is only asked for then, so what it does (arriving somewhere) happens after, not before.
+ */
+internal fun List<JStep>.andThen(next: () -> List<JStep>): List<JStep> {
+    if (isEmpty()) return next()
+    val last = last()
+    return dropLast(1) + JStep(last.beat) { reply -> last.then(reply) + next() }
+}
+
+/** Night falls: everyone is rested, then a new day starts at the map. */
+internal fun Journey.night(): List<JStep> {
+    val ending = day
+    dayEffort = 0.0
+    day++
+    hp = hero.maxHp
+    val s = scene(Place.CAMP)
+    return listOf(
+        JStep(Beat.Night(s, Speech.of(say.nightfall()), ending)),
+        tell(s.copy(mood = Mood.HAPPY), say.morning()),
+    )
 }
 
 /** The XP and level bookkeeping used when an adventure ends. */

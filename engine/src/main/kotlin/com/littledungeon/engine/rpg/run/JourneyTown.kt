@@ -3,11 +3,13 @@ package com.littledungeon.engine.rpg.run
 import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.items.Obstacle
+import com.littledungeon.engine.rpg.learn.Thing
 import com.littledungeon.engine.rpg.story.Effect
 import com.littledungeon.engine.rpg.story.Npc
 import com.littledungeon.engine.rpg.story.ShopDef
 import com.littledungeon.engine.rpg.world.Location
 import com.littledungeon.engine.rpg.world.LocationKind
+import com.littledungeon.engine.rpg.world.RoomKind
 import com.littledungeon.engine.rpg.world.Terrain
 
 /** What a night at an inn costs. */
@@ -71,24 +73,64 @@ internal fun Journey.wild(l: Location, first: Boolean): List<JStep> {
     val people = l.residents.mapNotNull { Content.npc(it) }
     if (people.isNotEmpty()) {
         val someone = people.firstOrNull { p -> p.starts.any { holds(it.needs) } }
-        return steps + if (someone != null) talk(someone) { emptyList() } else listOf(tell(s, say.quiet(l.name)))
+        return steps + if (someone != null) talk(someone) { tollCheck(l, someone) } else listOf(tell(s, say.quiet(l.name)))
     }
     return steps + if (first) wildEvent(l, s) else listOf(tell(s, say.quiet(l.name)))
 }
 
-/** Something happens at a place nobody lives: a chest, a shrine, a fight or a traveler. */
+/**
+ * Someone who holds the way lets the hero by once they have paid, made friends or been beaten. Otherwise the hero is sent
+ * back the way they came and that road is closed for a few moves, and can go around, or come back with what is wanted.
+ */
+internal fun Journey.tollCheck(l: Location, npc: Npc): List<JStep> {
+    if (npc.passFlags.isEmpty() || npc.passFlags.any { hasFlag(it) }) return emptyList()
+    val back = kingdom.location(cameFrom)
+    kingdom.roadBetween(l.id, back.id)?.let { closed[it.id] = moves + 3 }
+    here = back.id
+    return listOf(tell(sceneAt(l, npc), say.tollBlocked(npc.name)))
+}
+
+/** Something happens at a place nobody lives: a chest, a shrine, a fight, a traveler or a hidden room. */
 internal fun Journey.wildEvent(l: Location, s: Scene): List<JStep> = when (random.nextInt(100)) {
-    in 0 until 35 -> chestEvent(s)
-    in 35 until 55 -> {
-        heal(hero.maxHp)
-        gain(com.littledungeon.engine.rpg.hero.Attribute.COURAGE, 5)
-        listOf(tell(s.copy(mood = Mood.HAPPY), say.shrine()))
-    }
-    in 55 until 80 -> {
+    in 0 until 25 -> chestEvent(s)
+    in 25 until 40 -> shrineEvent(s)
+    in 40 until 65 -> {
         val m = roadMonster(Terrain.FOREST, 1 + random.nextInt(2))
-        listOf(tell(s, say.fightAsk(m.name.lowercase()))) + battle(m, s.place, onWin = { emptyList() })
+        encounter(m, s, retreat = { listOf(tell(s, say.sneakAway())) }, onWin = { emptyList() })
     }
-    else -> listOf(tell(s, say.wanderer())) + coins(s, 2 + random.nextInt(4))
+    in 65 until 80 -> wandererEvent(s)
+    else -> hiddenRoom(s)
+}
+
+/** Something found along a road that is walked for the first time and has no monster: a chest, a shrine, a traveler, a hidden room. */
+internal fun Journey.roadEvent(s: Scene): List<JStep> = when (random.nextInt(100)) {
+    in 0 until 25 -> chestEvent(s)
+    in 25 until 40 -> shrineEvent(s)
+    in 40 until 60 -> wandererEvent(s)
+    else -> hiddenRoom(s)
+}
+
+internal fun Journey.shrineEvent(s: Scene): List<JStep> {
+    heal(hero.maxHp)
+    gain(com.littledungeon.engine.rpg.hero.Attribute.COURAGE, 5)
+    return listOf(tell(s.copy(mood = Mood.HAPPY), say.shrine()))
+}
+
+internal fun Journey.wandererEvent(s: Scene): List<JStep> = listOf(tell(s, say.wanderer())) + coins(s, 2 + random.nextInt(4))
+
+/**
+ * A little door hidden by the road, into one of the puzzle rooms a dungeon can hold: the kind of puzzle the
+ * child has practiced least. Solving it earns coins; missing it just closes the door.
+ */
+internal fun Journey.hiddenRoom(s: Scene): List<JStep> {
+    val skill = pickSkill(RoomKind.learningRooms.map { it.skill!! })
+    val kind = RoomKind.learningRooms.first { it.skill == skill }
+    val room = roomScene(kind)
+    return listOf(tell(s, say.hiddenDoor())) + roomPuzzle(
+        kind, room,
+        solved = { coins(room, 3 + random.nextInt(5)) + tell(room.copy(mood = Mood.HAPPY), say.roomCleared()) },
+        failed = { listOf(tell(s, say.hiddenDoorShut())) },
+    )
 }
 
 /** A locked chest: one try at the lock, or a key from the bag. */
@@ -193,10 +235,12 @@ internal fun Journey.runEffects(list: List<Effect>, npc: Npc?, back: () -> List<
         }
         is Effect.Puzzle -> {
             val o = Obstacle.valueOf(e.kind)
+            val own = e.skill?.let { Costume(it, e.ask.orEmpty(), e.thing ?: Thing.STONE) }
             obstacle(
                 o, s,
                 next = { e.win?.let { node(npc!!, it, back) } ?: cont() },
                 turnBack = { e.lose?.let { node(npc!!, it, back) } ?: cont() },
+                own = own,
             )
         }
         is Effect.Shop -> {
@@ -213,10 +257,16 @@ internal fun Journey.runEffects(list: List<Effect>, npc: Npc?, back: () -> List<
 
 // ------------------------------------------------------------- shops
 
+/** What an item costs here: kindness already lowers it, and a shopkeeper who likes the hero lowers it more (5% for each point, up to 20%). */
+internal fun Journey.priceAt(npc: Npc?, item: com.littledungeon.engine.rpg.items.Item): Int {
+    val friendly = npc?.let { (relation(it.id) * 5).coerceIn(0, 20) } ?: 0
+    return (hero.priceOf(item) * (100 - friendly) / 100).coerceAtLeast(1)
+}
+
 internal fun Journey.shop(def: ShopDef, npc: Npc?, done: () -> List<JStep>): List<JStep> {
     val s = sceneAt(kingdom.location(here), npc)
     val stock = def.stock.mapNotNull { Content.item(it) }.map {
-        val price = hero.priceOf(it)
+        val price = priceAt(npc, it)
         ShopItem(it.id, it.name, price, hero.count(it.id) + if (hero.worn.values.contains(it.id)) 1 else 0, hero.coins >= price)
     }
     val prompt = Speech.of(say.shopWelcome(npc?.name ?: def.name) + " " + say.shopAsk())
@@ -225,7 +275,7 @@ internal fun Journey.shop(def: ShopDef, npc: Npc?, done: () -> List<JStep>): Lis
             val bought = (reply as? Reply.Bought)?.itemId?.let { id -> Content.item(id)?.takeIf { it.id in def.stock } }
             if (reply !is Reply.Bought) return@JStep listOf(tell(s, say.shopBye())) + done()
             if (bought == null) return@JStep shop(def, npc, done)
-            val price = hero.priceOf(bought)
+            val price = priceAt(npc, bought)
             if (hero.coins < price) return@JStep listOf(tell(s, say.cannotAfford())) + shop(def, npc, done)
             hero = hero.earn(-price).give(bought.id)
             // New gear goes straight on if that spot was empty, so the hero's look changes at once.

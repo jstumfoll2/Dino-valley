@@ -101,9 +101,12 @@ fun Backdrop(place: Place) {
 fun Modifier.at(centerX: Dp, centerY: Dp, width: Dp, height: Dp): Modifier =
     this.offset(centerX - width / 2, centerY - height / 2).size(width, height)
 
-/** The narrator's words, printed on parchment for grown-ups reading along. The dragon's name is in orange. */
+/**
+ * The narrator's words, printed on parchment for grown-ups reading along. The dragon's name is in orange. [names] says who each
+ * voice is in this scene (a person's or a foe's name), so the label reads "Professor Hoot:" and not "Elder:".
+ */
 @Composable
-fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modifier, names: Map<Who, String> = emptyMap(), onClick: () -> Unit) {
     val name = LocalDragonName.current.name
     val text = buildAnnotatedString {
         // Characters' words are labelled with who says them; the narrator's are plain.
@@ -128,7 +131,8 @@ fun Caption(speech: List<Speech>, fontSize: TextUnit, modifier: Modifier = Modif
                     who = part.who
                     if (who != Who.NARRATOR) {
                         space(null)
-                        val label = if (who == Who.PET) name else who.tag.replaceFirstChar { it.uppercase() }
+                        // Who is speaking, by name when the scene knows them (Professor Hoot), otherwise by kind of voice (Critter).
+                        val label = if (who == Who.PET) name else names[who] ?: who.tag.replaceFirstChar { it.uppercase() }
                         withStyle(SpanStyle(color = speakerColor(who), fontWeight = FontWeight.Black)) { append("$label:") }
                     }
                 }
@@ -233,14 +237,6 @@ fun HealthBar(hp: Int, maxHp: Int, height: Dp, modifier: Modifier = Modifier, la
     }
 }
 
-@Composable
-fun BossStars(lit: Int, size: Dp, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(size * 0.15f)) {
-        repeat(3) { BossStar(it < lit, Modifier.size(size)) }
-    }
-}
-
-
 /**
  * Shown while the narrator's next words are still being made: a little scroll with bouncing
  * dots, so a pause reads as "getting ready", not "stuck". After a moment it grows into a
@@ -277,7 +273,7 @@ fun VoiceLoading(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (long) Text("📖", fontSize = 40.sp, modifier = Modifier.graphicsLayer { rotationZ = spin * 0.05f - 9f })
+            if (long) PictoIcon(Picto.BOOK, Palette.Ink, Modifier.size(40.dp).graphicsLayer { rotationZ = spin * 0.05f - 9f })
             repeat(3) { i ->
                 val up = (phase - i).let { if (it in 0f..1f) kotlin.math.sin(it * Math.PI).toFloat() else 0f }
                 Box(

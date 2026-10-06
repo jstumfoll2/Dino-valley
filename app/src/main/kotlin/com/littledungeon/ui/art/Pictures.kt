@@ -2,6 +2,9 @@ package com.littledungeon.ui.art
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -20,10 +23,8 @@ import com.littledungeon.engine.rpg.learn.PuzzlePicture
 import com.littledungeon.engine.rpg.learn.Rune
 import com.littledungeon.engine.rpg.learn.RuneShape
 import com.littledungeon.engine.rpg.learn.Thing
-import com.littledungeon.engine.rpg.run.ChoicePicture
 import com.littledungeon.engine.rpg.run.LootKind
 import com.littledungeon.engine.rpg.run.Place
-import com.littledungeon.engine.rpg.world.RoomKind
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -62,21 +63,6 @@ object Art {
         PuzzlePicture.LIBRARY -> R.drawable.art_scene_library
         PuzzlePicture.LAIR -> R.drawable.art_scene_lair
         PuzzlePicture.POND -> R.drawable.art_scene_pond
-    }
-
-    /** The sign on a door at a fork: what kind of puzzle is behind it. */
-    fun sign(kind: RoomKind): String = when (kind) {
-        RoomKind.RUNE_DOOR -> "⭐🌙"
-        RoomKind.BRIDGE -> "123"
-        RoomKind.CRYSTAL_CAVE -> "🎨"
-        RoomKind.LIBRARY -> "ABC"
-        RoomKind.TUNNEL -> "✏️"
-        RoomKind.MIRROR_HALL -> "👀"
-        RoomKind.VAULT -> "1+1"
-        RoomKind.STOREROOM -> "🧺"
-        RoomKind.POND -> "🐸"
-        RoomKind.MOSAIC_HALL -> "🧩"
-        else -> "❓"
     }
 
     @DrawableRes
@@ -133,21 +119,9 @@ object Art {
         PotionKind.FRIENDSHIP -> Color(0xFFFF8FC0)
     }
 
+    /** A choice's picture: a painted icon found by name (`art_<icon>`). */
     @DrawableRes
-    fun choice(c: ChoicePicture): Int = when (c) {
-        ChoicePicture.SHARE_SNACK -> R.drawable.art_choice_snack
-        ChoicePicture.SING_SONG -> R.drawable.art_choice_song
-        ChoicePicture.TIPTOE -> R.drawable.art_choice_tiptoe
-        ChoicePicture.MAKE_FRIENDS -> R.drawable.art_choice_friends
-        ChoicePicture.CAST_SPELL -> R.drawable.art_choice_spell
-        ChoicePicture.LIGHT_SPELL -> R.drawable.art_choice_light
-        ChoicePicture.LULLABY -> R.drawable.art_choice_lullaby
-    }
-
-    /** A choice's picture: one of the story pictures, or a painted icon found by name (`art_<icon>`). */
-    @DrawableRes
-    fun choice(c: com.littledungeon.engine.rpg.run.Choice): Int =
-        c.picture?.let { choice(it) } ?: c.icon?.let { byName("art_$it") } ?: R.drawable.art_choice_friends
+    fun choice(c: com.littledungeon.engine.rpg.run.Choice): Int = byName("art_${c.icon}") ?: R.drawable.art_talk_yes
 
     /** The icon of an item, found by name (`art_item_<id>`). */
     @DrawableRes
@@ -164,10 +138,67 @@ object Art {
     }
 }
 
-/** A magic rune: a bold symbol in its color, drawn in code so any shape and color can pair. */
+/**
+ * A magic rune: a bold symbol in its color, drawn in code so any shape and color can pair. With [mark] it also wears the mark of its
+ * color (see [HueMark]), for patterns where color is the only thing that changes.
+ */
 @Composable
-fun RuneIcon(rune: Rune, modifier: Modifier = Modifier) {
-    Canvas(modifier) { drawRune(rune.shape, Art.color(rune.hue)) }
+fun RuneIcon(rune: Rune, modifier: Modifier = Modifier, mark: Boolean = false) {
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) { drawRune(rune.shape, Art.color(rune.hue)) }
+        if (mark) HueMark(rune.hue, Modifier.fillMaxSize(0.46f))
+    }
+}
+
+/**
+ * A small mark that always goes with a color, so a child who cannot tell the colors apart can still tell things apart and learn
+ * which is which: red is a triangle, blue a ring, green a square, yellow a plus, purple a diamond, orange a bar.
+ */
+@Composable
+fun HueMark(hue: Hue, modifier: Modifier = Modifier) {
+    Canvas(modifier) { drawHueMark(hue) }
+}
+
+fun DrawScope.drawHueMark(hue: Hue) {
+    val w = size.minDimension
+    val c = Offset(size.width / 2, size.height / 2)
+    val ink = Color(0xFF3D2A1C)
+    fun filled(path: Path) {
+        drawPath(path, Color.White)
+        drawPath(path, ink, style = Stroke(w * 0.09f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
+    when (hue) {
+        Hue.RED -> filled(
+            Path().apply {
+                moveTo(c.x, c.y - w * 0.4f); lineTo(c.x + w * 0.38f, c.y + w * 0.3f); lineTo(c.x - w * 0.38f, c.y + w * 0.3f); close()
+            },
+        )
+        Hue.BLUE -> {
+            drawCircle(ink, w * 0.3f, c, style = Stroke(w * 0.26f))
+            drawCircle(Color.White, w * 0.3f, c, style = Stroke(w * 0.14f))
+        }
+        Hue.GREEN -> filled(Path().apply { addRect(androidx.compose.ui.geometry.Rect(c.x - w * 0.32f, c.y - w * 0.32f, c.x + w * 0.32f, c.y + w * 0.32f)) })
+        Hue.YELLOW -> filled(
+            Path().apply {
+                val a = w * 0.14f
+                val b = w * 0.4f
+                moveTo(c.x - a, c.y - b); lineTo(c.x + a, c.y - b); lineTo(c.x + a, c.y - a); lineTo(c.x + b, c.y - a); lineTo(c.x + b, c.y + a)
+                lineTo(c.x + a, c.y + a); lineTo(c.x + a, c.y + b); lineTo(c.x - a, c.y + b); lineTo(c.x - a, c.y + a); lineTo(c.x - b, c.y + a)
+                lineTo(c.x - b, c.y - a); lineTo(c.x - a, c.y - a); close()
+            },
+        )
+        Hue.PURPLE -> filled(
+            Path().apply {
+                moveTo(c.x, c.y - w * 0.42f); lineTo(c.x + w * 0.3f, c.y); lineTo(c.x, c.y + w * 0.42f); lineTo(c.x - w * 0.3f, c.y); close()
+            },
+        )
+        Hue.ORANGE -> {
+            val left = Offset(c.x - w * 0.3f, c.y)
+            val right = Offset(c.x + w * 0.3f, c.y)
+            drawLine(ink, left, right, w * 0.34f, androidx.compose.ui.graphics.StrokeCap.Round)
+            drawLine(Color.White, left, right, w * 0.2f, androidx.compose.ui.graphics.StrokeCap.Round)
+        }
+    }
 }
 
 fun DrawScope.drawRune(shape: RuneShape, color: Color) {

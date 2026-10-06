@@ -45,7 +45,7 @@ internal class JourneyLines(private val r: Random) {
             else -> append(" It looks dangerous!")
         }
         if (visited) append(" You have been there.")
-        if (marked) append(" <pet>I think the story wants us to go that way!")
+        if (marked) append(" {name} points that way. <pet>I think the story wants us to go that way!")
     }
 
     fun blockedRoad(to: String) = "The way to $to is still blocked. Pick another road for now."
@@ -59,6 +59,23 @@ internal class JourneyLines(private val r: Random) {
     fun hubAsk(name: String) = pick("What would you like to do in $name?", "You are in $name. What now?")
 
     fun quiet(name: String) = pick("It is quiet at $name now. Time to move on.", "Nothing new at $name. <pet>Let's keep going!")
+
+    fun tollBlocked(name: String) = pick(
+        "$name will not let you pass yet. <pet>Let's find another way, or come back when you are ready.",
+        "$name still blocks the way. <pet>We can pay, make friends, or go around.",
+    )
+
+    fun nightfall() = pick(
+        "The sun is going down. It is time to camp for the night. <pet>I am sleepy. Yawn!",
+        "Stars come out, one by one. You make a little fire and curl up. <pet>Good night!",
+        "It is getting dark. You find a cozy spot to rest. <pet>Sweet dreams, everyone!",
+    )
+
+    fun morning() = pick(
+        "Good morning! The sun is up, and you feel rested and brave. <pet>Let's go!",
+        "A new day begins. The birds are singing. <pet>I slept so well!",
+        "Wake up, sleepyhead! A new day of adventure is here. <pet>Where will we go today?",
+    )
 
     fun backAtCamp() = pick("Back at camp! Everyone is happy to see you. <pet>Home sweet home!", "Camp at last. The fire crackles, and you rest your feet.")
 
@@ -103,7 +120,13 @@ internal class JourneyLines(private val r: Random) {
         Obstacle.RIDDLE -> pick("The stone face smiles and the door slides open.", "That is the one! The door opens.")
     }
 
-    fun rescueAsk(thing: String) = pick("Wait! You have $thing. Would you like to use it?", "You have $thing. Do you want to use it now?")
+    /** For a person's own puzzle: they say what it means; these only react to the tap. */
+    fun puzzleOops() = pick("Oh no, that is not it.", "Hmm, not that one.")
+
+    fun puzzleYay() = pick("That's it! Well done.", "Yes! You got it.")
+
+    /** The pictures name what can help, so the question does not: a list of whatever the hero holds would be a new sentence to record for every combination. */
+    fun rescueAsk() = pick("Wait! You have some help. Would you like to use it?", "You have a little help in your bag. Do you want to use it now?")
 
     fun toolWorks(tool: String, o: Obstacle) = when (o) {
         Obstacle.CLIMB -> "You tie the $tool and haul yourself up the cliff."
@@ -115,6 +138,8 @@ internal class JourneyLines(private val r: Random) {
 
     fun charmWorks(charm: String) = pick("The $charm glows, and you get another look.", "The $charm sparkles. <pet>Think carefully this time!")
 
+    fun sparkleWorks() = pick("Sparkle magic! One wrong answer fades away. <pet>Think carefully this time!", "Glitter swirls in the air, and one wrong answer fades away. <pet>Now look again!")
+
     fun failedFor(o: Obstacle) = pick(
         "You could not get through this time. <pet>That is okay. We learned something. Let's try another way!",
         "Not this time. <pet>The right answer was there, and now we know. Let's find another road.",
@@ -122,7 +147,7 @@ internal class JourneyLines(private val r: Random) {
 
     fun turnedBack(from: String) = pick("You turn back to $from. The road is blocked for now.", "Back to $from you go. That road needs a rest.")
 
-    fun petClover() = pick("<pet>Wait! I found a lucky clover in my pocket! It gives you one more guess.", "<pet>Look what I found! A lucky clover. Use it to guess again!")
+    fun petClover() = pick("{name} pulls something out of a pocket. <pet>Wait! A lucky clover! It gives you one more guess.", "{name} wiggles with joy. <pet>Look what I found! A lucky clover. Use it to guess again!")
 
     fun noRescue() = pick("You do not have anything to help. <pet>Next time, bring a rope or a clover!", "No tools in your bag for this. <pet>Maybe a shop has something!")
 
@@ -142,6 +167,13 @@ internal class JourneyLines(private val r: Random) {
     )
 
     fun wanderer() = pick("A traveler waves hello and shares a snack and a coin.", "A cheerful peddler tips her hat and gives you a coin for your trouble.")
+
+    fun hiddenDoor() = pick(
+        "A little door is hidden in the rocks by the road. <pet>Ooh, a secret! Let's look inside.",
+        "You spot a tiny door under some leaves. <pet>Do you think we can fit?",
+    )
+
+    fun hiddenDoorShut() = pick("The little door swings shut with a click. <pet>Maybe next time!", "Whoosh! The secret door closes. <pet>It will be there another day.")
 
     // ------------------------------------------------------------- dungeons
 
@@ -198,6 +230,8 @@ internal class JourneyLines(private val r: Random) {
 
     fun foeStunned(foe: String) = pick("The $foe is fast asleep and cannot attack.", "The $foe is too sleepy to fight.")
 
+    fun braveHeart() = pick("Brave heart! You wobble, but you stand right back up, and the fight goes on.", "You are not done yet! Your brave heart lifts you back onto your feet.")
+
     fun healed(hp: Int) = pick("You feel better! ${capital(hp)} health back.", "Yum! You get ${n(hp)} health back.")
 
     @Suppress("UNUSED_PARAMETER")
@@ -216,11 +250,16 @@ internal class JourneyLines(private val r: Random) {
     fun spoils(coins: Int) = if (coins == 0) "" else "You collect ${n(coins)} coins."
 
     fun faint(coins: Int) = pick(
-        "Everything goes fuzzy, and you fall asleep right there. <pet>I will carry you to safety!",
+        "Everything goes fuzzy, and you fall asleep right there. {name} carries you to safety!",
         "Oh dear! You are too tired to go on. <pet>Come on, let's get you to a safe place.",
     ) + if (coins > 0) " You lose ${n(coins)} coins on the way." else ""
 
     fun wakeUp(place: String) = pick("You wake up in $place, safe and sound.", "You open your eyes. You are back in $place, feeling a little better.")
+
+    /** Choosing not to fight on a road: the hero goes back, and the road is not closed (it is only closed when a puzzle is failed). */
+    fun backAway(from: String) = pick("You back away slowly and go back to $from. <pet>Maybe there is another way!", "You hurry back to $from. <pet>Let's try a different road!")
+
+    fun sneakAway() = pick("You tiptoe away before it notices you. <pet>Phew!", "You slip away quietly. <pet>That was close!")
 
     fun fightAsk(foe: String) = pick("A $foe blocks the way! What will you do?", "Here comes a $foe! Fight, or find another way?")
 
@@ -230,7 +269,10 @@ internal class JourneyLines(private val r: Random) {
 
     fun shopAsk() = pick("What would you like to buy? Tap a thing to buy it, or tap the door to leave.", "Tap something to buy it. Tap the door when you are done.")
 
-    fun bought(item: String, price: Int) = pick("You bought the $item for ${n(price)} coins. [coins]", "Sold! The $item is yours for ${n(price)} coins. [coins]")
+    /** The item's name and the price are in different sentences, so no item has to be recorded at every price. */
+    fun bought(item: String, price: Int) = pick("You bought the $item. [coins] ${priceLine(price)}", "Sold! The $item is yours. [coins] ${priceLine(price)}")
+
+    fun priceLine(price: Int) = pick("It cost ${n(price)} ${if (price == 1) "coin" else "coins"}.", "That was ${n(price)} ${if (price == 1) "coin" else "coins"}.")
 
     fun cannotAfford() = pick("You do not have enough coins for that yet.", "That costs too much for now. Keep adventuring and come back!")
 
@@ -290,7 +332,7 @@ internal class JourneyLines(private val r: Random) {
                 repeat(10) {
                     add(l.heroHits("", x)); add(l.heroHitsBig("", x)); add(l.foeHits("", x)); add(l.healed(x)); add(l.healthLine(x, x))
                     add(l.spoils(x)); add(l.faint(x)); add(l.coinsEarned(x)); add(l.killsLine(x)); add(l.finale(x))
-                    add(l.pagesLine(x)); add(l.roomsLeft(x)); add(l.levelUp(x)); add(l.rest(x)); add(l.coinsFound(x))
+                    add(l.pagesLine(x)); add(l.roomsLeft(x)); add(l.levelUp(x)); add(l.rest(x)); add(l.coinsFound(x)); add(l.priceLine(x))
                 }
             }
         }.filter { it.isNotEmpty() }

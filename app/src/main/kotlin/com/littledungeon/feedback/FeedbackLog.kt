@@ -8,7 +8,7 @@ import com.littledungeon.engine.rpg.run.Beat
 /**
  * What the game remembers so a grown-up's note can be pinned to the exact moment: the screen
  * showing now, the adventure's seed and every answer so far (an adventure can be replayed from
- * those), and the last things said and done. Nothing leaves the phone until someone taps send.
+ * those: see [replayData]), and the last things said and done. Nothing leaves the phone until someone taps send.
  */
 object FeedbackLog {
     private const val KEEP = 120
@@ -24,6 +24,13 @@ object FeedbackLog {
     var adventure: String = "no adventure yet"
 
     private val replies = mutableListOf<String>()
+
+    /**
+     * The adventure in progress as saved (its start and every tap): with it a developer can rebuild exactly what the
+     * child saw (`Journey.replay`). Set by the game; empty when there is no adventure under way.
+     */
+    @Volatile
+    var replayData: () -> String = { "" }
 
     @Synchronized
     fun note(kind: String, text: String) {
@@ -61,6 +68,10 @@ object FeedbackLog {
         appendLine("\n## Adventure (replayable)")
         appendLine(adventure)
         appendLine("Replies so far: ${replyList()}")
+        replayData().takeIf { it.isNotBlank() }?.let {
+            appendLine("\n## Replay data (journey.json, then journey.log: the adventure from its start)")
+            appendLine(it)
+        }
         appendLine("\n## Last things heard and done")
         recent(60).forEach { appendLine("- $it") }
         appendLine("\n## Phone")
@@ -85,9 +96,9 @@ object FeedbackLog {
         is Beat.Ask -> "Challenge ${beat.challenge::class.simpleName} level ${beat.challenge.level} seed ${beat.challenge.seed} at ${beat.scene.place}: ${Voice.caption(beat.challenge.prompt)}"
         is Beat.Roll -> "Dice ${beat.dice}, reroll ${beat.reroll}, at ${beat.scene.place}: ${Voice.caption(beat.why)}"
         is Beat.Choose -> "Choice at ${beat.scene.place}: ${beat.options.map { it.said }}"
-        is Beat.Doors -> "Doors at stop ${beat.stopIndex}: ${beat.fork.doors.map { "${it.hue.word} ${it.kind}" }}, closed ${beat.closed}, clue answer ${beat.clue?.answer}"
         is Beat.Travel -> "Map at ${beat.here}: ${beat.routes.map { "${it.name} (${it.terrain.word})" }}"
         is Beat.Shop -> "Shop ${beat.shopName}, ${beat.coins} coins: ${beat.stock.map { it.name }}"
+        is Beat.Night -> "Night falls at the end of day ${beat.day}: ${Voice.caption(beat.lines)}"
         is Beat.Finale -> "Finale"
     }
 }

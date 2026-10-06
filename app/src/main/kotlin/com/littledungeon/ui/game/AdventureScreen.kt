@@ -45,8 +45,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -69,12 +72,12 @@ import com.littledungeon.engine.rpg.run.Actor
 import com.littledungeon.engine.rpg.run.Beat
 import com.littledungeon.engine.rpg.run.Place
 import com.littledungeon.engine.rpg.run.Reply
-import com.littledungeon.engine.rpg.run.placeOf
 import com.littledungeon.engine.rpg.run.Say
 import com.littledungeon.engine.rpg.run.speech
 import com.littledungeon.ui.art.Art
 import com.littledungeon.ui.art.Character
 import com.littledungeon.ui.art.DieFace
+import com.littledungeon.ui.art.HueMark
 import com.littledungeon.ui.art.Mood
 import com.littledungeon.ui.art.Picto
 import com.littledungeon.ui.art.Rigs
@@ -97,7 +100,7 @@ fun AdventureScreen(vm: GameViewModel) {
     val speakingAs by narrator.speakingAs.collectAsState()
     var caption by remember { mutableStateOf<List<Speech>>(emptyList()) }
     var heroMood by remember { mutableStateOf(Mood.CALM) }
-    val interactive = beat !is Beat.Tell && beat !is Beat.Found && beat.scene.battle == null
+    val interactive = beat !is Beat.Tell && beat !is Beat.Found && beat !is Beat.Night && beat.scene.battle == null
     // How far the visitors have stepped back to leave room for a challenge.
     val back by animateFloatAsState(if (interactive) 1f else 0f, tween(500), label = "back")
 
@@ -142,11 +145,11 @@ fun AdventureScreen(vm: GameViewModel) {
                 is Beat.Tell -> TellBeat(beat.lines, say) { reply(Reply.Next) }
                 is Beat.Found -> FoundBeat(beat, say, celebrate) { reply(Reply.Next) }
                 is Beat.Choose -> ChooseBeat(beat, say) { reply(Reply.Picked(it)) }
-                is Beat.Doors -> DoorsBeat(beat, say) { i -> reply(Reply.Picked(i)) }
                 is Beat.Roll -> RollBeat(beat, say, celebrate) { used, tries -> reply(Reply.Rolled(used, tries)) }
                 is Beat.Ask -> AskBeat(beat, vm.state.hero.heroClass.power == Power.SPARKLE_HINT, say, celebrate) { solved -> reply(solved) }
                 is Beat.Travel -> TravelBeat(beat, adventure, say) { reply(Reply.Picked(it)) }
                 is Beat.Shop -> ShopBeat(beat, say, { reply(Reply.Bought(it)) }) { reply(Reply.Next) }
+                is Beat.Night -> NightBeat(beat, say, { reply(Reply.Next) }) { vm.home() }
                 is Beat.Finale -> Unit
             }
         }
@@ -158,6 +161,10 @@ fun AdventureScreen(vm: GameViewModel) {
         if (caption.isNotEmpty()) {
             Caption(
                 caption,
+                names = buildMap {
+                    beat.scene.npc?.let { put(it.who, it.name) }
+                    beat.scene.battle?.let { put(it.foe.who, it.foe.name) }
+                },
                 fontSize = with(LocalDensity.current) { (h * 0.048f).toSp() },
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = h * 0.02f).fillMaxWidth(0.6f),
                 onClick = { scope.launch { narrator.speak(caption) } },
@@ -170,7 +177,10 @@ fun AdventureScreen(vm: GameViewModel) {
         VoiceLoading()
         Column(Modifier.align(Alignment.TopEnd).padding(10.dp), horizontalAlignment = Alignment.End) {
             BagBar(adventure.bag, h * 0.07f)
-            beat.scene.battle?.let { b -> HealthBar(b.heroHp, b.heroMaxHp, h * 0.07f, Modifier.padding(top = 6.dp), label = "You") }
+            beat.scene.battle?.let { b ->
+                HealthBar(b.heroHp, b.heroMaxHp, h * 0.07f, Modifier.padding(top = 6.dp), label = "You")
+                HealthBar(b.foe.hp, b.foe.maxHp, h * 0.07f, Modifier.padding(top = 6.dp), label = "Foe")
+            }
         }
     }
 }
@@ -249,9 +259,10 @@ private fun Cast(beat: Beat, interactive: Boolean, who: Who?, heroMood: Mood, ba
     }
     // People and monsters of the kingdom. They step back while a puzzle needs the room.
     scene.npc?.let { npc ->
-        if (beat !is Beat.Ask) NpcStand(npc, who == npc.who, w, h, voice(npc.who))
+        if (beat !is Beat.Ask) NpcStand(npc, who == npc.who, w, h, voice(npc.who), behindCounter = beat is Beat.Shop)
     }
-    scene.battle?.let { b -> BattleStage(b, who == b.foe.who, w, h, voice(b.foe.who)) }
+    // While a puzzle needs the room, the foe shrinks to a portrait beside the hero instead of standing behind the answers.
+    scene.battle?.let { b -> BattleStage(b, who == b.foe.who, w, h, voice(b.foe.who), portrait = beat is Beat.Ask) }
 }
 
 // ------------------------------------------------------------------ narration
@@ -267,6 +278,56 @@ private fun TellBeat(lines: List<Speech>, say: (List<Speech>) -> Unit, next: () 
         next()
     }
 }
+
+/**
+ * Night falls at the camp. The scene darkens, the stars come out and the narrator says good night. Then the child can keep
+ * going (the big arrow) or put the game down at the fire (the house): the adventure is saved either way.
+ */
+@Composable
+private fun NightBeat(beat: Beat.Night, say: (List<Speech>) -> Unit, goOn: () -> Unit, stop: () -> Unit) {
+    val narrator = LocalNarrator.current
+    val dark = remember { Animatable(0f) }
+    var resting by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        say(beat.lines)
+        dark.animateTo(1f, tween(1800))
+        narrator.speak(beat.lines)
+        delay(400)
+        resting = true
+    }
+    val t = rememberInfiniteTransition(label = "stars")
+    val twinkle by t.animateFloat(0.35f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label = "twinkle")
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val h = maxHeight
+        val w = maxWidth
+        Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = dark.value }) {
+            drawRect(Color(0xB30B1236))
+            for ((i, star) in NIGHT_STARS.withIndex()) {
+                val bright = if (i % 2 == 0) twinkle else 1.35f - twinkle
+                drawCircle(Color.White.copy(alpha = bright.coerceIn(0.2f, 1f)), size.height * (0.006f + 0.004f * (i % 3)), Offset(size.width * star.first, size.height * star.second))
+            }
+            // The moon: a full circle with a bite taken out of it.
+            val r = size.height * 0.1f
+            val centre = Offset(size.width * 0.84f, size.height * 0.24f)
+            val moon = Path.combine(
+                PathOperation.Difference,
+                Path().apply { addOval(Rect(centre, r)) },
+                Path().apply { addOval(Rect(centre + Offset(r * 0.55f, -r * 0.2f), r * 0.9f)) },
+            )
+            drawPath(moon, Color(0xFFFFF1B8))
+        }
+        if (resting) {
+            RoundButton(Picto.NEXT, Palette.Go, h * 0.24f, Modifier.align(Alignment.BottomEnd).padding(end = w * 0.03f, bottom = h * 0.05f), pulse = true) { goOn() }
+            RoundButton(Picto.HOME, Palette.Berry, h * 0.15f, Modifier.align(Alignment.BottomStart).padding(start = w * 0.03f, bottom = h * 0.05f)) { stop() }
+        }
+    }
+}
+
+/** Where the stars are, as shares of the screen. */
+private val NIGHT_STARS = listOf(
+    0.08f to 0.12f, 0.17f to 0.3f, 0.26f to 0.1f, 0.35f to 0.22f, 0.44f to 0.08f, 0.52f to 0.28f, 0.6f to 0.14f, 0.68f to 0.06f,
+    0.74f to 0.32f, 0.93f to 0.1f, 0.12f to 0.46f, 0.3f to 0.42f, 0.57f to 0.44f, 0.8f to 0.5f, 0.96f to 0.38f, 0.04f to 0.3f,
+)
 
 @Composable
 private fun FoundBeat(beat: Beat.Found, say: (List<Speech>) -> Unit, celebrate: () -> Unit, next: () -> Unit) {
@@ -307,6 +368,11 @@ private fun FoundBeat(beat: Beat.Found, say: (List<Speech>) -> Unit, celebrate: 
             painterResource(res), null,
             Modifier.at(w * 0.64f, h * 0.55f, h * 0.34f, h * 0.34f).graphicsLayer { scaleX = pop.value; scaleY = pop.value },
         )
+        // A gem wears the mark of its color, so it can be told from the others without the color.
+        val hue = beat.loot.hue
+        if (beat.loot.kind == com.littledungeon.engine.rpg.run.LootKind.GEM && hue != null) {
+            HueMark(hue, Modifier.at(w * 0.64f, h * 0.55f, h * 0.12f, h * 0.12f).graphicsLayer { scaleX = pop.value; scaleY = pop.value })
+        }
         if (beat.loot.count > 1) {
             Text(
                 "× ${beat.loot.count}", fontSize = 40.sp, fontWeight = FontWeight.Black, color = Color.White,
@@ -348,14 +414,15 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
         val h = maxHeight
         val w = maxWidth
         val n = beat.options.size
-        // Up to six answers fit across: the pictures shrink to make room.
-        val card = minOf(h * 0.3f, w * 0.44f / (n * 1.1f) * 1.8f)
+        // The choices sit in a tray along the bottom, between the hero and the edge: the person talking stands above it, so
+        // their face and moving mouth stay clear. Up to six fit across; the pictures shrink to make room.
+        val card = minOf(h * 0.24f, w * 0.5f / (n * 1.1f) * 1.8f)
         beat.options.forEachIndexed { i, o ->
             val lift by animateFloatAsState(if (pointing == i || chosen == i) 1.12f else 1f, spring(dampingRatio = 0.5f), label = "lift")
             val appear by animateFloatAsState(if (i < shown) 1f else 0f, tween(380, easing = OutBack), label = "appear")
             Box(
                 Modifier
-                    .at(w * (0.5f + 0.44f * (i + 0.5f) / n), h * 0.62f, card, card)
+                    .at(w * (0.42f + 0.54f * (i + 0.5f) / n), h * 0.78f, card, card)
                     .graphicsLayer {
                         scaleX = lift * appear
                         scaleY = lift * appear
@@ -372,100 +439,12 @@ private fun ChooseBeat(beat: Beat.Choose, say: (List<Speech>) -> Unit, pick: (In
                     },
             ) {
                 Image(painterResource(Art.choice(o)), null, Modifier.fillMaxSize())
-                if (o.picture == null) {
-                    // Badges and items are not pictures of a whole story step: say what they are too, for grown-ups reading along.
-                    Text(
-                        o.said, color = Color.White, fontWeight = FontWeight.Black, maxLines = 2, lineHeight = with(LocalDensity.current) { (card * 0.13f).toSp() },
-                        fontSize = with(LocalDensity.current) { (card * 0.12f).toSp() },
-                        modifier = Modifier.align(Alignment.BottomCenter).offset(y = card * 0.22f).background(Color(0xCC2A1C10), RoundedCornerShape(50)).padding(horizontal = 8.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ------------------------------------------------------------------ the map
-
-/**
- * Pick a door at a fork. While each door lifts, the narrator says its color and the kind of
- * puzzle behind it (the sign on the door shows it too), so the child picks the path and the
- * puzzle; whether it was the door from the clue is the engine's to say.
- */
-@Composable
-private fun DoorsBeat(beat: Beat.Doors, say: (List<Speech>) -> Unit, pick: (Int) -> Unit) {
-    val narrator = LocalNarrator.current
-    val sfx = LocalSfx.current
-    val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    var pointing by remember { mutableIntStateOf(-1) }
-    var opened by remember { mutableIntStateOf(-1) }
-    // The doors come after the clue: each lifts into place as it is described, and none can be
-    // opened until everything has been said. Doors already tried (they looped back) stay, faded.
-    var shown by remember { mutableIntStateOf(0) }
-    var ready by remember { mutableStateOf(false) }
-    val doors = beat.fork.doors
-    LaunchedEffect(Unit) {
-        say(beat.prompt)
-        narrator.speak(beat.prompt)
-        doors.forEachIndexed { i, room ->
-            if (i in beat.closed) return@forEachIndexed
-            pointing = i
-            shown = i + 1
-            narrator.speak(beat.offers.getOrNull(i)?.takeIf { it.isNotEmpty() } ?: Speech.of(Say.doorName(room.hue)))
-            delay(150)
-        }
-        pointing = -1
-        narrator.speak(Say.PICK_DOOR)
-        ready = true
-    }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val h = maxHeight
-        val w = maxWidth
-        val n = doors.size
-        val doorH = h * 0.42f
-        val doorW = doorH * (200f / 280f)
-        doors.forEachIndexed { i, room ->
-            val lift by animateFloatAsState(if (pointing == i || opened == i) 1.1f else 1f, spring(dampingRatio = 0.5f), label = "lift")
-            val closed = i in beat.closed
-            val appear by animateFloatAsState(if (closed || i < shown) 1f else 0f, tween(380, easing = OutBack), label = "appear")
-            val x = w * (0.5f + 0.5f * ((i + 0.5f) / n - 0.5f))
-            Box(
-                Modifier
-                    .at(x, h * 0.75f, doorW, doorH)
-                    .graphicsLayer {
-                        scaleX = lift * appear
-                        scaleY = lift * appear
-                        alpha = (if (closed) 0.3f else if (opened >= 0 && opened != i) 0.4f else 1f) * appear.coerceIn(0f, 1f)
-                    }
-                    .clickable(NoRipple, null, enabled = ready && opened < 0 && !closed) {
-                        opened = i
-                        pointing = -1
-                        sfx.play("tap")
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        scope.launch {
-                            narrator.speak(Speech.of(Say.doorPicked(room.hue)))
-                            pick(i)
-                        }
-                    },
-            ) {
-                Image(painterResource(Art.door(room.hue)), null, Modifier.fillMaxSize())
-                // A sign on the door: what kind of puzzle waits behind it.
-                Box(
-                    Modifier.align(Alignment.TopCenter).padding(top = doorH * 0.08f).size(doorW * 0.5f)
-                        .shadow(4.dp, CircleShape).background(Palette.Paper, CircleShape).border(3.dp, Palette.PaperEdge, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(Art.sign(room.kind), fontSize = with(LocalDensity.current) { (doorW * 0.24f).toSp() }, fontWeight = FontWeight.Black, color = Palette.Ink, maxLines = 1)
-                }
-                if (beat.peek) {
-                    // Ranger power: a peek at what's behind each door.
-                    Image(
-                        painterResource(Art.place(placeOf(room.kind))), null,
-                        Modifier.align(Alignment.BottomCenter).padding(bottom = doorH * 0.1f).size(doorW * 0.45f).clip(CircleShape).border(3.dp, Palette.Gold, CircleShape),
-                        contentScale = ContentScale.Crop,
-                    )
-                }
+                // Badges and items are pictures the child learns; say what they mean too, for grown-ups reading along.
+                Text(
+                    o.said, color = Color.White, fontWeight = FontWeight.Black, maxLines = 2, lineHeight = with(LocalDensity.current) { (card * 0.13f).toSp() },
+                    fontSize = with(LocalDensity.current) { (card * 0.12f).toSp() },
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = card * 0.22f).background(Color(0xCC2A1C10), RoundedCornerShape(50)).padding(horizontal = 8.dp),
+                )
             }
         }
     }

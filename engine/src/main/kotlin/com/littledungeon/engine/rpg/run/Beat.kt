@@ -5,9 +5,7 @@ import com.littledungeon.engine.rpg.hero.Attribute
 import com.littledungeon.engine.rpg.hero.Unlock
 import com.littledungeon.engine.rpg.learn.Challenge
 import com.littledungeon.engine.rpg.learn.Hue
-import com.littledungeon.engine.rpg.learn.MapChallenge
 import com.littledungeon.engine.rpg.world.RoomKind
-import com.littledungeon.engine.rpg.world.Stop
 
 /**
  * Where a beat happens: the name of a painted backdrop (`art_scene_<id>`). Places are open data so
@@ -16,7 +14,6 @@ import com.littledungeon.engine.rpg.world.Stop
 data class Place(val id: String) {
     companion object {
         val CAMP = Place("camp")
-        val GATE = Place("gate")
         val RUNE_HALL = Place("rune_hall")
         val BRIDGE = Place("bridge")
         val CRYSTAL_CAVE = Place("crystal_cave")
@@ -27,17 +24,13 @@ data class Place(val id: String) {
         val STOREROOM = Place("storeroom")
         val POND = Place("pond")
         val MOSAIC_HALL = Place("mosaic_hall")
-        val GOBLIN_DEN = Place("goblin_den")
         val WORKSHOP = Place("workshop")
-        val LAIR = Place("lair")
-        val MAP = Place("map")
         val WORLD_MAP = Place("world_map")
     }
 }
 
 /** Where each kind of room is drawn. */
 fun placeOf(kind: RoomKind): Place = when (kind) {
-    RoomKind.GATE -> Place.GATE
     RoomKind.RUNE_DOOR -> Place.RUNE_HALL
     RoomKind.BRIDGE -> Place.BRIDGE
     RoomKind.CRYSTAL_CAVE -> Place.CRYSTAL_CAVE
@@ -48,9 +41,7 @@ fun placeOf(kind: RoomKind): Place = when (kind) {
     RoomKind.STOREROOM -> Place.STOREROOM
     RoomKind.POND -> Place.POND
     RoomKind.MOSAIC_HALL -> Place.MOSAIC_HALL
-    RoomKind.GOBLIN_DEN -> Place.GOBLIN_DEN
     RoomKind.WORKSHOP -> Place.WORKSHOP
-    RoomKind.LAIR -> Place.LAIR
 }
 
 /** Who can be on screen. COMPANION is the child's baby dragon. */
@@ -74,8 +65,6 @@ data class Scene(
     val place: Place,
     val cast: Set<Actor>,
     val mood: Mood = Mood.CALM,
-    /** In the lair: how many of the three boss stars are lit. */
-    val bossStars: Int? = null,
     /** The room's obstacle is cleared (door open, bridge whole, lights on). */
     val cleared: Boolean = false,
     /** Someone from the world is here talking. */
@@ -84,13 +73,8 @@ data class Scene(
     val battle: BattleView? = null,
 )
 
-/** Picture choices. The app draws each; the narrator says [Choice.said]. */
-enum class ChoicePicture { SHARE_SNACK, SING_SONG, TIPTOE, MAKE_FRIENDS, CAST_SPELL, LIGHT_SPELL, LULLABY }
-
-/** [icon] is a painted icon (`art_<icon>`) for choices that are not one of the story pictures. */
-data class Choice(val picture: ChoicePicture?, val said: String, val icon: String? = null) {
-    constructor(icon: String, said: String) : this(null, said, icon)
-}
+/** A picture choice: [icon] is a painted icon (`art_<icon>`) the child taps; the narrator says [said]. */
+data class Choice(val icon: String, val said: String)
 
 /** Things drawn along with a challenge. */
 enum class Prop { NONE, CHEST }
@@ -102,7 +86,8 @@ data class Loot(val kind: LootKind, val count: Int, val words: String, val hue: 
 
 /**
  * One moment of the adventure. The app shows the beat, the child does something, and the app
- * sends back a [Reply]. Beats never end in failure: every challenge is eventually solved.
+ * sends back a [Reply]. A beat never leaves the child stuck: a miss is met with a hint, a joke or the right answer, and
+ * the story goes on.
  */
 sealed interface Beat {
     val scene: Scene
@@ -128,6 +113,8 @@ sealed interface Beat {
         val allowedMisses: Int = 1,
         /** Answers already ruled out (a second guess after a charm), crossed out and not tappable. */
         val tried: List<Int> = emptyList(),
+        /** Said with the right answer showing when the last try is missed: why it is right (see `Coach.explain`). */
+        val explain: List<Speech> = emptyList(),
     ) : Beat
 
     /**
@@ -148,23 +135,6 @@ sealed interface Beat {
     data class Choose(override val scene: Scene, val prompt: List<Speech>, val options: List<Choice>) : Beat
 
     /**
-     * Pick a door on the map. With [clue] it's the map challenge (one door is right); without,
-     * any door is fine. [peek] shows what's behind each door (Ranger power). Reply [Reply.Picked].
-     */
-    data class Doors(
-        override val scene: Scene,
-        val prompt: List<Speech>,
-        val fork: Stop.Fork,
-        val clue: MapChallenge?,
-        val peek: Boolean,
-        val stopIndex: Int,
-        /** Said while each door lifts: its color and the kind of puzzle behind it (empty for closed doors). */
-        val offers: List<List<Speech>> = emptyList(),
-        /** Doors already tried, whose path wound back round to these doors. They can't be picked again. */
-        val closed: Set<Int> = emptySet(),
-    ) : Beat
-
-    /**
      * Pick where to go on the map of the kingdom. Reply [Reply.Picked] with the index of the route.
      */
     data class Travel(override val scene: Scene, val prompt: List<Speech>, val here: String, val routes: List<Route>) : Beat
@@ -180,6 +150,12 @@ sealed interface Beat {
 
     /** Something found. Reply [Reply.Next]. */
     data class Found(override val scene: Scene, val loot: Loot, val lines: List<Speech>) : Beat
+
+    /**
+     * Night falls and the party camps. The hero is rested (health full) and the child can stop here: the journey is saved
+     * either way, so putting the game down at the fire loses nothing. [day] is the day that is ending. Reply [Reply.Next].
+     */
+    data class Night(override val scene: Scene, val lines: List<Speech>, val day: Int) : Beat
 
     /** The end of the adventure: stars earned, levels gained, what was unlocked. */
     data class Finale(override val scene: Scene, val summary: Summary) : Beat
@@ -249,11 +225,33 @@ fun Beat.speech(): List<List<Speech>> = when (this) {
         add(challenge.prompt)
         add(yay)
         add(oops)
+        if (explain.isNotEmpty()) add(explain)
     }
     is Beat.Roll -> listOf(why)
     is Beat.Choose -> listOf(prompt)
-    is Beat.Doors -> listOf(prompt) + offers
     is Beat.Travel -> listOf(prompt) + routes.map { it.said }
     is Beat.Shop -> listOf(prompt)
+    is Beat.Night -> listOf(lines)
     is Beat.Finale -> listOf(summary.lines)
+}
+
+/** Narration runs at about 140 words a minute. */
+private const val WORDS_PER_SECOND = 2.3
+
+/**
+ * How long a child takes over this beat, in seconds: the words said, plus time to look, think and tap. The same
+ * figure measures a day's play (so the party camps for the night) and the balance report's session lengths.
+ */
+fun Beat.effortSeconds(): Double {
+    val words = speech().firstOrNull()?.let { com.littledungeon.engine.model.Voice.caption(it).split(Regex("\\s+")).count { w -> w.isNotBlank() } } ?: 0
+    val doing = when (this) {
+        is Beat.Tell, is Beat.Found -> 1.5
+        is Beat.Ask -> 10.0
+        is Beat.Roll -> 3.0
+        is Beat.Choose -> 4.0
+        is Beat.Travel -> 6.0
+        is Beat.Shop -> 5.0
+        is Beat.Night, is Beat.Finale -> 0.0
+    }
+    return doing + words / WORDS_PER_SECOND
 }

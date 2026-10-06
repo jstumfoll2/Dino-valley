@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.littledungeon.ui.art.Picto
+import com.littledungeon.ui.art.PictoIcon
 import com.littledungeon.feedback.FeedbackLog
 
 /** What kind of problem it was; one tap each, so a note can be as short as a tap. */
@@ -74,7 +76,7 @@ fun FeedbackButton(size: Dp, modifier: Modifier = Modifier) {
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text("💬", fontSize = (size.value * 0.5f).sp)
+        PictoIcon(Picto.SPEECH, Palette.Ink, Modifier.size(size * 0.56f))
     }
     if (open) FeedbackDialog { open = false }
 }

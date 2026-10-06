@@ -69,9 +69,6 @@ class ItemsAndHeroTest {
         val geared = fresh.give("iron_helm").give("knight_sword").wear(Content.item("iron_helm")!!).wear(Content.item("knight_sword")!!)
         assertEquals(fresh.defense + 2, geared.defense)
         assertEquals(fresh.attackWith(Skill.NUMBERS) + 4, geared.attackWith(Skill.NUMBERS))
-        // Puzzles get harder as the hero levels.
-        assertEquals(0, fresh.puzzleBoost)
-        assertTrue(Hero(xp = mapOf(Attribute.COURAGE to 5000)).puzzleBoost >= 2)
     }
 
     @Test

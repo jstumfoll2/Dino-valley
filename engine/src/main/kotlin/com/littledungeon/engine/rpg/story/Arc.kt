@@ -11,8 +11,11 @@ data class Variant(
     val peaceEnd: String,
 )
 
-/** One step on the peaceful way: a puzzle the boss sets, and what is said before and after. */
-data class PeaceStep(val kind: String, val intro: String, val yay: String)
+/**
+ * One step on the peaceful way: a puzzle the boss sets, and what is said before and after. When [skippedBy] is a flag the hero has
+ * (something learned along the road), the boss says [skipNote] and goes straight to the next step: the hero already understands.
+ */
+data class PeaceStep(val kind: String, val intro: String, val yay: String, val skippedBy: String? = null, val skipNote: String? = null)
 
 /**
  * Something the story shows when the hero first reaches a place: a clue, a sign, a letter. It can
@@ -52,4 +55,12 @@ data class Arc(
     /** Clues and scenes along the way, shown the first time the hero reaches each place. */
     val moments: List<Moment> = emptyList(),
     val minChapter: Int = 1,
+    /** Told at camp instead of [setup] once this story has been played before: shorter, and about what has changed. */
+    val returnSetup: List<String> = emptyList(),
+    /** At the lair when the boss was made a friend in an earlier adventure: no choice to make, the boss asks for help ([friendSteps]) and [friendEnd] closes it. */
+    val friendMeeting: String? = null,
+    val friendSteps: List<PeaceStep> = emptyList(),
+    val friendEnd: String? = null,
+    /** At the lair when the hero fought and beat the boss in an earlier adventure. */
+    val rivalMeeting: String? = null,
 )

@@ -1,6 +1,9 @@
 # Plan for issue #13: story, characters, world map, battles, loot
 
-Status: **approved with changes (see "Decisions from review"); building.**
+Status, 2026-10-05: **slices 1 to 7 are built; slice 8 and the "six arcs" of slice 6 are not.** What is not done is carried in
+[`docs/review/improvement-plan.md`](../review/improvement-plan.md) and the roadmap in
+[`docs/review/2026-10-04-review-and-roadmap.md`](../review/2026-10-04-review-and-roadmap.md). This file is kept as the plan the journey was
+built from, and the table at the bottom says what happened to each slice.
 
 ## Decisions from review (these override anything below that disagrees)
 
@@ -107,6 +110,22 @@ that recovers a page. After five pages the campaign finale plays, then a new boo
 Slices 1 to 6 are engine work I can fully test here. Slice 7 is phone UI that I can't run here:
 CI compiles it, and I'll rely on your playtest notes via the feedback button for how it looks and
 feels.
+
+## What happened to each slice (2026-10-05)
+
+| # | Slice | Now |
+|---|-------|-----|
+| 1 | Foundations | Built. |
+| 2 | Overworld | Built (17 places, 30 roads; every lair has more than one way in). |
+| 3 | Adventure rewrite | Built as `Journey` (the old `Adventure` was removed). |
+| 4 | Battles | Built. |
+| 5 | Towns and people | Built. |
+| 6 | Story | **One arc, "The Missing Pages"**, told three ways; the other five are not written (roadmap Phase 7). Memory between rounds is built and, since the improvement work, is read as well as written. |
+| 7 | Phone screens | Built. Painted art replaced the emoji placeholders for people, monsters and gear; a few emoji remain in the interface (roadmap 4.5). |
+| 8 | Voice and docs | Voice: every line is recorded by the build. Docs: how to add content is `adding-content.md`; the decision log is current as of the improvement work. |
+
+Two things in the plan did not survive: "difficulty rises with hero level" (the child's own skill levels decide it, decision #54) and "a simple
+easier setting" (not built; the puzzles follow the child instead).
 
 ## Extensibility (how "custom story designs" work)
 

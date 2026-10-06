@@ -5,6 +5,7 @@ import com.littledungeon.engine.rpg.battle.Monster
 import com.littledungeon.engine.rpg.battle.Tier
 import com.littledungeon.engine.rpg.content.Content
 import com.littledungeon.engine.rpg.hero.Attribute
+import com.littledungeon.engine.rpg.hero.Power
 import com.littledungeon.engine.rpg.items.BattleUse
 import com.littledungeon.engine.rpg.items.Item
 import com.littledungeon.engine.rpg.items.ItemKind
@@ -34,6 +35,19 @@ private fun Journey.scaled(m: Monster): Fight {
     val maxHp = (m.hp * grow / 100).coerceAtLeast(m.hp / 2).coerceAtLeast(6)
     val attack = (m.attack + (hero.level - 1) / 3 - faints.coerceAtMost(4)).coerceAtLeast(1)
     return Fight(m, maxHp, attack)
+}
+
+/**
+ * A monster turns up on the way and the child decides: fight it (two pictures, the swords and the way out), or slip away, which is
+ * [retreat]. Asking "what will you do?" and then fighting whatever was answered was a question with no choice in it.
+ */
+internal fun Journey.encounter(m: Monster, s: Scene, retreat: () -> List<JStep>, onWin: () -> List<JStep>): List<JStep> {
+    val choices = listOf(Choice("talk_fight", "Fight"), Choice("hub_leave", "Go away"))
+    return listOf(
+        JStep(Beat.Choose(s, Speech.of(say.fightAsk(m.name.lowercase())), choices)) { reply ->
+            if ((reply as? Reply.Picked)?.index == 1) retreat() else battle(m, s.place, onWin)
+        },
+    )
 }
 
 /**
@@ -88,8 +102,8 @@ private fun Journey.turn(f: Fight, place: Place, onWin: () -> List<JStep>, onEsc
 
 private fun Journey.attack(f: Fight, place: Place, onWin: () -> List<JStep>, onEscape: () -> List<JStep>): List<JStep> {
     f.round++
-    val skill = f.monster.skills[(f.round - 1 + random.nextInt(2)) % f.monster.skills.size]
-    val c = battlePuzzle(f.monster, skill)
+    val c = battlePuzzle(f.monster)
+    val skill = c.skill
     val s = fightScene(place, f)
     return listOf(
         askOnce(
@@ -169,7 +183,19 @@ private fun Journey.foeAttacks(f: Fight, place: Place, onWin: () -> List<JStep>,
     val dmg = (f.attack - hero.defense).coerceAtLeast(1)
     hp -= dmg
     val hit = tell(fightScene(place, f), say.foeHits(name, dmg), if (hp > 0) say.healthLine(hp, hero.maxHp) else null)
-    return listOf(hit) + if (hp <= 0) faint(f, place) else turn(f, place, onWin, onEscape)
+    return listOf(hit) + when {
+        hp > 0 -> turn(f, place, onWin, onEscape)
+        braveHeart() -> listOf(tell(fightScene(place, f), say.braveHeart())) + turn(f, place, onWin, onEscape)
+        else -> faint(f, place)
+    }
+}
+
+/** The Knight's power: once a journey, a knock-out is not the end. They stand back up with a quarter of their health. */
+private fun Journey.braveHeart(): Boolean {
+    if (hero.heroClass.power != Power.BRAVE_HEART || "run:brave_heart" in runFlags) return false
+    runFlags += "run:brave_heart"
+    hp = (hero.maxHp / 4).coerceAtLeast(1)
+    return true
 }
 
 // ------------------------------------------------------------- the end of a fight

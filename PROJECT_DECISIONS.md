@@ -5,9 +5,11 @@ someone might later ask "why did we do it this way?". Don't delete old
 entries; if we change our minds, mark the old one **Superseded by #N** and add
 a new one.
 
-Entries 1–33 were made on 2026-10-02 together with
-[`ARCHITECTURE.md`](ARCHITECTURE.md). Jason approved the architecture the
-same day, so they are **Accepted**.
+Entries 1–33 were made on 2026-10-02 together with the original architecture proposal
+([`docs/archive/ARCHITECTURE-proposal.md`](docs/archive/ARCHITECTURE-proposal.md)). Jason approved it the
+same day, so they were **Accepted**. Much of that proposal was never built (the game became a different game
+within a day); entries are marked "Not built" or "Superseded" where that is so. What is really there is in
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
 
@@ -36,7 +38,9 @@ pass them in through interfaces instead).
 
 ### 2. Manual dependency injection with one `AppContainer`
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Not built as written** (2026-10-05)
+
+**Update, 2026-10-05:** There is no `AppContainer`. `GameViewModel` creates `Save` directly and the screens read engine objects through it. Revisit when a second place needs to share something (a settings store, say).
 
 **Decision:** Wire objects by hand in an `AppContainer` created by the
 `Application` class. No Hilt or Dagger.
@@ -54,7 +58,9 @@ many screens needing scoped objects.
 
 ### 3. Unidirectional data flow; the round is a pure state machine
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Built differently** (2026-10-05)
+
+**Update, 2026-10-05:** The engine is a state machine, but of `Beat`s and `Reply`s (a `Journey`, decision #51), not of rounds. Screens show the current beat and send back a reply; they decide nothing about the story.
 
 **Decision:** Composables send events to a ViewModel, which forwards them to
 `GameSession` (in `:engine`). `GameSession` moves between explicit states
@@ -77,7 +83,9 @@ inside one composable.
 
 ### 4. Separate Skill, ActivityTemplate, and ActivityInstance; difficulty is per skill
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Partly built** (2026-10-05)
+
+**Update, 2026-10-05:** Per-skill levels exist (`SkillBook`, see #54). There is no `ActivityTemplate` and `ActivityInstance` split: each kind of puzzle is a `Challenge` class made by `ChallengeFactory`.
 
 **Decision:** A *skill* is what is learned ("counting"), with a level 1–5 per
 child. A *template* is a reusable, themed way to practise it ("count Mama
@@ -98,7 +106,9 @@ that they are really different templates.
 
 ### 5. Typed activity parameters via a sealed hierarchy and a `"type"` field
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Not built** (2026-10-05)
+
+**Update, 2026-10-05:** Challenges are Kotlin classes (`PickOne`, `TraceChallenge`, `SortChallenge`, ...), not a JSON hierarchy with a `"type"` field. See #6.
 
 **Decision:** Common template fields are shared; type-specific fields live in
 an `"activity"` block whose `"type"` selects a Kotlin subclass
@@ -120,7 +130,9 @@ content alone without shipping code (unlikely; new types need new UI anyway).
 
 ### 6. Content is a bundled JSON pack, validated by a unit test
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #51** (2026-10-05)
+
+**Update, 2026-10-05:** Content is Kotlin: `ContentPack`s registered in `Content` (built once, looked up by id). `ContentRegistryTest` and `ArtCoverageTest` do the validating.
 
 **Decision:** Skills, templates, areas, prompts and rewards live as JSON in
 `app/src/main/assets/content/`. `ContentValidator` checks references, ranges,
@@ -142,7 +154,9 @@ updates (would require downloads, which conflicts with #18).
 
 ### 7. Words and sounds are referenced by keys, not embedded
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Partly built** (2026-10-05)
+
+**Update, 2026-10-05:** Words are plain text in the content. Sounds are `[tags]`. What is recorded is named by a fingerprint of the voice and the sentence (#45).
 
 **Decision:** Templates reference `PromptKey`s like `count.how_many`. A
 per-language `prompts.<lang>.json` maps keys to text and an audio clip.
@@ -180,7 +194,9 @@ scenes, where the UI owns positions after the start.
 
 ### 9. All randomness is seeded and the seed is stored
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Built** (2026-10-05)
+
+**Update, 2026-10-05:** The seed is what makes a journey replayable. Since #53 the seed plus the child's taps rebuild a journey exactly.
 
 **Decision:** Generation uses an injected `GameRandom`; each item stores its seed.
 
@@ -195,7 +211,9 @@ exactly in a test.
 
 ### 10. Rules-based difficulty with first-try accuracy and hysteresis
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #54** (2026-10-05)
+
+**Update, 2026-10-05:** Skill levels follow a windowed rule over recent answers (`SkillBook`), and the hero's level no longer makes puzzles harder.
 
 **Decision:** Per skill, look at the last 8 first-try results at the current
 level. Up one level when ≥ 85% with at least 5 items and the last 3 correct.
@@ -218,7 +236,9 @@ justify a model (#11).
 
 ### 11. `LearnerModel` interface is the seam for future ML
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Not built** (2026-10-05)
+
+**Update, 2026-10-05:** There is no `LearnerModel` interface. `SkillBook` is the whole model, and the challenge log (#42) is the seam for any future model.
 
 **Decision:** Activity selection and learner updates go through
 `LearnerModel`. `RuleBasedLearnerModel` is the only implementation now; an
@@ -236,7 +256,9 @@ replace one part; we'd then split the interface.
 
 ### 12. Room with an append-only outcome log as the source of truth
 
-**Status:** Accepted · 2026-10-02 (introduced in Phase 2)
+**Status:** Accepted · 2026-10-02 (introduced in Phase 2) · **Not built** (2026-10-05)
+
+**Update, 2026-10-05:** Progress is JSON files (#42) and, during an adventure, a log of taps (#53). Room was never added.
 
 **Decision:** Store every finished question in `item_outcome`; `skill_state`
 is a cache rebuildable by replaying the log. All rows carry `profileId` and
@@ -255,7 +277,9 @@ history); raw SQLite (more boilerplate); SQLDelight (fine, but third-party).
 
 ### 13. Settings in a Room table, not DataStore
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Not built** (2026-10-05)
+
+**Update, 2026-10-05:** There are no settings yet. A grown-up space (settings, a progress view) is Phase 8 of `docs/review/improvement-plan.md`.
 
 **Decision:** A one-row `app_settings` table.
 
@@ -271,7 +295,9 @@ is opened, or many settings.
 
 ### 14. No navigation library for the first prototype; Navigation Compose in Phase 2
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Accepted, still true** (2026-10-05)
+
+**Update, 2026-10-05:** There is no navigation library: `MainActivity` shows the title screen or the adventure. Navigation Compose was never needed.
 
 **Decision:** The prototype switches between 2 screens with a `when`.
 Adopt Navigation Compose once there are map, play, reward, sticker book and
@@ -327,7 +353,9 @@ record (then TTS for the long tail, recorded for the core).
 
 ### 17. No numeric score; progress and rewards are things
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #40 and #51** (2026-10-05)
+
+**Update, 2026-10-05:** Health, damage, coins, levels and "Pages 3" are numbers on the screen.
 
 **Decision:** A round shows 5 nest spots filling up; rewards are hatching
 baby dinos, stickers and fossils. No points, no lives, no daily streaks.
@@ -363,7 +391,9 @@ would need an explicit privacy review first (spec §21).
 
 ### 19. Hints escalate; every question ends in success
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #51 and #60** (2026-10-05)
+
+**Update, 2026-10-05:** Obstacles give one try. A miss shows the right answer with the reason, and the story goes on, so nobody is stuck, but a guess is no longer as good as knowing.
 
 **Decision:** Wrong answer → "let's look again" → app counts together with
 highlights → only two choices remain with the right one glowing. The item
@@ -419,8 +449,10 @@ correct but joyless app).
 
 ### 22. The no-reading rule: every idea comes across by voice or visuals
 
-**Status:** Accepted · 2026-10-02 (Jason: "he can't read; the game needs to be
+**Status:** Accepted · 2026-10-02 (Jason: "he can't read; the game needs to be · **Accepted, with exceptions** (2026-10-05)
 voice input/output or visually simple enough to get the ideas across")
+
+**Update, 2026-10-05:** Since #38 the screen also shows captions (for grown-ups reading along), names on the map and in shops, health as "HP 17/25", coins and "Pages 3". Everything the child must understand is still said or drawn.
 
 **Decision:** Core gameplay never depends on reading. Every prompt is spoken
 and must have an audio clip (the content validator fails otherwise); tapping
@@ -444,7 +476,9 @@ spoken.
 
 ### 23. Voice input is optional, on-device only, and arrives after the prototype
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Not built** (2026-10-05)
+
+**Update, 2026-10-05:** No voice input has been added. It stays an idea for later.
 
 **Decision:** Let him answer out loud ("three!") using Android's on-device
 `SpeechRecognizer` (Android 12+), mapped to the same `ChildResponse` a tap
@@ -496,7 +530,9 @@ abstract without more counting/visual groundwork first.
 
 ### 25. One `FIND_SYMBOL` activity type for numerals and letters
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #48** (2026-10-05)
+
+**Update, 2026-10-05:** There are many kinds of puzzle, not one `FIND_SYMBOL`.
 
 **Decision:** Replace the counting-only `CHOOSE_NUMBER` with `FIND_SYMBOL`,
 which has a `symbolSet` (numerals, uppercase, lowercase) and a `mode`
@@ -517,8 +553,10 @@ activity type rather than a mode.
 
 ### 26. Built-in playtest feedback tool, saved on the phone and shared by hand
 
-**Status:** Accepted · 2026-10-02 (Jason asked for an easy way to report bugs
+**Status:** Accepted · 2026-10-02 (Jason asked for an easy way to report bugs · **Accepted · changed** (2026-10-05)
 during playtests)
+
+**Update, 2026-10-05:** The hidden gesture was replaced by a visible button (#49). Since #61 the note also carries the saved adventure so it can be replayed exactly.
 
 **Decision:** A two-finger press and hold anywhere pauses the game and opens a
 report sheet with one-tap tags (including "he loved this") and an optional voice note.
@@ -588,7 +626,9 @@ excludes older hand-me-down phones).
 
 ### 29. A play session is 5 rounds
 
-**Status:** Accepted · 2026-10-02 (Jason)
+**Status:** Accepted · 2026-10-02 (Jason) · **Not built · see #55** (2026-10-05)
+
+**Update, 2026-10-05:** A sitting is a "day" of about ten minutes, ended by a night at camp, not five rounds.
 
 **Decision:** After 5 rounds (about 10–15 minutes) the dino gets sleepy and
 the session ends gently. Parents will be able to change it.
@@ -625,8 +665,10 @@ later).
 
 ### 31. Built to be publishable on F-Droid
 
-**Status:** Accepted · 2026-10-02 (Jason: "I want to post to F-Droid
+**Status:** Accepted · 2026-10-02 (Jason: "I want to post to F-Droid · **Accepted · open question** (2026-10-05)
 eventually"); licence choice pending
+
+**Update, 2026-10-05:** The APK ships espeak-ng data, which is GPL-3.0, and a voice that makes it about 120 MB; both matter for F-Droid. See area X3 in `docs/review/improvement-plan.md`. The app id is in #52.
 
 **Decision:** Keep the app F-Droid-ready from the start: only free-software
 dependencies (AndroidX, Kotlin), no Google Play Services, no tracking, no
@@ -689,7 +731,9 @@ would need a private release key kept out of the repo.
 
 ### 34. The game is a picture book with games baked into its pages
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #38 and #51** (2026-10-05)
+
+**Update, 2026-10-05:** "The Lost Eggs" is gone. The Storybook survives as the count of pages brought home.
 
 **Decision:** The game is now a storybook, "The Lost Eggs". A storm blows
 Mama Dino's eggs across the valley and the child's dino finds them. There
@@ -757,7 +801,9 @@ means a dino per profile.
 
 ### 37. Each read of the story adjusts difficulty with one simple rule
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #54** (2026-10-05)
+
+**Update, 2026-10-05:** There are no story levels; each skill has its own level.
 
 **Decision:** The story has five levels (`StoryLevels`). Each level sets the
 counting range, the highest stone numeral, which letters appear and how many
@@ -799,7 +845,9 @@ playtests.
 
 ### 39. Every adventure is generated, and choices change it
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Partly superseded by #51** (2026-10-05)
+
+**Update, 2026-10-05:** There are no doors or dungeon maps in the journey (the child picks roads, #51), and "nothing is ever lost" no longer holds: fainting loses a quarter of the coins. Seeded variety and a world that remembers still hold.
 
 **Decision:** Each run is made from a seed. The dungeon map, which rooms are
 behind which doors, the storyline (one of the brief's three), its twist, names,
@@ -820,7 +868,9 @@ A "play that one again" button could replay a seed.
 
 ### 40. Stars, levels and unlocks for the hero
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Accepted · powers made real in #56** (2026-10-05)
+
+**Update, 2026-10-05:** Until #56 the class powers did nothing in a journey (they were written for the dice and doors of the first dungeon). Now: the Knight stands back up once a journey, the Wizard and Spellkeeper have sparkle magic that takes a wrong answer away, the Ranger sees road dangers and half as many ambushes, the Guardian's kind choices are always open. Every level unlock is delivered or was removed.
 
 **Decision:** Every challenge, roll and kind choice earns stars (XP) in one of
 the brief's five attributes. Stars add up to hero levels (180, 420, 720, 1080, …),
@@ -840,7 +890,9 @@ the adventure, or later unlocks feel too slow.
 
 ### 41. His named dino becomes a baby dragon companion
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Accepted · changed by #46** (2026-10-05)
+
+**Update, 2026-10-05:** The dragon is called "Sparky" until a grown-up types a name (#46); the name is now spoken.
 
 **Decision:** The child's companion is a baby dragon that comes on every
 adventure. The name he recorded for the dino carries over; without a recording
@@ -856,7 +908,9 @@ as a second companion.
 
 ### 42. Progress and every challenge are saved on the phone
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Accepted · extended by #53** (2026-10-05)
+
+**Update, 2026-10-05:** Between adventures: `save.json`. During one: `journey.json` and `journey.log` (#53). Puzzle records are added to `challenges.jsonl` as they are answered, not at the end.
 
 **Decision:** The hero, skill levels and world memory are saved to
 `save.json` in the app's private storage when an adventure ends. Every challenge
@@ -899,7 +953,9 @@ phone, or the download size becomes a problem.
 
 ### 44. Two dice to add, and hearts
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Superseded by #51** (2026-10-05)
+
+**Update, 2026-10-05:** The dice and hearts belonged to the first dungeon. `Beat.Roll` stays in the engine for a dice minigame later (roadmap Phase 6).
 
 **Decision:** Every roll uses two dice, and the child adds them up before the
 roll counts. A wrong first answer pops one of three hearts, and the narrator
@@ -981,7 +1037,9 @@ until something was right.
 
 ### 48. More kinds of learning, and doors choose the game
 
-**Status:** Accepted · 2026-10-02
+**Status:** Accepted · 2026-10-02 · **Partly superseded by #51** (2026-10-05)
+
+**Update, 2026-10-05:** Puzzles are chosen by terrain and by what the child needs (#54), not by doors.
 
 **Decision:** New rooms: a storeroom where things are dragged into baskets by
 color, kind or size; a frog pond for counting by 2s, 5s, 3s and 10s; a mosaic
@@ -1000,7 +1058,9 @@ skills never get practiced.
 
 ### 49. First playtest fixes: feedback button, character voices, a branching map
 
-**Status:** Accepted · 2026-10-03
+**Status:** Accepted · 2026-10-03 · **Accepted · partly superseded by #51** (2026-10-05)
+
+**Update, 2026-10-05:** The branching door map is gone. The feedback button, character voices, answers waiting for the question, effects and gem colors remain.
 
 **Decision:**
 - **A feedback button** (speech bubble) on the title and adventure screens. A
@@ -1100,3 +1160,150 @@ repository address.
 **Why we made it:** One name everywhere is easier to follow.
 
 **What might cause us to change it:** Nothing planned. Changing the install id again after anyone depends on it would lose their saved game.
+
+---
+
+Entries 53 onward come from the improvement work that followed
+[`docs/review/2026-10-04-review-and-roadmap.md`](docs/review/2026-10-04-review-and-roadmap.md); the step-by-step
+tracker is [`docs/review/improvement-plan.md`](docs/review/improvement-plan.md).
+
+### 53. A journey is its seed and the child's taps; it saves after every tap
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** Everything in a `Journey` is decided by its seed and the hero, skills and world it starts with, so what the child does
+is kept as a list of `Command`s (a `Reply` and the time of the tap, one line of text each: `CommandCodec`). `Journey.replay` rebuilds
+the same journey beat for beat. The app writes `journey.json` (seed and starting state) when an adventure begins and appends a line to
+`journey.log` after every tap. Closing the game, pressing Back or losing the phone leaves the adventure waiting: the camp screen's big arrow
+carries on from the same beat. A new adventure over a waiting one lets it go, but the skills the child practiced in it still count. The hero,
+skills and world are stored when an adventure ends, before the journey files are removed. Back asks first. The time of a tap is part of the
+command, because "which skill was practiced longest ago" decides which puzzle comes next.
+
+**Why we made it:** The review found a 25-minute adventure that was lost if the phone was put down, and a Back that threw it away without
+asking. For a four-year-old with a parent who limits screen time, that is the worst thing the game could do.
+
+**Alternatives considered:** Saving a snapshot of the whole `Journey` (large, and breaks whenever the content changes). Saving only at
+nights (still loses a quarter of an hour).
+
+**What might cause us to change it:** Content changes between versions of the app would make an old log replay differently (a new item
+changes a seed's draws). If that happens, a log from an older version is dropped, or the log is stamped with a content version.
+
+### 54. Levels follow what the child shows, and the child's needs choose the puzzle
+
+**Status:** Accepted · 2026-10-05 · supersedes #10 and #37
+
+**Decision:** The balance harness (#58) showed a child who got 60% right reaching level 5 in every skill. Now: a one-try puzzle that was
+failed is a miss, whatever its tries say. `SkillBook` looks at the last eight first-try results at the current level: up one after at least
+five puzzles with 85% right and the last three in a row; down one after three misses in a row or under 60% right; the window starts again
+after any change. A warm-up puzzle (the first of each skill in a journey, one level easier) is practice, not evidence. The hero's own level
+no longer makes puzzles harder; it only makes monsters tougher. Answer cards are shuffled so the right one is not usually the middle one.
+Obstacles are *costumes*: the terrain says what dresses the puzzle (a river has lily pads, a lock has a number) and the child's recent
+practice picks which costume, with every skill getting its turn before any skill gets a second one. People's own puzzles (Henrietta's chicks,
+Hazel's riddle) use their own words. Letters are taught the way a child is taught them: sounds said without the vowel, short *a*, lowercase,
+names of letters before sounds.
+
+**Why we made it:** Review sections 5.1 to 5.9. Difficulty only ever went up, guessing paid, and one skill (patterns) was 19% of puzzles.
+
+**Alternatives considered:** A model that learns from the challenge log (later, with real data from a real child). A parent-set level.
+
+**What might cause us to change it:** The simulated children are guesses. A real child who stays at level 1 and is bored, or who is pushed
+down and is frustrated, tells us the window or the thresholds are wrong (`BalanceTest` and `./gradlew :engine:balanceReport` show the effect
+of any change before a child sees it).
+
+### 55. A journey is played in days, and the party camps for the night
+
+**Status:** Accepted · 2026-10-05 · replaces #29
+
+**Decision:** A day of play is about nine minutes by `Beat.effortSeconds` (the words said plus time to look and tap). At the next map
+choice after that the party camps: the sun goes down, health is full, and the child can keep going or put the game down at the fire. A night
+never comes right before the last fight. Simulated sittings are about ten minutes (90th percentile about fourteen); a whole journey is
+two or three days.
+
+**Why we made it:** Journeys took about 25 minutes with nowhere to stop. The night is a story-shaped place to stop that costs nothing,
+because every tap is already saved (#53).
+
+**Alternatives considered:** Fewer places and shorter stories (less to see). A "tired" timer (a nag).
+
+**What might cause us to change it:** Real sittings are much longer or shorter than the simulation; change `Journey.DAY_SECONDS`.
+
+### 56. The world's rules are true: no forced fights, no friends ambushing, class powers that work
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** Every conversation has a peaceful way out. People with their own story (Bandit Bess, the Sneaky Fox, Grumble the Troll)
+are never met as random monsters, and a kind that was befriended does not ambush again. Tolls gate something, and "find another way" offers
+one. A flag that is set is read somewhere, and a flag that is read is set somewhere (`StoryMemoryTest`). What the world remembers changes prices, greetings, who
+holds a road and how the Baron's story ends. Friendship points earn stars of kindness, and kindness opens kind choices and lowers prices. Each class power works in a
+journey (see #40), every level unlock is real, and the guardian of Gloomwood Mine (the Mossy Golem) stays in its mine as a mini-boss.
+
+**Why we made it:** Review section 3: the world's memory was mostly write-only, named characters were also random monsters, and class
+powers and unlocks did nothing.
+
+**What might cause us to change it:** A playtest shows a rule makes the world feel too safe.
+
+### 57. One engine, content built once, and everything looked up by id
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** The legacy single-dungeon engine (`Adventure`, doors, hearts, quests and the goblin den, with the 23 tests that only exercised them) is
+removed. Content is built once into a `Registry` with id maps, so `Content.item("x")` is a lookup, not a search. Dungeon plans are kept on
+the `Journey` (not in a global), and old saves still load (unknown keys are ignored).
+
+**Why we made it:** Review sections 2.1 and 2.3: two engines in one app, one of them dead, and a hidden global.
+
+**What might cause us to change it:** Nothing planned. Beat.Roll stays for a dice minigame.
+
+### 58. Simulated children play the game, and the numbers are held by tests
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** `BalanceSim` plays ten simulated children through ten journeys each at 60%, 75% and 90% accuracy and measures how long a
+sitting is, which skills come up, whether levels follow ability, where the right answer sits, and whether anyone is forced to fight.
+`./gradlew :engine:balanceReport` writes the table and CI prints it in the run summary. `BalanceTest` holds the results that were fixed:
+a 60% child's mean level at most 2.0 and a 90% child at least a level ahead, a guesser never above level 1, every everyday skill between 8%
+and 20% of puzzles, no forced fights, no named ambushes, median sitting at most 12 minutes.
+
+**Why we made it:** The review's findings were numbers (levels at 5 for a child who got 60% right, the right answer usually in the middle), and a number
+that is only in a document slips back.
+
+**What might cause us to change it:** Real children. The simulation guesses at how a child plays; real data replaces it.
+
+### 59. The voice catalog is enumerated, not found by chance
+
+**Status:** Accepted · 2026-10-05 · refines #45
+
+**Decision:** `VoiceCatalog` still plays simulated adventures, but now also lists by enumeration every sentence whose words depend on a
+small domain: every sum, every costume and monster introduction, every color, the Baron's peace puzzles, room puzzles, every story arc, person
+and monster line, and every plain line (found by reflection over `JourneyLines` and `RoomLines`). The rule for writing a line: a sentence
+never mixes a name with a number (so a monster's name does not multiply every sum), and a list of things the hero holds is never one
+sentence (it would be a new recording for every combination). `VoiceCatalogTest` plays 1,500 fresh adventures with another seed and fails
+if any sentence is missing.
+
+**Why we made it:** The check found "It needs nine stones and has five." missing, and a rescue question that listed the hero's bag in
+every combination. On a phone each would have been made by the on-device voice, which is the slow, hot path #45 removed.
+
+**What might cause us to change it:** The on-device voice is removed (roadmap area on the APK size), at which point a missing sentence
+should fail the build outright.
+
+### 60. A miss teaches, and one try means one try
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** When the last try is missed the right answer glows and is explained out loud (`Coach.explain`: "Count them together",
+"Two and three make five", "This is the letter M", "Count by twos: TWO, FOUR, SIX"). Puzzles that allow only one try never say "let's try
+again" (a one-try miss said it in 0 of 887 simulated misses). Hands-on puzzles (tracing, sorting, jigsaw, memory) have no explanation.
+
+**Why we made it:** Review section 5: a miss showed the answer and said "Oh no, that is not the one", teaching nothing.
+
+**What might cause us to change it:** The spoken explanation is too long for him; shorten it, or let it be skipped.
+
+### 61. The playtest note carries the adventure, so it can be replayed
+
+**Status:** Accepted · 2026-10-05 · extends #26 and #49
+
+**Decision:** The note that the feedback button writes includes `journey.json` and `journey.log` as saved (#53). `Journey.replay` turns
+them into exactly what he saw, and the issue template says how.
+
+**Why we made it:** The old note listed replies as words and the seed alone could not rebuild an adventure that depended on the world's memory.
+
+**What might cause us to change it:** A grown-up space (roadmap Phase 8) that sends notes some other way.

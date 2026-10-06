@@ -78,7 +78,10 @@ fun TitleScreen(vm: GameViewModel) {
     val speaking = speakingAs == Who.PET
     var dragonMood by remember { mutableStateOf(Mood.CALM) }
     var naming by remember { mutableStateOf(false) }
+    var replacing by remember { mutableStateOf(false) }
     val hero = vm.state.hero
+    // An adventure was put down: the big arrow carries on with it, and the hero is the one it began with.
+    val waiting = vm.canContinue
 
     LaunchedEffect(Unit) {
         narrator.speak(Speech.of(if (vm.state.world.adventures == 0) Say.WELCOME_NEW else Say.WELCOME_BACK))
@@ -160,8 +163,11 @@ fun TitleScreen(vm: GameViewModel) {
                         .shadow(if (chosen) 10.dp else 4.dp, RoundedCornerShape(18.dp))
                         .background(if (chosen) Color(0xFFFFF0C2) else Color(0xCCFFF6E0), RoundedCornerShape(18.dp))
                         .border(if (chosen) 5.dp else 2.dp, if (chosen) Palette.Gold else Palette.PaperEdge, RoundedCornerShape(18.dp))
+                        .graphicsLayer { alpha = if (waiting && !chosen) 0.45f else 1f }
                         .clickable(enabled = true) {
-                            if (open) {
+                            if (waiting && !chosen) {
+                                scope.launch { narrator.speak(Say.heroLine(hero.heroClass)) }
+                            } else if (open) {
                                 sfx.play("tap")
                                 vm.chooseClass(c)
                                 scope.launch { narrator.speak(Say.heroLine(c)) }
@@ -188,7 +194,30 @@ fun TitleScreen(vm: GameViewModel) {
         ) {
             sfx.play("tap")
             narrator.stop()
-            vm.start()
+            if (waiting) vm.resume() else vm.start()
+        }
+        if (waiting) {
+            // A new adventure instead; the one put down is let go, so this asks first.
+            RoundButton(
+                Picto.AGAIN, Palette.Berry, h * 0.14f,
+                Modifier.align(Alignment.BottomEnd).padding(end = 22.dp + h * 0.26f + 16.dp, bottom = 18.dp),
+            ) {
+                sfx.play("tap")
+                replacing = true
+            }
+        }
+        if (replacing) {
+            ConfirmDialog(
+                title = "Start a new adventure?",
+                note = "The adventure you put down will be let go. What your hero learned in it is kept.",
+                keep = Picto.NEXT, change = Picto.AGAIN,
+                onKeep = { replacing = false },
+                onChange = {
+                    replacing = false
+                    narrator.stop()
+                    vm.start()
+                },
+            )
         }
 
         if (naming) {

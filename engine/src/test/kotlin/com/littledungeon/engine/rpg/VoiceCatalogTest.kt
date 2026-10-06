@@ -12,7 +12,7 @@ class VoiceCatalogTest {
         val (catalog, _) = VoiceCatalog.speech()
         val (other, _) = VoiceCatalog.speech(runs = 1500, seed = 99)
         val missing = other - catalog
-        assertTrue(missing.isEmpty(), "not recorded: ${missing.take(20)}")
+        assertTrue(missing.isEmpty(), "not recorded: ${missing.take(60)}")
     }
 
     @Test

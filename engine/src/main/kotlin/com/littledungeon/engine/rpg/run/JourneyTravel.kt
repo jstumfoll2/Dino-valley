@@ -4,10 +4,14 @@ import com.littledungeon.engine.model.Speech
 import com.littledungeon.engine.rpg.battle.Monster
 import com.littledungeon.engine.rpg.battle.Tier
 import com.littledungeon.engine.rpg.content.Content
+import com.littledungeon.engine.rpg.hero.Power
 import com.littledungeon.engine.rpg.world.Location
 import com.littledungeon.engine.rpg.world.LocationKind
 import com.littledungeon.engine.rpg.world.Road
 import com.littledungeon.engine.rpg.world.Terrain
+
+/** The chance, on the first walk of a road with no monster on it, that something is found along the way. */
+internal const val ROAD_EVENT_PERCENT = 30
 
 /** The backdrop for a road. */
 internal fun roadPlace(t: Terrain) = Place("road_${t.name.lowercase()}")
@@ -62,6 +66,7 @@ internal fun Journey.travel(): List<JStep> {
 internal fun Journey.go(road: Road): List<JStep> {
     moves++
     val from = here
+    cameFrom = from
     val dest = kingdom.location(road.other(from))
     val terrain = terrainOf(road)
     val s = scene(roadPlace(terrain))
@@ -71,17 +76,18 @@ internal fun Journey.go(road: Road): List<JStep> {
             !road.terrain.monsters -> 0
             road.danger >= 2 -> 70
             else -> 50
-        }
+        } / (if (hero.heroClass.power == Power.KEEN_EYES) 2 else 1) // a Ranger spots trouble early
         if (terrain.monsters && road.id !in opened && random.nextInt(100) < chance) {
-            val m = roadMonster(terrain, road.danger)
-            listOf(tell(s, say.fightAsk(m.name.lowercase()))) + battle(m, s.place, arrive)
+            encounter(roadMonster(terrain, road.danger), s, retreat = { listOf(tell(scene(placeOf(kingdom.location(from))), say.backAway(kingdom.location(from).name))) }, onWin = arrive)
+        } else if (walked.add(road.id) && random.nextInt(100) < ROAD_EVENT_PERCENT) {
+            roadEvent(s).andThen(arrive)
         } else {
             arrive()
         }
     }
     val obstacle = terrain.obstacle
     return if (obstacle != null) {
-        obstacle(obstacle, s, afterObstacle) { turnedBack(road, from) }
+        obstacle(obstacle, s, next = afterObstacle, turnBack = { turnedBack(road, from) })
     } else {
         afterObstacle()
     }
@@ -90,8 +96,11 @@ internal fun Journey.go(road: Road): List<JStep> {
 /** A road monster fitted to the road: little ones on easy roads, a chance of a tough one on dangerous ones. */
 internal fun Journey.roadMonster(terrain: Terrain, danger: Int): Monster {
     val tier = if (danger >= 2 && random.nextInt(100) < 40) Tier.ELITE else Tier.MINION
-    val pool = Content.monsters.filter { it.tier == tier && (it.habitat.isEmpty() || terrain in it.habitat) }
-        .ifEmpty { Content.monsters.filter { it.tier == tier } }
+    // Kinds the hero has made friends with (a cookie for a wolf pup) do not ambush them again.
+    fun fair(m: Monster) = m.roams && m.tier == tier && !hasFlag("friend:${m.id}")
+    val pool = Content.monsters.filter { fair(it) && (it.habitat.isEmpty() || terrain in it.habitat) }
+        .ifEmpty { Content.monsters.filter { fair(it) } }
+        .ifEmpty { Content.monsters.filter { it.roams && it.tier == tier } }
     return pool.random(random)
 }
 
