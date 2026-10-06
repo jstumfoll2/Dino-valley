@@ -7,6 +7,7 @@ import com.littledungeon.engine.rpg.hero.HeroClass
 import com.littledungeon.engine.rpg.items.Slot
 import com.littledungeon.engine.rpg.run.Command
 import com.littledungeon.engine.rpg.run.CommandCodec
+import com.littledungeon.engine.rpg.run.Settings
 import com.littledungeon.engine.rpg.learn.ChallengeRecord
 import com.littledungeon.engine.rpg.learn.Skill
 import com.littledungeon.engine.rpg.learn.SkillBook
@@ -29,11 +30,12 @@ class Save(context: Context) {
     private val log = File(context.filesDir, "challenges.jsonl")
     private val journeyFile = File(context.filesDir, "journey.json")
     private val commandFile = File(context.filesDir, "journey.log")
+    private val settingsFile = File(context.filesDir, "settings.json")
 
     data class State(val hero: Hero, val skills: SkillBook, val world: WorldMemory)
 
     /** An adventure that was put down: its seed, the state it started from, and what the child did in it. */
-    class Saved(val seed: Long, val start: State, val commands: List<Command>)
+    class Saved(val seed: Long, val start: State, val commands: List<Command>, val settings: Settings = Settings())
 
     fun load(): State = runCatching { stateFrom(JSONObject(file.readText())) }.getOrDefault(State(Hero(), SkillBook(), WorldMemory()))
 
@@ -42,9 +44,9 @@ class Save(context: Context) {
     // ------------------------------------------------------------- the adventure in progress
 
     /** Starts keeping an adventure: its seed and where the hero stands as it begins. Any earlier one is gone. */
-    fun begin(seed: Long, start: State) {
+    fun begin(seed: Long, start: State, settings: Settings) {
         end()
-        write(journeyFile, stateJson(start).put("seed", seed))
+        write(journeyFile, stateJson(start).put("seed", seed).put("settings", settingsJson(settings)))
     }
 
     /** Keeps one tap. A line cut short by the phone dying is ignored when the adventure is read back. */
@@ -63,7 +65,7 @@ class Save(context: Context) {
             // running on from the broken one (which would make every tap after it unreadable).
             val whole = CommandCodec.encodeAll(commands)
             if (whole != text) commandFile.writeText(whole)
-            Saved(json.getLong("seed"), stateFrom(json), commands)
+            Saved(json.getLong("seed"), stateFrom(json), commands, json.optJSONObject("settings")?.let(::settingsFrom) ?: Settings())
         }.getOrNull()
     }
 
@@ -81,6 +83,33 @@ class Save(context: Context) {
     fun logRecords(records: List<ChallengeRecord>) {
         if (records.isNotEmpty()) log.appendText(records.joinToString("") { record(it).toString() + "\n" })
     }
+
+    // ------------------------------------------------------------- grown-up settings and the progress view
+
+    fun settings(): Settings = runCatching { settingsFrom(JSONObject(settingsFile.readText())) }.getOrDefault(Settings())
+
+    fun storeSettings(s: Settings) = write(settingsFile, settingsJson(s))
+
+    /** Every puzzle answered so far, from the challenge log (a line that cannot be read is skipped). */
+    fun records(): List<ChallengeRecord> = runCatching {
+        if (!log.exists()) emptyList() else log.readLines().mapNotNull { line ->
+            runCatching {
+                val o = JSONObject(line)
+                ChallengeRecord(
+                    enumOrNull<Skill>(o.getString("skill")) ?: return@runCatching null, o.getString("kind"), o.getInt("level"), o.getInt("tries"),
+                    o.getInt("hints"), o.getLong("millis"), o.getLong("at"), o.getLong("seed"), o.optBoolean("failed"),
+                )
+            }.getOrNull()
+        }
+    }.getOrDefault(emptyList())
+
+    private fun settingsJson(s: Settings) = JSONObject()
+        .put("twoTries", s.twoTries).put("floor", s.levelFloor).put("ceiling", s.levelCeiling).put("dayMinutes", s.dayMinutes)
+
+    private fun settingsFrom(o: JSONObject): Settings = runCatching {
+        val floor = o.optInt("floor", 1).coerceIn(1, 5)
+        Settings(o.optBoolean("twoTries"), floor, o.optInt("ceiling", 5).coerceIn(floor, 5), o.optInt("dayMinutes", 9).coerceIn(3, 30))
+    }.getOrDefault(Settings())
 
     // ------------------------------------------------------------- the whole state
 

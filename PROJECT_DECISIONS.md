@@ -1224,7 +1224,7 @@ because every tap is already saved (#53).
 
 **Alternatives considered:** Fewer places and shorter stories (less to see). A "tired" timer (a nag).
 
-**What might cause us to change it:** Real sittings are much longer or shorter than the simulation; change `Journey.DAY_SECONDS`.
+**What might cause us to change it:** Real sittings are much longer or shorter than the simulation; change `Settings.dayMinutes`.
 
 ### 56. The world's rules are true: no forced fights, no friends ambushing, class powers that work
 
@@ -1307,3 +1307,24 @@ them into exactly what he saw, and the issue template says how.
 **Why we made it:** The old note listed replies as words and the seed alone could not rebuild an adventure that depended on the world's memory.
 
 **What might cause us to change it:** A grown-up space (roadmap Phase 8) that sends notes some other way.
+
+### 62. A grown-up can set a second look, the puzzle levels and the length of a day
+
+**Status:** Accepted · 2026-10-05 · fulfils the "easier setting" the story-engine plan promised
+
+**Decision:** `Settings` (a second look after a miss, easiest and hardest puzzle level, minutes in a day) is chosen behind a parent gate (a sum with
+two-digit numbers) and is saved with each adventure, so a replay uses the same ones. A second look crosses one wrong answer out and uses nothing up.
+The same screen shows how each skill is going from the challenge log (`progressOf`), in words, never grades.
+
+**Why we made it:** Review phase 8: the one-try rule is the hardest thing in the game for a four-year-old, and a parent should be able to ease it.
+
+**What might cause us to change it:** A gate a child can pass (the sum is too easy), or settings nobody uses.
+
+### 63. Lucky dice are a road event
+
+**Status:** Accepted · 2026-10-05
+
+**Decision:** The first-time walk of a road can find two dice (`luckyRoll`): the child rolls and adds them up, and the total is the coins. A low total is silly,
+not bad. The adding counts as practice for addition. It reuses the dice screen and lines that were kept for it.
+
+**What might cause us to change it:** Dice screens feel like a detour; the other minigames are the better use of the slot.

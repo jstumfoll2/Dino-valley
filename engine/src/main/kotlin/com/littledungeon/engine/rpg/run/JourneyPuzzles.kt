@@ -169,6 +169,14 @@ private fun Journey.rescue(
     scene: Scene, c: Challenge, oops: String, yay: String, obstacle: Obstacle?, prop: Prop,
     wrong: List<Int>, charmUsed: Boolean, onWin: (Reply.Solved) -> List<JStep>, onFail: () -> List<JStep>,
 ): List<JStep> {
+    // A grown-up can allow a second look at every missed puzzle: the wrong answer is crossed out, nothing is used up.
+    if (settings.twoTries && !charmUsed && c is PickOne) {
+        val more = extraWrong(c, SPARKLE, wrong)
+        return listOf(
+            tell(scene, say.anotherLook()),
+            askOnce(scene, c, oops, yay, obstacle, prop, wrong + more, charmUsed = true, onWin = onWin, onFail = onFail),
+        )
+    }
     val owned = hero.bag.keys.mapNotNull { Content.item(it) }
     val tool = if (obstacle != null) owned.firstOrNull { obstacle in it.opens } else null
     val charms = if (charmUsed) emptyList() else owned.filter { it.isCharm }.sortedBy { it.guess }.take(2)

@@ -138,6 +138,14 @@ internal class JourneyLines(private val r: Random) {
 
     fun charmWorks(charm: String) = pick("The $charm glows, and you get another look.", "The $charm sparkles. <pet>Think carefully this time!")
 
+    fun anotherLook() = pick("Not quite. <pet>Let's look again. One wrong answer is crossed out!", "Oops, not that one. <pet>Try once more. I crossed one out for you!")
+
+    fun luckyRollAsk() = pick("A pair of lucky dice lies on the road! Tap them to roll.", "Look, two dice in the grass! Roll them and see how lucky you are.")
+
+    fun luckyRollSilly() = pick("Oh, tiny dice! A silly gnome tumbles out of the grass and gives you a coin to say sorry. <pet>Hee hee!", "Plink, plink. The dice are so small that a sneezing mouse knocks them over. <pet>Bless you, mouse!")
+
+    fun luckyRollBig() = pick("What a roll! Coins pour out of the grass. <pet>We are so lucky!", "Hooray, a lucky roll! Shiny coins pop up all around you.")
+
     fun sparkleWorks() = pick("Sparkle magic! One wrong answer fades away. <pet>Think carefully this time!", "Glitter swirls in the air, and one wrong answer fades away. <pet>Now look again!")
 
     fun failedFor(o: Obstacle) = pick(
